@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>LEGDAY graybox — knockdown + cards probe</title>
+<style>
+  html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#0F0C0A;touch-action:none;
+    -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;overscroll-behavior:none}
+  canvas{display:block;width:100vw;height:100vh}
+  #panel{position:fixed;top:env(safe-area-inset-top,0);right:0;background:rgba(14,11,9,.94);color:#B0A17C;
+    font:13px Georgia,serif;padding:14px 16px;display:none;z-index:10;border:1px solid #2A231C;border-top:none;max-width:230px}
+  #panel label{display:block;margin:8px 0 2px;letter-spacing:.08em}
+  #panel input{width:200px}
+  #panel .v{color:#E6D8B8}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="panel"></div>
+<script>
+"use strict";
+const cv = document.getElementById('c'), cx = cv.getContext('2d');
+let W = 0, H = 0, DPR = 1;
+function resize(){
+  if (window.innerWidth < 50 || window.innerHeight < 50) return;
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  W = window.innerWidth; H = window.innerHeight;
+  cv.width = W * DPR; cv.height = H * DPR;
+  cx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+resize(); addEventListener('resize', resize);
+
+// ---- tunables ----
+const S = {
+  scroll:   { v: 78,   min: 20,  max: 160,  label: 'scroll px/s' },
+  spawn:    { v: 1.7,  min: 0.3, max: 4,    label: 'spawn mult' },
+  shove:    { v: 120,  min: 30,  max: 260,  label: 'shove impulse' },
+  iframes:  { v: 0.55, min: 0.1, max: 1.5,  label: 'i-frames s' },
+  fogSec:   { v: 2.4,  min: 0.8, max: 6,    label: 'fog kill s' },
+  fogGrace: { v: 0.8,  min: 0,   max: 2,    label: 'fog grace s' },
+  fogCreep: { v: 1.1,  min: 0,   max: 3,    label: 'fog creep px/s' },
+  killPush: { v: 0.9,  min: 0,   max: 4,    label: 'fog push per kill' },
+  downBias: { v: 0.35, min: 0,   max: 1,    label: 'shove down-bias' },
+  cardSlow: { v: 0.005, min: 0,  max: 1,    label: 'card time-scale' },
+};
+
+// ---- cards ----
+// player deck: buffs with costs priced in height/greed. Death's deck: both options bad.
+const GOLD = '#C99A2E', PLAGUE = '#8FA03A', GRAVE = '#8A6FB3', RUST = '#C06430', INKSPINE = '#050303';
+function timed(apply, undo, secs){ apply(); effects.push({ undo, until: t + secs }); }
+const PLAYER_CARDS = [
+  { title: 'THE SECOND KNUCKLE', spine: RUST,
+    L: { a: '+1 bolt', b: 'fog +26 for 30s', fx: () => { mods.bolts++; timed(() => mods.fogAdd += 26, () => mods.fogAdd -= 26, 30); } },
+    R: { a: 'attack 20% faster', b: 'no price', fx: () => { mods.atk *= 0.8; } } },
+  { title: 'OATH OF FOOTING', spine: GOLD,
+    L: { a: 'footing +35%', b: 'shoves resisted', fx: () => { mods.footing *= 1.35; } },
+    R: { a: 'motes worth ×2', b: 'motes sink 30% faster', fx: () => { mods.essMul *= 2; mods.moteSink *= 1.3; } } },
+  { title: 'LANTERN OIL', spine: GRAVE,
+    L: { a: 'magnet ×1.6', b: 'gather from afar', fx: () => { mods.magnet *= 1.6; } },
+    R: { a: '+4 essence now', b: 'next card sooner', fx: () => { charge += 4; } } },
+  { title: 'PILGRIM’S PACE', spine: PLAGUE,
+    L: { a: 'stride +15%', b: 'no price', fx: () => { mods.gain *= 1.15; } },
+    R: { a: 'essence ×2', b: 'scroll +8% forever', fx: () => { mods.essMul *= 2; mods.scrollMul *= 1.08; } } },
+  { title: 'THE TITHE', spine: GOLD,
+    L: { a: 'smite every foe', b: 'fog +30 forever', fx: () => { foes = []; mods.fogAdd += 30; } },
+    R: { a: 'decline', b: 'nothing happens', fx: () => {} } },
+];
+const DEATH_CARDS = [
+  { title: 'HIS ATTENTION', spine: INKSPINE, death: true,
+    L: { a: 'the swarm thickens', b: 'spawns ×1.5 for 30s', fx: () => timed(() => mods.spawnMul *= 1.5, () => mods.spawnMul /= 1.5, 30) },
+    R: { a: 'the fog climbs', b: 'fog +44 for 30s', fx: () => timed(() => mods.fogAdd += 44, () => mods.fogAdd -= 44, 30) } },
+  { title: 'THE TOLL', spine: INKSPINE, death: true,
+    L: { a: 'pay half your essence', b: 'he keeps ledgers', fx: () => { essence = Math.floor(essence / 2); } },
+    R: { a: 'the fog climbs', b: '+34 forever', fx: () => { mods.fogAdd += 34; } } },
+  { title: 'NO REST', spine: INKSPINE, death: true,
+    L: { a: 'the road quickens', b: 'scroll +12% forever', fx: () => { mods.scrollMul *= 1.12; } },
+    R: { a: 'your arm tires', b: 'attack 25% slower for 30s', fx: () => timed(() => mods.atk *= 1.25, () => mods.atk /= 1.25, 30) } },
+];
+function shuffled(a){ const b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [b[i], b[j]] = [b[j], b[i]]; } return b; }
+
+// ---- state ----
+let hero, foes, motes, bolts, flashes, t, fathoms, essence, kills, spawnAcc, dead, atkT, best = 0, inited = false;
+let mods, effects, deck, deathDeck, drawn, charge, essNeed, card, essPulse = 0, fogPressure = 0, ts = 1;
+function reset(){
+  hero = { x: W/2, y: H*0.42, tx: W/2, ty: H*0.42, vx: 0, vy: 0, inv: 0, fog: 0 };
+  foes = []; motes = []; bolts = []; flashes = [];
+  t = 0; fathoms = 0; essence = 0; kills = 0; spawnAcc = 0; dead = false; atkT = 0;
+  mods = { bolts: 1, atk: 0.38, footing: 1, magnet: 34, gain: 1, scrollMul: 1, essMul: 1, moteSink: 1, spawnMul: 1, fogAdd: 0 };
+  effects = [];
+  deck = shuffled(PLAYER_CARDS.concat(PLAYER_CARDS));   // deck of 10: your narrative fuel
+  deathDeck = shuffled(DEATH_CARDS);
+  drawn = 0; charge = 0; essNeed = 4; card = null; fogPressure = 0; ts = 1;
+}
+reset();
+
+function drawCard(){
+  let def;
+  if (deck.length) def = deck.shift();
+  else { if (!deathDeck.length) deathDeck = shuffled(DEATH_CARDS); def = deathDeck.shift(); }  // Death deals when you run dry
+  drawn++;
+  card = { def, off: 0, anim: 0, leaving: 0, dir: 0 };
+  if (navigator.vibrate) navigator.vibrate(12);
+}
+
+// ---- input ----
+let anchor = null;
+cv.addEventListener('pointerdown', e => {
+  if (dead) { best = Math.max(best, fathoms|0); reset(); return; }
+  if (e.clientX > W - 56 && e.clientY < 96) { togglePanel(); return; }
+  anchor = { px: e.clientX, py: e.clientY, hx: hero.tx, hy: hero.ty };
+  cv.setPointerCapture(e.pointerId);
+});
+cv.addEventListener('pointermove', e => {
+  if (!anchor) return;
+  if (card && !card.leaving) { card.off = (e.clientX - anchor.px); return; }   // the card takes the thumb
+  hero.tx = anchor.hx + (e.clientX - anchor.px) * 1.18 * mods.gain;
+  hero.ty = anchor.hy + (e.clientY - anchor.py) * 1.18 * mods.gain;
+});
+function release(){
+  if (card && !card.leaving) {
+    if (Math.abs(card.off) > W * 0.3) commitCard(card.off > 0 ? 1 : -1);
+    else card.off = 0;                                   // spring back
+  }
+  anchor = null;
+}
+cv.addEventListener('pointerup', release);
+cv.addEventListener('pointercancel', release);
+addEventListener('contextmenu', e => e.preventDefault());
+
+function commitCard(dir){
+  const c = card.def, ch = dir > 0 ? c.R : c.L;
+  ch.fx();
+  card.leaving = 1; card.dir = dir;
+  if (navigator.vibrate) navigator.vibrate(20);
+}
+
+// ---- gear panel ----
+const panel = document.getElementById('panel');
+function togglePanel(){
+  if (panel.style.display === 'block') { panel.style.display = 'none'; return; }
+  panel.innerHTML = '';
+  for (const k of Object.keys(S)) {
+    const o = S[k];
+    const lab = document.createElement('label');
+    lab.innerHTML = o.label + ' <span class="v">' + o.v + '</span>';
+    const inp = document.createElement('input');
+    inp.type = 'range'; inp.min = o.min; inp.max = o.max; inp.step = (o.max - o.min) / 100; inp.value = o.v;
+    inp.addEventListener('input', () => { o.v = +inp.value; lab.querySelector('.v').textContent = (+inp.value).toFixed(2); });
+    inp.addEventListener('pointerdown', e => e.stopPropagation());
+    panel.appendChild(lab); panel.appendChild(inp);
+  }
+  panel.style.display = 'block';
+}
+
+// ---- helpers ----
+const rnd = (a, b) => a + Math.random() * (b - a);
+function fogLine(){ return H - (110 + Math.sin(t * 1.05) * 12 + fogPressure + mods.fogAdd); }
+function scrollEff(){ return S.scroll.v * mods.scrollMul; }
+
+function spawnFoe(){
+  const side = Math.random();
+  let x, y;
+  if (side < 0.7) { x = rnd(20, W - 20); y = -20; }
+  else if (side < 0.85) { x = -16; y = rnd(0, H * 0.45); }
+  else { x = W + 16; y = rnd(0, H * 0.45); }
+  const big = t > 30 && Math.random() < 0.15;
+  foes.push({ x, y, r: big ? 15 : 9 + Math.random() * 3, hp: big ? 3 : (t > 45 ? 2 : 1),
+              sp: rnd(48, 92) + Math.min(60, t * 0.8), big });
+}
+
+// ---- update ----
+function update(dt){
+  t += dt;
+  fathoms += scrollEff() * dt / 10;
+  // the fog gains ground with time; only slaughter holds it back
+  fogPressure = Math.min(190, fogPressure + dt * S.fogCreep.v * (0.7 + t * 0.015));
+  const fl = fogLine();
+
+  effects = effects.filter(e => { if (t > e.until) { e.undo(); return false; } return true; });
+
+  hero.x += (hero.tx - hero.x) * Math.min(1, dt * 14);
+  hero.y += (hero.ty - hero.y) * Math.min(1, dt * 14);
+  hero.x += hero.vx * dt; hero.y += hero.vy * dt;
+  const dec = Math.exp(-dt * 5.5);
+  hero.vx *= dec; hero.vy *= dec;
+  hero.tx += hero.vx * dt; hero.ty += hero.vy * dt;
+  hero.x = Math.max(14, Math.min(W - 14, hero.x));
+  hero.y = Math.max(64, Math.min(H - 12, hero.y));
+  hero.tx = Math.max(14, Math.min(W - 14, hero.tx));
+  hero.ty = Math.max(64, Math.min(H - 12, hero.ty));
+  if (hero.inv > 0) hero.inv -= dt;
+
+  const inFog = hero.y > fl;
+  if (inFog) {
+    hero.fog += dt;
+    const gripped = hero.fog > S.fogGrace.v;          // grace: the fog takes a moment to notice you
+    hero.ty += (gripped ? 30 : 8) * dt;
+    if (hero.fog - S.fogGrace.v > S.fogSec.v) dead = true;
+  } else {
+    hero.fog = Math.max(0, hero.fog - dt * 0.9);
+  }
+
+  spawnAcc += dt * S.spawn.v * mods.spawnMul * (0.7 + t * 0.05);
+  while (spawnAcc > 1) { spawnAcc -= 1; spawnFoe(); }
+
+  for (const f of foes) {
+    const dx = hero.x - f.x, dy = hero.y - f.y, d = Math.hypot(dx, dy) || 1;
+    f.x += dx / d * f.sp * dt;
+    f.y += dy / d * f.sp * dt + scrollEff() * 0.22 * dt;
+    if (d < f.r + 13 && hero.inv <= 0 && !dead) {
+      const n = Math.hypot(dx, dy) || 1;
+      let sx = dx / n, sy = dy / n;
+      sy += S.downBias.v;
+      const m = Math.hypot(sx, sy) || 1;
+      const imp = S.shove.v * (f.big ? 1.7 : 1) / mods.footing;
+      hero.vx += sx / m * imp; hero.vy += sy / m * imp;
+      hero.inv = S.iframes.v;
+      flashes.push({ x: hero.x, y: hero.y, r: 20, life: 0.18 });
+      if (navigator.vibrate) navigator.vibrate(25);
+      f.x -= sx / m * 14; f.y -= sy / m * 14;
+    }
+  }
+  foes = foes.filter(f => f.y < H + 60 && f.x > -60 && f.x < W + 60);
+
+  atkT -= dt;
+  if (atkT <= 0 && !inFog) {
+    const targets = foes.map(f => ({ f, d: Math.hypot(f.x - hero.x, f.y - hero.y) }))
+                        .filter(o => o.d < 340).sort((a, b) => a.d - b.d).slice(0, mods.bolts);
+    if (targets.length) {
+      atkT = mods.atk;
+      for (const { f } of targets) {
+        bolts.push({ x1: hero.x, y1: hero.y, x2: f.x, y2: f.y, life: 0.12 });
+        f.hp -= 1;
+        if (f.hp <= 0) {
+          kills++;
+          fogPressure = Math.max(0, fogPressure - S.killPush.v * (f.big ? 3 : 1));   // each kill drives Death back
+          flashes.push({ x: f.x, y: fogLine(), r: 6, life: 0.16, c: 'rgba(201,154,46,' });
+          if (f.big) motes.push({ x: f.x, y: f.y, r: 8, val: 3 });
+          else if (Math.random() < 0.85) motes.push({ x: f.x, y: f.y, r: 5, val: 1 });
+          foes.splice(foes.indexOf(f), 1);
+        }
+      }
+    } else atkT = 0.12;
+  }
+
+  // motes ride the world into the fog; inside the magnet range they fly to you (the hoover)
+  for (const m of motes) {
+    const dx = hero.x - m.x, dy = hero.y - m.y, d = Math.hypot(dx, dy) || 1;
+    if (d < mods.magnet * 2.4) {
+      const pull = 140 + (mods.magnet * 2.4 - d) * 6;
+      m.x += dx / d * pull * dt; m.y += dy / d * pull * dt;
+    } else {
+      m.y += (scrollEff() * 0.95 + 2) * mods.moteSink * dt;
+    }
+  }
+  motes = motes.filter(m => {
+    if (Math.hypot(m.x - hero.x, m.y - hero.y) < 16) {
+      essence += mods.essMul * m.val; charge += mods.essMul * m.val;
+      essPulse = 0.25;
+      flashes.push({ x: m.x, y: m.y, r: 4, life: 0.14, c: 'rgba(138,111,179,' });
+      return false;
+    }
+    return m.y < fl + 30;
+  });
+  if (essPulse > 0) essPulse -= dt;
+
+  // essence charges the next fate; the card surfaces when full
+  if (!card && charge >= essNeed) { charge = 0; essNeed += 1; drawCard(); }
+
+  bolts = bolts.filter(b => (b.life -= dt) > 0);
+  flashes = flashes.filter(f => (f.life -= dt) > 0);
+}
+
+// ---- draw ----
+function roundRect(x, y, w, h, r){
+  cx.beginPath();
+  cx.moveTo(x + r, y); cx.arcTo(x + w, y, x + w, y + h, r); cx.arcTo(x + w, y + h, x, y + h, r);
+  cx.arcTo(x, y + h, x, y, r); cx.arcTo(x, y, x + w, y, r); cx.closePath();
+}
+
+function draw(){
+  cx.fillStyle = '#0F0C0A'; cx.fillRect(0, 0, W, H);
+  const fl = fogLine();
+
+  cx.fillStyle = 'rgba(230,216,184,0.05)';
+  for (let i = 0; i < 26; i++) {
+    const y = ((i * 137 + t * scrollEff()) % (H + 40)) - 20;
+    cx.fillRect((i * 61) % W, y, 2, 2);
+  }
+
+  cx.fillStyle = '#8A6FB3';
+  for (const m of motes) { cx.beginPath(); cx.arc(m.x, m.y, m.r, 0, 7); cx.fill(); }
+
+  cx.strokeStyle = 'rgba(230,216,184,0.8)'; cx.lineWidth = 2;
+  for (const b of bolts) { cx.beginPath(); cx.moveTo(b.x1, b.y1); cx.lineTo(b.x2, b.y2); cx.stroke(); }
+
+  for (const f of foes) {
+    cx.fillStyle = f.big ? '#4A3A30' : '#5E4B3D';
+    cx.beginPath(); cx.arc(f.x, f.y, f.r, 0, 7); cx.fill();
+  }
+
+  if (!(hero.inv > 0 && Math.floor(t * 18) % 2 === 0)) {
+    cx.fillStyle = '#E6D8B8';
+    cx.fillRect(hero.x - 9, hero.y - 13, 18, 26);
+    cx.fillStyle = hero.y > fl ? '#8A6FB3' : '#C99A2E';
+    cx.beginPath(); cx.arc(hero.x + 12, hero.y + 2, 4, 0, 7); cx.fill();
+  }
+
+  for (const f of flashes) {
+    cx.strokeStyle = (f.c || 'rgba(230,216,184,') + (f.life * 4) + ')'; cx.lineWidth = 3;
+    cx.beginPath(); cx.arc(f.x, f.y, f.r + (0.18 - f.life) * 160, 0, 7); cx.stroke();
+  }
+
+  // next fate surfacing from the fog corner (diegetic charge bar)
+  if (!card && !dead) {
+    const k = Math.min(1, charge / essNeed);
+    const ch = 64 * k;
+    cx.save();
+    cx.translate(W - 64, H + 8 - ch);
+    cx.rotate(-0.12);
+    cx.fillStyle = '#CDBB92';
+    roundRect(0, 0, 46, 66, 5); cx.fill();
+    cx.restore();
+  }
+
+  // fog
+  const g = cx.createLinearGradient(0, fl - 60, 0, H);
+  g.addColorStop(0, 'rgba(27,20,41,0)');
+  g.addColorStop(0.35, 'rgba(27,20,41,0.88)');
+  g.addColorStop(1, '#171122');
+  cx.fillStyle = g; cx.fillRect(0, fl - 60, W, H - fl + 60);
+
+  if (hero.fog > 0.05) {
+    const k = Math.min(1, Math.max(0, hero.fog - S.fogGrace.v) / S.fogSec.v);
+    const vg = cx.createRadialGradient(W/2, H/2, (1 - k) * H * 0.75, W/2, H/2, H);
+    vg.addColorStop(0, 'rgba(10,7,21,0)');
+    vg.addColorStop(1, 'rgba(10,7,21,' + (0.35 + k * 0.65) + ')');
+    cx.fillStyle = vg; cx.fillRect(0, 0, W, H);
+  }
+
+  // the card
+  if (card) {
+    if (card.anim < 1 && !card.leaving) card.anim = Math.min(1, card.anim + 0.09);
+    {
+      cx.fillStyle = 'rgba(10,7,21,0.35)'; cx.fillRect(0, 0, W, H);
+      const cw = 290, chh = 172;
+      const cxp = W/2 + card.off, cyp = H * 0.60 + (1 - card.anim) * 240;
+      cx.save();
+      cx.translate(cxp, cyp);
+      cx.rotate(card.off / 900);
+      cx.shadowColor = 'rgba(0,0,0,0.6)'; cx.shadowBlur = 30; cx.shadowOffsetY = 14;
+      cx.fillStyle = '#E9DCBC';
+      roundRect(-cw/2, -chh/2, cw, chh, 12); cx.fill();
+      cx.shadowColor = 'transparent';
+      cx.fillStyle = card.def.spine;
+      cx.fillRect(-cw/2 + 16, -chh/2, cw - 32, 4);
+      cx.strokeStyle = 'rgba(36,28,18,0.45)'; cx.lineWidth = 1;
+      roundRect(-cw/2 + 8, -chh/2 + 8, cw - 16, chh - 16, 7); cx.stroke();
+      cx.fillStyle = '#241C12'; cx.textAlign = 'center';
+      cx.font = 'bold 17px Georgia, serif';
+      cx.fillText(card.def.title, 0, -chh/2 + 40);
+      if (card.def.death) {
+        cx.font = 'italic 11px Georgia, serif'; cx.fillStyle = '#6B5A3D';
+        cx.fillText('your deck is spent — Death deals', 0, -chh/2 + 58);
+      }
+      const lLit = card.off < -W * 0.12, rLit = card.off > W * 0.12;
+      cx.textAlign = 'left';
+      cx.font = (lLit ? 'bold ' : '') + '12px Georgia, serif';
+      cx.fillStyle = lLit ? '#241C12' : '#6B5A3D';
+      cx.fillText('← ' + card.def.L.a, -cw/2 + 18, chh/2 - 40);
+      cx.font = '10.5px Georgia, serif';
+      cx.fillText(card.def.L.b, -cw/2 + 18, chh/2 - 24);
+      cx.textAlign = 'right';
+      cx.font = (rLit ? 'bold ' : '') + '12px Georgia, serif';
+      cx.fillStyle = rLit ? '#241C12' : '#6B5A3D';
+      cx.fillText(card.def.R.a + ' →', cw/2 - 18, chh/2 - 40);
+      cx.font = '10.5px Georgia, serif';
+      cx.fillText(card.def.R.b, cw/2 - 18, chh/2 - 24);
+      cx.restore();
+    }
+  }
+
+  // HUD
+  cx.fillStyle = essPulse > 0 ? '#E6D8B8' : '#B0A17C';
+  cx.font = (essPulse > 0 ? 'bold 15px' : '13px') + ' Georgia, serif'; cx.textAlign = 'left';
+  cx.fillText('◈ ' + essence, 18, 44);
+  cx.fillStyle = '#B0A17C';
+  cx.textAlign = 'center';
+  cx.font = 'bold 15px Georgia, serif';
+  cx.fillText((fathoms|0) + ' FATHOMS', W/2, 44);
+  cx.textAlign = 'right';
+  cx.font = '13px Georgia, serif';
+  cx.fillText(kills + ' felled  ·  ' + deck.length + ' fates  ⚙', W - 18, 44);
+
+  if (dead) {
+    cx.fillStyle = 'rgba(10,7,21,0.82)'; cx.fillRect(0, 0, W, H);
+    cx.fillStyle = '#E6D8B8'; cx.textAlign = 'center';
+    cx.font = 'bold 44px Georgia, serif';
+    cx.fillText('C A U G H T', W/2, H * 0.4);
+    cx.fillStyle = '#B0A17C'; cx.font = 'italic 16px Georgia, serif';
+    cx.fillText('Ascended ' + (fathoms|0) + ' fathoms. Felled ' + kills + '. Drew ' + drawn + '.', W/2, H * 0.4 + 36);
+    if (best > 0) cx.fillText('Best: ' + best, W/2, H * 0.4 + 60);
+    cx.fillStyle = '#6F6450'; cx.font = '13px Georgia, serif';
+    cx.fillText('touch the dark to rise again', W/2, H * 0.4 + 96);
+  }
+}
+
+// ---- loop ----
+let last = performance.now();
+function tick(dt){
+  // smoothed timescale: drops fast when a card arrives, eases back after the commit
+  const target = (card && !card.leaving) ? S.cardSlow.v : 1;
+  const rate = target < ts ? 10 : 1.8;
+  ts += (target - ts) * Math.min(1, dt * rate);
+  update(dt * ts);                                   // the world holds its breath...
+  if (ts < 0.999) hero.ty += scrollEff() * dt * (1 - ts);  // ...but you still drift. Reading costs ground.
+  if (card && card.leaving) { card.off += card.dir * 34; if (Math.abs(card.off) > W) card = null; }
+}
+function frame(now){
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (!inited) { inited = true; resize(); reset(); }
+  if (!dead) tick(dt);
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+// debug hooks
+window.__dbg = {
+  state: () => ({ t, fathoms, essence, kills, dead, foes: foes.length, motes: motes.length, drawn,
+                  deckLeft: deck.length, card: card ? card.def.title : null, charge, essNeed, fogPressure,
+                  mods: { ...mods }, hero: { x: hero.x, y: hero.y, fog: hero.fog }, fogLine: fogLine() }),
+  sink: () => { hero.ty = H - 20; hero.y = H - 20; },
+  give: n => { charge += n; },
+  choose: dir => { if (card) { commitCard(dir); } },
+  set: (k, v) => { S[k].v = v; },
+  step: (n, dt) => { for (let i = 0; i < n; i++) { if (!dead) tick(dt || 1/60); } draw(); },
+  reset: (w, h) => { if (w && h) { W = w; H = h; } else { resize(); } reset(); },
+};
+</script>
+</body>
+</html>
