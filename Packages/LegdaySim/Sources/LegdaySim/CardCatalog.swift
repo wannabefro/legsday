@@ -11,30 +11,35 @@ public struct CardCatalog: Codable, Equatable, Sendable {
     public var weapons: [CardDef]
     /// Rival threat cards interleaved by hostility (U12); one per faction.
     public var threats: [CardDef]
+    /// World-owned fork cards dealt on a cadence (U13).
+    public var forks: [CardDef]
     public var death: [CardDef]
 
     public init(player: [CardDef], weapons: [CardDef] = [], threats: [CardDef] = [],
-                death: [CardDef]) {
+                forks: [CardDef] = [], death: [CardDef]) {
         self.player = player
         self.weapons = weapons
         self.threats = threats
+        self.forks = forks
         self.death = death
     }
 
-    private enum CodingKeys: String, CodingKey { case player, weapons, threats, death }
+    private enum CodingKeys: String, CodingKey { case player, weapons, threats, forks, death }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         player = try c.decode([CardDef].self, forKey: .player)
         weapons = try c.decodeIfPresent([CardDef].self, forKey: .weapons) ?? []
         threats = try c.decodeIfPresent([CardDef].self, forKey: .threats) ?? []
+        forks = try c.decodeIfPresent([CardDef].self, forKey: .forks) ?? []
         death = try c.decode([CardDef].self, forKey: .death)
     }
 
-    /// The in-code seed set (graybox parity + U11 weapons + U12 threats).
+    /// The in-code seed set (graybox parity + U11 weapons + U12 threats + U13 forks).
     public static let seed = CardCatalog(player: CardLibrary.playerSeed,
                                          weapons: CardLibrary.weaponSeed,
                                          threats: CardLibrary.threatSeed,
+                                         forks: CardLibrary.forkSeed,
                                          death: CardLibrary.deathSeed)
 }
 

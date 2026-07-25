@@ -89,6 +89,7 @@ public struct RunSim {
         steerAndContact(dt: dt)
         autoAttack(dt: dt)
         updateMotes(dt: dt)
+        maybeDealFork() // mandatory forks take priority over essence-charged draws
         maybeDrawCard()
     }
 

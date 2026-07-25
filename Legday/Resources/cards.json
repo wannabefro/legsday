@@ -108,6 +108,164 @@
       "title" : "NO REST"
     }
   ],
+  "forks" : [
+    {
+      "fork" : {
+        "biome" : "crypt",
+        "lateRisk" : {
+          "effects" : [
+            {
+              "multiply" : {
+                "_0" : "spawnMul",
+                "_1" : 1.4
+              }
+            },
+            {
+              "multiply" : {
+                "_0" : "essMul",
+                "_1" : 1.25
+              }
+            }
+          ],
+          "label" : "the drowned road",
+          "subtitle" : "denser still, essence ×1.25"
+        },
+        "risk" : {
+          "effects" : [
+            {
+              "multiply" : {
+                "_0" : "spawnMul",
+                "_1" : 1.5
+              }
+            },
+            {
+              "multiply" : {
+                "_0" : "essMul",
+                "_1" : 1.3
+              }
+            }
+          ],
+          "label" : "the deep road",
+          "subtitle" : "dense foes, essence ×1.3"
+        },
+        "safe" : {
+          "effects" : [
+            {
+              "multiply" : {
+                "_0" : "scrollMul",
+                "_1" : 1.1
+              }
+            },
+            {
+              "multiply" : {
+                "_0" : "spawnMul",
+                "_1" : 0.7
+              }
+            }
+          ],
+          "label" : "the low road",
+          "subtitle" : "sparse foes, scroll +10%"
+        }
+      },
+      "id" : "the_crossroads",
+      "isDeath" : false,
+      "isThreat" : false,
+      "left" : {
+        "effects" : [
+
+        ],
+        "label" : "fork",
+        "subtitle" : "the world forks"
+      },
+      "right" : {
+        "effects" : [
+
+        ],
+        "label" : "fork",
+        "subtitle" : "the world forks"
+      },
+      "spine" : "inkspine",
+      "title" : "THE CROSSROADS"
+    },
+    {
+      "fork" : {
+        "biome" : "mire",
+        "lateRisk" : {
+          "effects" : [
+            {
+              "multiply" : {
+                "_0" : "spawnMul",
+                "_1" : 1.4
+              }
+            },
+            {
+              "multiply" : {
+                "_0" : "essMul",
+                "_1" : 1.25
+              }
+            }
+          ],
+          "label" : "the sunk mire",
+          "subtitle" : "denser still, essence ×1.25"
+        },
+        "risk" : {
+          "effects" : [
+            {
+              "multiply" : {
+                "_0" : "spawnMul",
+                "_1" : 1.5
+              }
+            },
+            {
+              "multiply" : {
+                "_0" : "essMul",
+                "_1" : 1.3
+              }
+            }
+          ],
+          "label" : "the open mire",
+          "subtitle" : "dense foes, essence ×1.3"
+        },
+        "safe" : {
+          "effects" : [
+            {
+              "multiply" : {
+                "_0" : "scrollMul",
+                "_1" : 1.1
+              }
+            },
+            {
+              "multiply" : {
+                "_0" : "spawnMul",
+                "_1" : 0.7
+              }
+            }
+          ],
+          "label" : "the walled way",
+          "subtitle" : "sparse foes, scroll +10%"
+        }
+      },
+      "id" : "the_threshold",
+      "isDeath" : false,
+      "isThreat" : false,
+      "left" : {
+        "effects" : [
+
+        ],
+        "label" : "fork",
+        "subtitle" : "the world forks"
+      },
+      "right" : {
+        "effects" : [
+
+        ],
+        "label" : "fork",
+        "subtitle" : "the world forks"
+      },
+      "spine" : "inkspine",
+      "title" : "THE THRESHOLD"
+    }
+  ],
   "player" : [
     {
       "id" : "second_knuckle",

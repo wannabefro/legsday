@@ -36,10 +36,13 @@ public struct CardDef: Equatable, Sendable, Codable, Identifiable {
     /// A rival threat card interleaved into the stream by hostility (U12).
     /// Committing one does not build affinity for its faction.
     public var isThreat: Bool
+    /// A world-owned mandatory fork (U13): risk vs safe, resolved by run time.
+    /// Present → the card is a fork (zero-cost, no spring-back).
+    public var fork: ForkDef?
 
     public init(id: String, title: String, spine: CardSpine, isDeath: Bool,
                 left: CardChoice, right: CardChoice, weapon: WeaponDef? = nil,
-                faction: Faction? = nil, isThreat: Bool = false) {
+                faction: Faction? = nil, isThreat: Bool = false, fork: ForkDef? = nil) {
         self.id = id
         self.title = title
         self.spine = spine
@@ -49,6 +52,7 @@ public struct CardDef: Equatable, Sendable, Codable, Identifiable {
         self.weapon = weapon
         self.faction = faction
         self.isThreat = isThreat
+        self.fork = fork
     }
 }
 

@@ -110,6 +110,7 @@ extension RunSim {
     /// growth axes (owned), and surface the signature only at tier 3.
     public func currentOffer() -> CardOffer? {
         guard let c = state.card else { return nil }
+        if let fork = c.def.fork { return forkOffer(fork) } // resolved by run time (U13)
         guard let w = c.def.weapon else {
             return CardOffer(left: c.def.left, right: c.def.right)
         }

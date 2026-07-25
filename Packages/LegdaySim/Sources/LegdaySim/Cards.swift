@@ -112,6 +112,8 @@ extension RunSim {
         guard let c = state.card, !c.committing else { return }
         if c.signatureArmed, currentOffer()?.signature != nil {
             commitSignature()
+        } else if c.def.fork != nil {
+            commitCard(c.offset >= 0 ? 1 : -1) // mandatory: any release commits a side (R12)
         } else if abs(c.offset) > state.width * 0.3 {
             commitCard(c.offset > 0 ? 1 : -1)
         } else {
@@ -130,7 +132,11 @@ extension RunSim {
         if let w = c.def.weapon {
             commitWeaponChoice(w, dir: dir, faction: c.def.faction)
         } else {
-            for e in (dir > 0 ? c.def.right : c.def.left).effects { apply(e) }
+            // Apply the *resolved* side — for forks this is the time-appropriate
+            // choice (safe vs late-risk); for ordinary cards it is the static L/R.
+            let offer = currentOffer()!
+            for e in (dir > 0 ? offer.right : offer.left).effects { apply(e) }
+            if let fork = c.def.fork { applyForkSide(fork, dir: dir) }
         }
         // Accepting a faction offer (not a threat, not Death) builds affinity (U12).
         if let f = c.def.faction, !c.def.isDeath, !c.def.isThreat {

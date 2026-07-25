@@ -83,6 +83,15 @@ public struct RunState: Sendable {
     /// Rival threat cards still queued to interleave into the stream (R10),
     /// computed once from the draft's faction weighting at deck build.
     public internal(set) var scheduledThreats: [ThreatInsertion] = []
+    /// Run time at which the next mandatory fork deals (U13); starts one
+    /// cadence in (`Forks.cadence`).
+    public internal(set) var nextForkTime: Double = 90
+    /// Forks dealt so far — cycles the fork pool deterministically.
+    public internal(set) var forkCount: Int = 0
+    /// Current biome, swapped by forks (render palette tag, U13/U24).
+    public internal(set) var biome: Biome = .moor
+    /// A risk-route shrine is pending — the U14 Herald-guardian hook (U13).
+    public internal(set) var shrinePending: Bool = false
     /// Cards drawn this run (graybox `drawn`).
     public internal(set) var drawn: Int = 0
     /// Essence needed to charge the next card; escalates per draw.
@@ -163,6 +172,9 @@ public struct RunState: Sendable {
         }
         for f in Faction.allCases { mix(UInt64(bitPattern: Int64(affinity[f] ?? 0))) }
         for t in scheduledThreats { mix(UInt64(bitPattern: Int64(t.atDraw))) }
+        mix(nextForkTime); mix(UInt64(bitPattern: Int64(forkCount)))
+        mix(UInt64(bitPattern: Int64(Biome.allCases.firstIndex(of: biome) ?? 0)))
+        mix(UInt64(shrinePending ? 1 : 0))
         for te in timedEffects { mix(te.until) }
         for m in motes {
             mix(UInt64(bitPattern: Int64(m.id)))
