@@ -10,4 +10,8 @@ public enum FrameEvent: Equatable, Sendable {
     case heroShoved(at: Vec2)
     /// A foe was felled (corpse spawn in U9; fog splash scheduled in U4).
     case foeDown(at: Vec2, elite: Bool)
+    /// An essence mote was hoovered into the hero.
+    case moteCollected(at: Vec2)
+    /// An essence mote was lost to the fog.
+    case moteLost(at: Vec2)
 }

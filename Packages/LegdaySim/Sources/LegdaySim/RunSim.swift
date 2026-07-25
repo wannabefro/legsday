@@ -55,6 +55,7 @@ public struct RunSim {
         spawnFoes(dt: dt)
         steerAndContact(dt: dt)
         autoAttack(dt: dt)
+        updateMotes(dt: dt)
     }
 
     /// Offset-follow: touch-down anchors (pointer, hero target); movement sets

@@ -37,6 +37,12 @@ public struct RunState: Sendable {
 
     /// Live foes (append on spawn, remove on death/cull — stable order).
     public internal(set) var foes: [Foe] = []
+    /// Live essence motes.
+    public internal(set) var motes: [Mote] = []
+    /// Essence banked this run (the currency).
+    public internal(set) var essence: Double = 0
+    /// Essence charging the next Fate Card (consumed in U6).
+    public internal(set) var charge: Double = 0
     /// Foes felled this run (graybox `kills`).
     public internal(set) var kills: Int = 0
     /// Total foes spawned this run — monotonic (spawn-rate testing).
@@ -69,6 +75,8 @@ public struct RunState: Sendable {
     var attackTimer: Double = 0
     /// Monotonic foe id source (stable identity for render pooling).
     var nextFoeId: Int = 0
+    /// Monotonic mote id source.
+    var nextMoteId: Int = 0
 
     /// Drag anchor: pointer + hero-target at touch-down (offset follow).
     var anchor: (pointer: Vec2, heroTarget: Vec2)?
@@ -103,6 +111,11 @@ public struct RunState: Sendable {
         mix(UInt64(bitPattern: Int64(spawnedCount)))
         mix(spawnAcc); mix(attackTimer)
         mix(fogPressure); mix(UInt64(dead ? 1 : 0))
+        mix(essence); mix(charge)
+        for m in motes {
+            mix(UInt64(bitPattern: Int64(m.id)))
+            mix(m.pos.x); mix(m.pos.y); mix(m.value)
+        }
         for v in fogSurface.heights { mix(v) }
         for v in fogSurface.velocities { mix(v) }
         for f in foes {

@@ -111,6 +111,7 @@ extension RunSim {
     /// mote drop.
     mutating func onFoeFelled(_ foe: Foe) {
         applyFogKill(foe)
+        dropMote(foe)
     }
 
     /// Test/debug seam: mutate the otherwise-encapsulated state.
