@@ -3,6 +3,7 @@
     {
       "id" : "his_attention",
       "isDeath" : true,
+      "isThreat" : false,
       "left" : {
         "effects" : [
           {
@@ -43,6 +44,7 @@
     {
       "id" : "the_toll",
       "isDeath" : true,
+      "isThreat" : false,
       "left" : {
         "effects" : [
           {
@@ -72,6 +74,7 @@
     {
       "id" : "no_rest",
       "isDeath" : true,
+      "isThreat" : false,
       "left" : {
         "effects" : [
           {
@@ -109,6 +112,7 @@
     {
       "id" : "second_knuckle",
       "isDeath" : false,
+      "isThreat" : false,
       "left" : {
         "effects" : [
           {
@@ -149,6 +153,7 @@
     {
       "id" : "oath_of_footing",
       "isDeath" : false,
+      "isThreat" : false,
       "left" : {
         "effects" : [
           {
@@ -185,6 +190,7 @@
     {
       "id" : "lantern_oil",
       "isDeath" : false,
+      "isThreat" : false,
       "left" : {
         "effects" : [
           {
@@ -214,6 +220,7 @@
     {
       "id" : "pilgrims_pace",
       "isDeath" : false,
+      "isThreat" : false,
       "left" : {
         "effects" : [
           {
@@ -250,6 +257,7 @@
     {
       "id" : "the_tithe",
       "isDeath" : false,
+      "isThreat" : false,
       "left" : {
         "effects" : [
           {
@@ -278,10 +286,171 @@
       "title" : "THE TITHE"
     }
   ],
+  "threats" : [
+    {
+      "faction" : "church",
+      "id" : "the_inquest",
+      "isDeath" : false,
+      "isThreat" : true,
+      "left" : {
+        "effects" : [
+          {
+            "scaleEssence" : {
+              "_0" : 0.5
+            }
+          }
+        ],
+        "label" : "tithe or burn",
+        "subtitle" : "pay half your essence"
+      },
+      "right" : {
+        "effects" : [
+          {
+            "timed" : {
+              "_0" : {
+                "add" : {
+                  "_0" : "fogAdd",
+                  "_1" : 30
+                }
+              },
+              "seconds" : 30
+            }
+          }
+        ],
+        "label" : "the pyres light",
+        "subtitle" : "fog +30 for 30s"
+      },
+      "spine" : "gold",
+      "title" : "THE INQUEST"
+    },
+    {
+      "faction" : "plague",
+      "id" : "the_rot",
+      "isDeath" : false,
+      "isThreat" : true,
+      "left" : {
+        "effects" : [
+          {
+            "timed" : {
+              "_0" : {
+                "multiply" : {
+                  "_0" : "spawnMul",
+                  "_1" : 1.6
+                }
+              },
+              "seconds" : 30
+            }
+          }
+        ],
+        "label" : "the swarm swells",
+        "subtitle" : "spawns ×1.6 for 30s"
+      },
+      "right" : {
+        "effects" : [
+          {
+            "timed" : {
+              "_0" : {
+                "add" : {
+                  "_0" : "fogAdd",
+                  "_1" : 40
+                }
+              },
+              "seconds" : 30
+            }
+          }
+        ],
+        "label" : "the miasma",
+        "subtitle" : "fog +40 for 30s"
+      },
+      "spine" : "plague",
+      "title" : "THE ROT"
+    },
+    {
+      "faction" : "grave",
+      "id" : "the_interment",
+      "isDeath" : false,
+      "isThreat" : true,
+      "left" : {
+        "effects" : [
+          {
+            "timed" : {
+              "_0" : {
+                "multiply" : {
+                  "_0" : "gain",
+                  "_1" : 0.85
+                }
+              },
+              "seconds" : 30
+            }
+          }
+        ],
+        "label" : "dead weight",
+        "subtitle" : "stride −15% for 30s"
+      },
+      "right" : {
+        "effects" : [
+          {
+            "multiply" : {
+              "_0" : "scrollMul",
+              "_1" : 1.1
+            }
+          }
+        ],
+        "label" : "the earth pulls",
+        "subtitle" : "scroll +10% forever"
+      },
+      "spine" : "grave",
+      "title" : "THE INTERMENT"
+    },
+    {
+      "faction" : "wild",
+      "id" : "the_bramble",
+      "isDeath" : false,
+      "isThreat" : true,
+      "left" : {
+        "effects" : [
+          {
+            "timed" : {
+              "_0" : {
+                "multiply" : {
+                  "_0" : "attackCooldown",
+                  "_1" : 1.2
+                }
+              },
+              "seconds" : 30
+            }
+          }
+        ],
+        "label" : "thorns bind",
+        "subtitle" : "attack 20% slower for 30s"
+      },
+      "right" : {
+        "effects" : [
+          {
+            "timed" : {
+              "_0" : {
+                "add" : {
+                  "_0" : "fogAdd",
+                  "_1" : 26
+                }
+              },
+              "seconds" : 30
+            }
+          }
+        ],
+        "label" : "the wilds creep",
+        "subtitle" : "fog +26 for 30s"
+      },
+      "spine" : "rust",
+      "title" : "THE BRAMBLE"
+    }
+  ],
   "weapons" : [
     {
+      "faction" : "church",
       "id" : "the_thurible",
       "isDeath" : false,
+      "isThreat" : false,
       "left" : {
         "effects" : [
 
@@ -369,8 +538,10 @@
       }
     },
     {
+      "faction" : "grave",
       "id" : "the_passing_bell",
       "isDeath" : false,
+      "isThreat" : false,
       "left" : {
         "effects" : [
 

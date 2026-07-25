@@ -74,7 +74,8 @@ public extension CardLibrary {
                                effects: [.multiply(.attackCooldown, 0.9)]),
                 ],
                 signature: CardChoice(label: "censer flare", subtitle: "hold — +2 bolts",
-                                      effects: [.addBolts(2)]))),
+                                      effects: [.addBolts(2)])),
+            faction: .church),
         // Grave relic: a tolling bell. Wide toll vs. deep, footed toll.
         CardDef(id: "the_passing_bell", title: "THE PASSING BELL", spine: .grave, isDeath: false,
             left: CardChoice(label: "the bell", subtitle: "a Grave relic", effects: []),
@@ -91,7 +92,8 @@ public extension CardLibrary {
                                effects: [.multiply(.footing, 1.1)]),
                 ],
                 signature: CardChoice(label: "death knell", subtitle: "hold — smite every foe",
-                                      effects: [.smiteAllFoes]))),
+                                      effects: [.smiteAllFoes])),
+            faction: .grave),
     ]
 }
 
@@ -122,19 +124,21 @@ extension RunSim {
     }
 
     /// Commit a weapon card's L/R: acquire the form on the first draw, else level
-    /// the chosen growth axis. Effects are applied once, like any card commit.
-    mutating func commitWeaponChoice(_ w: WeaponDef, dir: Int) {
+    /// the chosen growth axis. Effects apply once; damage scales with the
+    /// weapon faction's affinity (R14, U12).
+    mutating func commitWeaponChoice(_ w: WeaponDef, dir: Int, faction: Faction?) {
+        let mult = faction.map { affinityWeaponMultiplier(for: $0) } ?? 1
         var st = state.weapons[w.id] ?? WeaponState()
         if !st.owned {
             let side = dir > 0 ? 1 : 0
             st.owned = true
             st.form = side
             st.levels = Array(repeating: 0, count: w.growthAxes.count)
-            for e in (side == 1 ? w.formB : w.formA).effects { apply(e) }
+            for e in (side == 1 ? w.formB : w.formA).effects { applyWeaponEffect(e, damageMult: mult) }
         } else {
             let axis = dir > 0 ? min(1, w.growthAxes.count - 1) : 0
             if axis < st.levels.count { st.levels[axis] += 1 }
-            for e in w.growthAxes[axis].effects { apply(e) }
+            for e in w.growthAxes[axis].effects { applyWeaponEffect(e, damageMult: mult) }
         }
         state.weapons[w.id] = st
     }
@@ -144,9 +148,20 @@ extension RunSim {
     mutating func commitSignature() {
         guard var c = state.card, !c.committing,
               let sig = c.def.weapon?.signature else { return }
-        for e in sig.effects { apply(e) }
+        let mult = c.def.faction.map { affinityWeaponMultiplier(for: $0) } ?? 1
+        for e in sig.effects { applyWeaponEffect(e, damageMult: mult) }
         c.committing = true
         c.dir = 0
         state.card = c
+    }
+
+    /// Apply a weapon effect, scaling only its *damage* (bolts) by the affinity
+    /// multiplier; reach/footing/etc. apply unscaled.
+    mutating func applyWeaponEffect(_ e: Effect, damageMult: Double) {
+        if case let .addBolts(n) = e, damageMult != 1 {
+            state.mods.bolts += Int((Double(n) * damageMult).rounded())
+        } else {
+            apply(e)
+        }
     }
 }

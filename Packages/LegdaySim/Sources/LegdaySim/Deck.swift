@@ -6,11 +6,23 @@ extension RunSim {
     mutating func buildDeck() {
         state.deck = shuffled(catalog.player + catalog.player)
         state.deathDeck = shuffled(catalog.death)
+        // Hostility is fixed at draft time: the deck's faction weighting decides
+        // which rival threats interleave, and when (R10).
+        state.scheduledThreats = Hostility.forecast(weights: deckFactionWeights())
     }
 
     /// Deal the next card: from the drafted deck while it lasts, otherwise from
     /// Death's deck (reshuffled when spent, cycling until the Finale).
     mutating func drawCard() {
+        // A scheduled rival threat interleaves at this ordinal without consuming
+        // the drafted deck (R10) — it is an extra card, not a replacement.
+        if let i = state.scheduledThreats.firstIndex(where: { $0.atDraw == state.drawn }),
+           let threat = catalog.threats.first(where: { $0.faction == state.scheduledThreats[i].faction }) {
+            state.scheduledThreats.remove(at: i)
+            state.drawn += 1
+            state.card = ActiveCard(def: threat, deathDealt: false)
+            return
+        }
         let def: CardDef
         let fromDeath: Bool
         if !state.deck.isEmpty {

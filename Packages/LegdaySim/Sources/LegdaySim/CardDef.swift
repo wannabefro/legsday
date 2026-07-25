@@ -30,9 +30,16 @@ public struct CardDef: Equatable, Sendable, Codable, Identifiable {
     /// such a card is resolved from weapon state at deal time, so `left`/`right`
     /// here are only the neutral fallback labels. `nil` for ordinary cards.
     public var weapon: WeaponDef?
+    /// Gameplay faction for affinity/hostility (U12) — distinct from `spine`,
+    /// which is a render band. `nil` = factionless (the graybox seed cards).
+    public var faction: Faction?
+    /// A rival threat card interleaved into the stream by hostility (U12).
+    /// Committing one does not build affinity for its faction.
+    public var isThreat: Bool
 
     public init(id: String, title: String, spine: CardSpine, isDeath: Bool,
-                left: CardChoice, right: CardChoice, weapon: WeaponDef? = nil) {
+                left: CardChoice, right: CardChoice, weapon: WeaponDef? = nil,
+                faction: Faction? = nil, isThreat: Bool = false) {
         self.id = id
         self.title = title
         self.spine = spine
@@ -40,6 +47,8 @@ public struct CardDef: Equatable, Sendable, Codable, Identifiable {
         self.left = left
         self.right = right
         self.weapon = weapon
+        self.faction = faction
+        self.isThreat = isThreat
     }
 }
 

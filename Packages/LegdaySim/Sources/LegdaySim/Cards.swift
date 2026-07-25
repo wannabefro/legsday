@@ -128,9 +128,13 @@ extension RunSim {
     mutating func commitCard(_ dir: Int) {
         guard var c = state.card, !c.committing else { return }
         if let w = c.def.weapon {
-            commitWeaponChoice(w, dir: dir)
+            commitWeaponChoice(w, dir: dir, faction: c.def.faction)
         } else {
             for e in (dir > 0 ? c.def.right : c.def.left).effects { apply(e) }
+        }
+        // Accepting a faction offer (not a threat, not Death) builds affinity (U12).
+        if let f = c.def.faction, !c.def.isDeath, !c.def.isThreat {
+            state.affinity[f, default: 0] += 1
         }
         c.committing = true
         c.dir = dir

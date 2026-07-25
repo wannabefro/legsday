@@ -77,6 +77,12 @@ public struct RunState: Sendable {
     /// Weapons acquired this run, keyed by weapon id: form chosen and levels
     /// accrued per growth axis (R13). Empty until the first weapon is claimed.
     public internal(set) var weapons: [String: WeaponState] = [:]
+    /// Faction affinity from accepted offers (U12) — empowers that faction's
+    /// weapons and (via the draft) thickens its draws.
+    public internal(set) var affinity: [Faction: Int] = [:]
+    /// Rival threat cards still queued to interleave into the stream (R10),
+    /// computed once from the draft's faction weighting at deck build.
+    public internal(set) var scheduledThreats: [ThreatInsertion] = []
     /// Cards drawn this run (graybox `drawn`).
     public internal(set) var drawn: Int = 0
     /// Essence needed to charge the next card; escalates per draw.
@@ -155,6 +161,8 @@ public struct RunState: Sendable {
             mix(UInt64(bitPattern: Int64(w.form ?? -1)))
             for l in w.levels { mix(UInt64(bitPattern: Int64(l))) }
         }
+        for f in Faction.allCases { mix(UInt64(bitPattern: Int64(affinity[f] ?? 0))) }
+        for t in scheduledThreats { mix(UInt64(bitPattern: Int64(t.atDraw))) }
         for te in timedEffects { mix(te.until) }
         for m in motes {
             mix(UInt64(bitPattern: Int64(m.id)))
