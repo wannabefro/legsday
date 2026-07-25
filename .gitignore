@@ -3,6 +3,7 @@
 
 # Build artifacts
 DerivedData/
+build/
 .build/
 .swiftpm/
 
