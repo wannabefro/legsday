@@ -36,7 +36,8 @@ final class RunScene: SKScene {
 
         sim = RunSim(tunables: try! Tunables.bundled(),
                      viewport: Vec2(size.width, size.height),
-                     seed: 0x1E6DA9)
+                     seed: 0x1E6DA9,
+                     catalog: try! CardCatalog.bundled()) // a run plays from cards.json (U10)
 
         physicsWorld.gravity = CGVector(dx: 0, dy: -9)   // corpse tumble only
 

@@ -1,0 +1,281 @@
+{
+  "death" : [
+    {
+      "id" : "his_attention",
+      "isDeath" : true,
+      "left" : {
+        "effects" : [
+          {
+            "timed" : {
+              "_0" : {
+                "multiply" : {
+                  "_0" : "spawnMul",
+                  "_1" : 1.5
+                }
+              },
+              "seconds" : 30
+            }
+          }
+        ],
+        "label" : "the swarm thickens",
+        "subtitle" : "spawns ×1.5 for 30s"
+      },
+      "right" : {
+        "effects" : [
+          {
+            "timed" : {
+              "_0" : {
+                "add" : {
+                  "_0" : "fogAdd",
+                  "_1" : 44
+                }
+              },
+              "seconds" : 30
+            }
+          }
+        ],
+        "label" : "the fog climbs",
+        "subtitle" : "fog +44 for 30s"
+      },
+      "spine" : "inkspine",
+      "title" : "HIS ATTENTION"
+    },
+    {
+      "id" : "the_toll",
+      "isDeath" : true,
+      "left" : {
+        "effects" : [
+          {
+            "scaleEssence" : {
+              "_0" : 0.5
+            }
+          }
+        ],
+        "label" : "pay half your essence",
+        "subtitle" : "he keeps ledgers"
+      },
+      "right" : {
+        "effects" : [
+          {
+            "add" : {
+              "_0" : "fogAdd",
+              "_1" : 34
+            }
+          }
+        ],
+        "label" : "the fog climbs",
+        "subtitle" : "+34 forever"
+      },
+      "spine" : "inkspine",
+      "title" : "THE TOLL"
+    },
+    {
+      "id" : "no_rest",
+      "isDeath" : true,
+      "left" : {
+        "effects" : [
+          {
+            "multiply" : {
+              "_0" : "scrollMul",
+              "_1" : 1.12
+            }
+          }
+        ],
+        "label" : "the road quickens",
+        "subtitle" : "scroll +12% forever"
+      },
+      "right" : {
+        "effects" : [
+          {
+            "timed" : {
+              "_0" : {
+                "multiply" : {
+                  "_0" : "attackCooldown",
+                  "_1" : 1.25
+                }
+              },
+              "seconds" : 30
+            }
+          }
+        ],
+        "label" : "your arm tires",
+        "subtitle" : "attack 25% slower for 30s"
+      },
+      "spine" : "inkspine",
+      "title" : "NO REST"
+    }
+  ],
+  "player" : [
+    {
+      "id" : "second_knuckle",
+      "isDeath" : false,
+      "left" : {
+        "effects" : [
+          {
+            "addBolts" : {
+              "_0" : 1
+            }
+          },
+          {
+            "timed" : {
+              "_0" : {
+                "add" : {
+                  "_0" : "fogAdd",
+                  "_1" : 26
+                }
+              },
+              "seconds" : 30
+            }
+          }
+        ],
+        "label" : "+1 bolt",
+        "subtitle" : "fog +26 for 30s"
+      },
+      "right" : {
+        "effects" : [
+          {
+            "multiply" : {
+              "_0" : "attackCooldown",
+              "_1" : 0.8
+            }
+          }
+        ],
+        "label" : "attack 20% faster",
+        "subtitle" : "no price"
+      },
+      "spine" : "rust",
+      "title" : "THE SECOND KNUCKLE"
+    },
+    {
+      "id" : "oath_of_footing",
+      "isDeath" : false,
+      "left" : {
+        "effects" : [
+          {
+            "multiply" : {
+              "_0" : "footing",
+              "_1" : 1.35
+            }
+          }
+        ],
+        "label" : "footing +35%",
+        "subtitle" : "shoves resisted"
+      },
+      "right" : {
+        "effects" : [
+          {
+            "multiply" : {
+              "_0" : "essMul",
+              "_1" : 2
+            }
+          },
+          {
+            "multiply" : {
+              "_0" : "moteSink",
+              "_1" : 1.3
+            }
+          }
+        ],
+        "label" : "motes worth ×2",
+        "subtitle" : "motes sink 30% faster"
+      },
+      "spine" : "gold",
+      "title" : "OATH OF FOOTING"
+    },
+    {
+      "id" : "lantern_oil",
+      "isDeath" : false,
+      "left" : {
+        "effects" : [
+          {
+            "multiply" : {
+              "_0" : "magnet",
+              "_1" : 1.6
+            }
+          }
+        ],
+        "label" : "magnet ×1.6",
+        "subtitle" : "gather from afar"
+      },
+      "right" : {
+        "effects" : [
+          {
+            "addCharge" : {
+              "_0" : 4
+            }
+          }
+        ],
+        "label" : "+4 essence now",
+        "subtitle" : "next card sooner"
+      },
+      "spine" : "grave",
+      "title" : "LANTERN OIL"
+    },
+    {
+      "id" : "pilgrims_pace",
+      "isDeath" : false,
+      "left" : {
+        "effects" : [
+          {
+            "multiply" : {
+              "_0" : "gain",
+              "_1" : 1.15
+            }
+          }
+        ],
+        "label" : "stride +15%",
+        "subtitle" : "no price"
+      },
+      "right" : {
+        "effects" : [
+          {
+            "multiply" : {
+              "_0" : "essMul",
+              "_1" : 2
+            }
+          },
+          {
+            "multiply" : {
+              "_0" : "scrollMul",
+              "_1" : 1.08
+            }
+          }
+        ],
+        "label" : "essence ×2",
+        "subtitle" : "scroll +8% forever"
+      },
+      "spine" : "plague",
+      "title" : "PILGRIM'S PACE"
+    },
+    {
+      "id" : "the_tithe",
+      "isDeath" : false,
+      "left" : {
+        "effects" : [
+          {
+            "smiteAllFoes" : {
+
+            }
+          },
+          {
+            "add" : {
+              "_0" : "fogAdd",
+              "_1" : 30
+            }
+          }
+        ],
+        "label" : "smite every foe",
+        "subtitle" : "fog +30 forever"
+      },
+      "right" : {
+        "effects" : [
+
+        ],
+        "label" : "decline",
+        "subtitle" : "nothing happens"
+      },
+      "spine" : "gold",
+      "title" : "THE TITHE"
+    }
+  ]
+}

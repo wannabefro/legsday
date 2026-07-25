@@ -4,8 +4,8 @@ extension RunSim {
     /// Build the run decks (U6 default: two copies of every player card, plus
     /// Death's deck). U17's draft replaces the player-deck construction.
     mutating func buildDeck() {
-        state.deck = shuffled(CardLibrary.playerSeed + CardLibrary.playerSeed)
-        state.deathDeck = shuffled(CardLibrary.deathSeed)
+        state.deck = shuffled(catalog.player + catalog.player)
+        state.deathDeck = shuffled(catalog.death)
     }
 
     /// Deal the next card: from the drafted deck while it lasts, otherwise from
@@ -17,7 +17,7 @@ extension RunSim {
             def = state.deck.removeFirst()
             fromDeath = false
         } else {
-            if state.deathDeck.isEmpty { state.deathDeck = shuffled(CardLibrary.deathSeed) }
+            if state.deathDeck.isEmpty { state.deathDeck = shuffled(catalog.death) }
             def = state.deathDeck.removeFirst()
             fromDeath = true
         }

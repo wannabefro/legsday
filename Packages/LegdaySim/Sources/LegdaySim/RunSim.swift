@@ -18,6 +18,8 @@ public struct RunSim {
     private static let velDecay: Double = 5.5      // knockback decay rate
 
     public let tunables: Tunables
+    /// Card content, injected so it can come from bundled data (U10).
+    public let catalog: CardCatalog
     public internal(set) var state: RunState
     /// Total fixed steps executed — exposes accumulator behavior for testing.
     public private(set) var stepsTaken: Int = 0
@@ -25,8 +27,9 @@ public struct RunSim {
     public private(set) var timescale = Timescale()
     private var accumulator: Double = 0
 
-    public init(tunables: Tunables, viewport: Vec2, seed: UInt64) {
+    public init(tunables: Tunables, viewport: Vec2, seed: UInt64, catalog: CardCatalog = .seed) {
         self.tunables = tunables
+        self.catalog = catalog
         self.state = RunState(width: viewport.x, height: viewport.y, seed: seed)
         self.state.essNeed = tunables.firstCardCost
         buildDeck()
