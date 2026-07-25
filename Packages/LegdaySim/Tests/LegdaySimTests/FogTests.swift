@@ -65,6 +65,8 @@ struct FogTests {
         var elapsed = 0.0
         var caught = false
         for _ in 0..<Int(180.0 / step) {
+            // Commit any dealt card so the world doesn't freeze on it.
+            if let c = sim.state.card, !c.committing { sim.commitCard(1) }
             sim.tick(dt: step, input: .idle)
             elapsed += step
             if sim.state.dead { caught = true; break }

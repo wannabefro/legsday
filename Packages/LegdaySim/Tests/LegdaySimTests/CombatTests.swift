@@ -96,7 +96,12 @@ struct CombatTests {
         // Hold the hero high and out of the fog so the run doesn't end mid-sample
         // (this isolates the spawn ramp from the fog/shove loop).
         func keepAlive(_ s: inout RunSim) {
-            s.debugMutate { $0.hero.pos.y = 180; $0.hero.target.y = 180; $0.hero.vel = .zero }
+            // Pin the hero out of the fog and suppress cards so the world never
+            // slows — isolating the spawn ramp from the fog/card systems.
+            s.debugMutate {
+                $0.hero.pos.y = 180; $0.hero.target.y = 180; $0.hero.vel = .zero
+                $0.card = nil; $0.charge = 0
+            }
         }
         let c0 = sim.state.spawnedCount
         for _ in 0..<60 { keepAlive(&sim); sim.tick(dt: 1.0 / 60, input: .idle) } // ~1s at t≈0

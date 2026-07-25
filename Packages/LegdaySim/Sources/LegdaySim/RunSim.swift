@@ -21,11 +21,15 @@ public struct RunSim {
     public internal(set) var state: RunState
     /// Total fixed steps executed — exposes accumulator behavior for testing.
     public private(set) var stepsTaken: Int = 0
+    /// Card-interrupt time scaling (KTD-2).
+    public private(set) var timescale = Timescale()
     private var accumulator: Double = 0
 
     public init(tunables: Tunables, viewport: Vec2, seed: UInt64) {
         self.tunables = tunables
         self.state = RunState(width: viewport.x, height: viewport.y, seed: seed)
+        self.state.essNeed = tunables.firstCardCost
+        buildDeck()
     }
 
     /// Effective scroll rate, px/s (graybox `scrollEff`).
@@ -35,11 +39,25 @@ public struct RunSim {
     /// step it produces. A `dt` above `maxFrameTime` is clamped (spike absorb).
     public mutating func tick(dt: Double, input: Input) {
         state.frameEvents.removeAll(keepingCapacity: true) // render hints are per-tick
-        accumulator += min(dt, Self.maxFrameTime)
+        guard !state.dead else { return }                  // frozen once caught
+
+        let clamped = min(dt, Self.maxFrameTime)
+        // Ease the timescale on real time, then feed the accumulator *scaled*
+        // sim time — the world holds its breath while a card is up (KTD-2).
+        timescale.advance(toward: cardTimescaleTarget(), realDt: clamped)
+        let ts = timescale.current
+        accumulator += clamped * ts
         while accumulator >= Self.fixedStep {
             step(dt: Self.fixedStep, input: input)
             accumulator -= Self.fixedStep
         }
+        // …but the Pilgrim still drifts at full scroll. Reading costs ground (R8).
+        if ts < 0.999 {
+            state.hero.target.y += scrollEff() * clamped * (1 - ts)
+            state.hero.target = clampToViewport(state.hero.target)
+        }
+        // The card animates in real time (it rises/slides while the world is slow).
+        updateCardAnimation(realDt: clamped)
     }
 
     // MARK: - One fixed step
@@ -49,6 +67,7 @@ public struct RunSim {
         stepsTaken += 1
         state.time += dt
         state.worldY += scrollEff() * dt
+        processTimedEffects()
         applyInput(input)
         integrateHero(dt: dt)
         updateFog(dt: dt)
@@ -56,6 +75,7 @@ public struct RunSim {
         steerAndContact(dt: dt)
         autoAttack(dt: dt)
         updateMotes(dt: dt)
+        maybeDrawCard()
     }
 
     /// Offset-follow: touch-down anchors (pointer, hero target); movement sets

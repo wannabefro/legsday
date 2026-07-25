@@ -62,8 +62,21 @@ public struct RunState: Sendable {
     /// The rippling fog surface (read-only feedback; rest line decides death).
     public internal(set) var fogSurface: SpringLine
 
+    /// The Fate Card currently in play (nil while charging).
+    public internal(set) var card: ActiveCard?
+    /// The drafted deck — fuel that darkens into Death's deck when spent (R11).
+    public internal(set) var deck: [CardDef] = []
+    /// Death's deck — dealt (and cycled) once the drafted deck is dry.
+    public internal(set) var deathDeck: [CardDef] = []
+    /// Cards drawn this run (graybox `drawn`).
+    public internal(set) var drawn: Int = 0
+    /// Essence needed to charge the next card; escalates per draw.
+    public internal(set) var essNeed: Double = 0
+
     /// Splashes queued from felled corpses, fired when their fall completes.
     var pendingSplashes: [PendingSplash] = []
+    /// Active auto-undo timers from `timed` card effects.
+    var timedEffects: [TimedEffect] = []
     /// Transient render hints produced this tick (bolts, hits, kills). Not
     /// persistent state and excluded from `fingerprint`; consumed by the render
     /// layer after each tick and cleared at the next tick's start.
@@ -111,7 +124,16 @@ public struct RunState: Sendable {
         mix(UInt64(bitPattern: Int64(spawnedCount)))
         mix(spawnAcc); mix(attackTimer)
         mix(fogPressure); mix(UInt64(dead ? 1 : 0))
-        mix(essence); mix(charge)
+        mix(essence); mix(charge); mix(essNeed)
+        mix(UInt64(bitPattern: Int64(drawn)))
+        mix(UInt64(bitPattern: Int64(deck.count)))
+        mix(UInt64(bitPattern: Int64(deathDeck.count)))
+        if let c = card {
+            mix(c.offset); mix(c.rise); mix(Double(c.dir))
+            mix(UInt64(c.committing ? 1 : 0))
+            mix(UInt64(c.deathDealt ? 1 : 0))
+        }
+        for te in timedEffects { mix(te.until) }
         for m in motes {
             mix(UInt64(bitPattern: Int64(m.id)))
             mix(m.pos.x); mix(m.pos.y); mix(m.value)
