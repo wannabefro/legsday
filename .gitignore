@@ -1,0 +1,14 @@
+# XcodeGen output (regenerated from project.yml)
+*.xcodeproj
+
+# Build artifacts
+DerivedData/
+.build/
+.swiftpm/
+
+# Xcode user state
+xcuserdata/
+*.xcuserstate
+
+# macOS
+.DS_Store

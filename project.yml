@@ -1,0 +1,46 @@
+name: Legday
+options:
+  bundleIdPrefix: com.legday
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+  generateEmptyDirectories: true
+
+packages:
+  LegdaySim:
+    path: Packages/LegdaySim
+
+targets:
+  Legday:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - Legday
+    dependencies:
+      - package: LegdaySim
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.legday.app
+        GENERATE_INFOPLIST_FILE: YES
+        CURRENT_PROJECT_VERSION: "1"
+        MARKETING_VERSION: "0.1"
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_VERSION: "6.0"
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_UIStatusBarHidden: YES
+
+  LegdayTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - LegdayTests
+    dependencies:
+      - target: Legday
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.legday.tests
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: "6.0"
