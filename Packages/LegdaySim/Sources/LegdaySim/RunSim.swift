@@ -45,11 +45,13 @@ public struct RunSim {
     // MARK: - One fixed step
 
     private mutating func step(dt: Double, input: Input) {
+        guard !state.dead else { return } // the run is frozen once caught
         stepsTaken += 1
         state.time += dt
         state.worldY += scrollEff() * dt
         applyInput(input)
         integrateHero(dt: dt)
+        updateFog(dt: dt)
         spawnFoes(dt: dt)
         steerAndContact(dt: dt)
         autoAttack(dt: dt)

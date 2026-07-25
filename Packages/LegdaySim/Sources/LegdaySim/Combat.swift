@@ -83,7 +83,7 @@ extension RunSim {
     mutating func autoAttack(dt: Double) {
         state.attackTimer -= dt
         guard state.attackTimer <= 0 else { return }
-        // U4 adds the `&& !heroInFog` gate (muted attacks in the grip).
+        guard !state.heroGripped else { return } // attacks muted in the grip (R4)
 
         let inRange = state.foes.enumerated()
             .map { (id: $0.element.id, d: (state.hero.pos - $0.element.pos).length) }
@@ -107,9 +107,11 @@ extension RunSim {
         }
     }
 
-    /// Extension seam for kill consequences that later units own (U4 fog
-    /// pushback, U5 mote drop). No-op in U3.
-    mutating func onFoeFelled(_ foe: Foe) {}
+    /// Kill consequences owned by later units: U4 fog pushback + splash, U5
+    /// mote drop.
+    mutating func onFoeFelled(_ foe: Foe) {
+        applyFogKill(foe)
+    }
 
     /// Test/debug seam: mutate the otherwise-encapsulated state.
     mutating func debugMutate(_ body: (inout RunState) -> Void) { body(&state) }

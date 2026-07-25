@@ -93,14 +93,19 @@ struct CombatTests {
     /// (0.7 + t·0.05): far more foes per second at t≈120 than at t≈0.
     @Test func spawnerRampMatchesGrayboxCurve() {
         var sim = makeSim()
+        // Hold the hero high and out of the fog so the run doesn't end mid-sample
+        // (this isolates the spawn ramp from the fog/shove loop).
+        func keepAlive(_ s: inout RunSim) {
+            s.debugMutate { $0.hero.pos.y = 180; $0.hero.target.y = 180; $0.hero.vel = .zero }
+        }
         let c0 = sim.state.spawnedCount
-        for _ in 0..<60 { sim.tick(dt: 1.0 / 60, input: .idle) } // ~1s at t≈0
+        for _ in 0..<60 { keepAlive(&sim); sim.tick(dt: 1.0 / 60, input: .idle) } // ~1s at t≈0
         let delta0 = sim.state.spawnedCount - c0
 
         // Advance to t≈120, then sample another second.
-        for _ in 0..<(119 * 60) { sim.tick(dt: 1.0 / 60, input: .idle) }
+        for _ in 0..<(119 * 60) { keepAlive(&sim); sim.tick(dt: 1.0 / 60, input: .idle) }
         let c120 = sim.state.spawnedCount
-        for _ in 0..<60 { sim.tick(dt: 1.0 / 60, input: .idle) }
+        for _ in 0..<60 { keepAlive(&sim); sim.tick(dt: 1.0 / 60, input: .idle) }
         let delta120 = sim.state.spawnedCount - c120
 
         // Expected: ~1.23 spawns/s at t≈0, ~11.4 at t≈120.

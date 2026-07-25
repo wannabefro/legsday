@@ -27,6 +27,14 @@ public struct RunState: Sendable {
     public var worldY: Double = 0
     public var hero: Hero
 
+    /// A splash scheduled to hit the fog surface after a felled foe's corpse
+    /// falls (KTD-3 — sim-born, never read back from the render layer).
+    struct PendingSplash: Equatable, Sendable {
+        var dueTime: Double
+        var xFraction: Double
+        var magnitude: Double
+    }
+
     /// Live foes (append on spawn, remove on death/cull — stable order).
     public internal(set) var foes: [Foe] = []
     /// Foes felled this run (graybox `kills`).
@@ -35,6 +43,21 @@ public struct RunState: Sendable {
     public internal(set) var spawnedCount: Int = 0
     /// Runtime modifiers (card effects mutate these in U6).
     public internal(set) var mods = Mods()
+
+    /// Fog pressure — the ramping term that raises the fog line (graybox
+    /// `fogPressure`). Kills push it back.
+    public internal(set) var fogPressure: Double = 0
+    /// Whether the hero is currently within the fog (below the fog line).
+    public internal(set) var heroInFog: Bool = false
+    /// Whether the fog's grip has taken hold (past the grace window).
+    public internal(set) var heroGripped: Bool = false
+    /// Run over — the fog's grip completed.
+    public internal(set) var dead: Bool = false
+    /// The rippling fog surface (read-only feedback; rest line decides death).
+    public internal(set) var fogSurface: SpringLine
+
+    /// Splashes queued from felled corpses, fired when their fall completes.
+    var pendingSplashes: [PendingSplash] = []
     /// Transient render hints produced this tick (bolts, hits, kills). Not
     /// persistent state and excluded from `fingerprint`; consumed by the render
     /// layer after each tick and cleared at the next tick's start.
@@ -57,6 +80,7 @@ public struct RunState: Sendable {
         self.height = height
         let start = Vec2(width / 2, height * 0.42) // graybox hero spawn
         self.hero = Hero(pos: start, target: start, vel: .zero, invuln: 0, fogTime: 0)
+        self.fogSurface = SpringLine(nodeCount: 48)
         self.anchor = nil
         self.rng = SeededRandom(seed: seed)
     }
@@ -78,6 +102,9 @@ public struct RunState: Sendable {
         mix(UInt64(bitPattern: Int64(kills)))
         mix(UInt64(bitPattern: Int64(spawnedCount)))
         mix(spawnAcc); mix(attackTimer)
+        mix(fogPressure); mix(UInt64(dead ? 1 : 0))
+        for v in fogSurface.heights { mix(v) }
+        for v in fogSurface.velocities { mix(v) }
         for f in foes {
             mix(UInt64(bitPattern: Int64(f.id)))
             mix(f.pos.x); mix(f.pos.y); mix(f.radius); mix(f.speed)
