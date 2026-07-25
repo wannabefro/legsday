@@ -1,4 +1,5 @@
 import SpriteKit
+import UIKit
 import LegdaySim
 
 /// The render/sync layer (KTD-4): `update(_:)` feeds real dt into the sim's
@@ -17,6 +18,10 @@ final class RunScene: SKScene {
     private var cardLayer: CardVisual!
     private var foePool: NodePool!
     private var motePool: NodePool!
+
+    // Input: the first touch owns the run; others are ignored (R1/U8).
+    private var owningTouch: UITouch?
+    private var touchInput = TouchInputAccumulator()
 
     override func didMove(to view: SKView) {
         backgroundColor = SKColor(red: 0x0F / 255.0, green: 0x0C / 255.0, blue: 0x0A / 255.0, alpha: 1)
@@ -61,8 +66,36 @@ final class RunScene: SKScene {
         let dt = currentTime - lastUpdate
         lastUpdate = currentTime
 
-        sim.tick(dt: dt, input: .idle) // touch wired in U8
+        sim.tick(dt: dt, input: touchInput.current)
+        touchInput.advance()
         syncRender()
+    }
+
+    // MARK: - Touch (first touch owns the run)
+
+    private func simPoint(_ scene: CGPoint) -> Vec2 { Vec2(scene.x, size.height - scene.y) }
+
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard owningTouch == nil, let t = touches.first else { return }
+        owningTouch = t
+        touchInput.down(simPoint(t.location(in: self)))
+    }
+
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let t = owningTouch, touches.contains(t) else { return }
+        touchInput.move(simPoint(t.location(in: self)))
+    }
+
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let t = owningTouch, touches.contains(t) else { return }
+        touchInput.up(simPoint(t.location(in: self)))
+        owningTouch = nil
+    }
+
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let t = owningTouch, touches.contains(t) else { return }
+        touchInput.cancel(simPoint(t.location(in: self)))
+        owningTouch = nil
     }
 
     private func syncRender() {

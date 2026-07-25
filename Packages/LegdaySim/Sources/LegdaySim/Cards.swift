@@ -71,6 +71,39 @@ extension RunSim {
         state.card = c
     }
 
+    /// Route a real-time touch to the engaged card (called once per tick). The
+    /// card takes the thumb: the hero drag is suspended and the touch tilts the
+    /// card. `began`/first `moved` sets the tilt anchor (the transfer point when
+    /// a card deals mid-drag).
+    mutating func applyCardInput(_ input: Input) {
+        guard let c = state.card, !c.committing else { return }
+        state.anchor = nil // the card owns the thumb; hero drag suspended
+        switch input.phase {
+        case .began:
+            state.cardGrabX = input.location.x
+            dragCard(offset: 0)
+        case .moved:
+            let grab = state.cardGrabX ?? input.location.x
+            state.cardGrabX = grab
+            dragCard(offset: input.location.x - grab)
+        case .ended:
+            releaseCard()
+            state.cardGrabX = nil
+        case .cancelled:
+            springBackCard()
+            state.cardGrabX = nil
+        case .idle:
+            _ = c // hold
+        }
+    }
+
+    /// Abort the drag: return the card to neutral without committing.
+    mutating func springBackCard() {
+        guard var c = state.card, !c.committing else { return }
+        c.offset = 0
+        state.card = c
+    }
+
     /// Release: commit past the 30%-width threshold, else spring back to neutral.
     mutating func releaseCard() {
         guard let c = state.card, !c.committing else { return }

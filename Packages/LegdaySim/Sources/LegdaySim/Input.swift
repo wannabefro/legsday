@@ -9,8 +9,10 @@ public struct Input: Equatable, Sendable {
         case began
         /// Touch moved (or held) this frame.
         case moved
-        /// Touch lifted this frame.
+        /// Touch lifted this frame (a release — commits a card past threshold).
         case ended
+        /// Touch cancelled this frame (an abort — a card always springs back).
+        case cancelled
     }
 
     public var phase: Phase

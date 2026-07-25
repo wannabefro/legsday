@@ -93,6 +93,9 @@ public struct RunState: Sendable {
 
     /// Drag anchor: pointer + hero-target at touch-down (offset follow).
     var anchor: (pointer: Vec2, heroTarget: Vec2)?
+    /// Pointer x at which the current card grab began (tilt anchor); nil when no
+    /// touch is driving the card.
+    var cardGrabX: Double?
     /// Injected PRNG (KTD-1).
     var rng: SeededRandom
 
@@ -133,6 +136,7 @@ public struct RunState: Sendable {
             mix(UInt64(c.committing ? 1 : 0))
             mix(UInt64(c.deathDealt ? 1 : 0))
         }
+        if let g = cardGrabX { mix(g) }
         for te in timedEffects { mix(te.until) }
         for m in motes {
             mix(UInt64(bitPattern: Int64(m.id)))

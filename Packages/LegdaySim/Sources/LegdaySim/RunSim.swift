@@ -46,6 +46,11 @@ public struct RunSim {
         // sim time — the world holds its breath while a card is up (KTD-2).
         timescale.advance(toward: cardTimescaleTarget(), realDt: clamped)
         let ts = timescale.current
+        // The card takes the thumb: its input is handled in real time (once per
+        // tick), so dragging stays responsive while the world is nearly frozen.
+        if let c = state.card, !c.committing {
+            applyCardInput(input)
+        }
         accumulator += clamped * ts
         while accumulator >= Self.fixedStep {
             step(dt: Self.fixedStep, input: input)
@@ -81,6 +86,9 @@ public struct RunSim {
     /// Offset-follow: touch-down anchors (pointer, hero target); movement sets
     /// the target relative to that anchor, so the finger never sits on the hero.
     private mutating func applyInput(_ input: Input) {
+        // While a card holds the thumb its input is handled in tick(); the step
+        // only drives hero movement, and only when no card is engaged.
+        guard state.card == nil || state.card!.committing else { return }
         switch input.phase {
         case .began:
             state.anchor = (pointer: input.location, heroTarget: state.hero.target)
@@ -88,7 +96,7 @@ public struct RunSim {
             guard let anchor = state.anchor else { return }
             let delta = (input.location - anchor.pointer) * (Self.dragGain * state.mods.gain)
             state.hero.target = anchor.heroTarget + delta
-        case .ended:
+        case .ended, .cancelled:
             state.anchor = nil
         case .idle:
             break // target holds; scroll continues
