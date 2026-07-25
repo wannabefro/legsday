@@ -15,7 +15,8 @@ struct LegdayApp: App {
 /// `GameFlow`-driven meta ↔ run navigation (KTD-6).
 struct RootView: View {
     var body: some View {
-        SpriteView(scene: Self.scene)
+        SpriteView(scene: Self.scene,
+                   debugOptions: [.showsFPS, .showsNodeCount, .showsDrawCount])
             .ignoresSafeArea()
     }
 
