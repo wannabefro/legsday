@@ -20,6 +20,9 @@ public struct RunSim {
     public let tunables: Tunables
     /// Card content, injected so it can come from bundled data (U10).
     public let catalog: CardCatalog
+    /// Collection dupe counts (card id → copies owned) driving weapon tier (U11).
+    /// U21's Reliquary fills this; empty means every card is tier 1.
+    public let collection: [String: Int]
     public internal(set) var state: RunState
     /// Total fixed steps executed — exposes accumulator behavior for testing.
     public private(set) var stepsTaken: Int = 0
@@ -27,9 +30,11 @@ public struct RunSim {
     public private(set) var timescale = Timescale()
     private var accumulator: Double = 0
 
-    public init(tunables: Tunables, viewport: Vec2, seed: UInt64, catalog: CardCatalog = .seed) {
+    public init(tunables: Tunables, viewport: Vec2, seed: UInt64,
+                catalog: CardCatalog = .seed, collection: [String: Int] = [:]) {
         self.tunables = tunables
         self.catalog = catalog
+        self.collection = collection
         self.state = RunState(width: viewport.x, height: viewport.y, seed: seed)
         self.state.essNeed = tunables.firstCardCost
         buildDeck()

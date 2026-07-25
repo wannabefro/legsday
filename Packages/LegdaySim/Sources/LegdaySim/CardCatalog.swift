@@ -6,15 +6,29 @@ import Foundation
 /// JSON is generated from), so tests construct sims without a bundle.
 public struct CardCatalog: Codable, Equatable, Sendable {
     public var player: [CardDef]
+    /// Weapon relic cards (form/growth/signature). Drafted in via U17; kept out
+    /// of the ordinary `player` deck so the two pools stay distinct.
+    public var weapons: [CardDef]
     public var death: [CardDef]
 
-    public init(player: [CardDef], death: [CardDef]) {
+    public init(player: [CardDef], weapons: [CardDef] = [], death: [CardDef]) {
         self.player = player
+        self.weapons = weapons
         self.death = death
     }
 
-    /// The in-code seed set (graybox parity).
+    private enum CodingKeys: String, CodingKey { case player, weapons, death }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        player = try c.decode([CardDef].self, forKey: .player)
+        weapons = try c.decodeIfPresent([CardDef].self, forKey: .weapons) ?? []
+        death = try c.decode([CardDef].self, forKey: .death)
+    }
+
+    /// The in-code seed set (graybox parity + U11 weapons).
     public static let seed = CardCatalog(player: CardLibrary.playerSeed,
+                                         weapons: CardLibrary.weaponSeed,
                                          death: CardLibrary.deathSeed)
 }
 

@@ -277,5 +277,179 @@
       "spine" : "gold",
       "title" : "THE TITHE"
     }
+  ],
+  "weapons" : [
+    {
+      "id" : "the_thurible",
+      "isDeath" : false,
+      "left" : {
+        "effects" : [
+
+        ],
+        "label" : "the censer",
+        "subtitle" : "a Church relic"
+      },
+      "right" : {
+        "effects" : [
+
+        ],
+        "label" : "the censer",
+        "subtitle" : "a Church relic"
+      },
+      "spine" : "gold",
+      "title" : "THE THURIBLE",
+      "weapon" : {
+        "formA" : {
+          "effects" : [
+            {
+              "addBolts" : {
+                "_0" : 1
+              }
+            },
+            {
+              "multiply" : {
+                "_0" : "magnet",
+                "_1" : 1.15
+              }
+            }
+          ],
+          "label" : "sweeping arc",
+          "subtitle" : "+1 bolt, wider reach"
+        },
+        "formB" : {
+          "effects" : [
+            {
+              "multiply" : {
+                "_0" : "attackCooldown",
+                "_1" : 0.85
+              }
+            }
+          ],
+          "label" : "focused ember",
+          "subtitle" : "attack 15% faster"
+        },
+        "growthAxes" : [
+          {
+            "effects" : [
+              {
+                "multiply" : {
+                  "_0" : "magnet",
+                  "_1" : 1.2
+                }
+              }
+            ],
+            "label" : "reach",
+            "subtitle" : "magnet ×1.2"
+          },
+          {
+            "effects" : [
+              {
+                "multiply" : {
+                  "_0" : "attackCooldown",
+                  "_1" : 0.9
+                }
+              }
+            ],
+            "label" : "ferocity",
+            "subtitle" : "attack 10% faster"
+          }
+        ],
+        "id" : "the_thurible",
+        "signature" : {
+          "effects" : [
+            {
+              "addBolts" : {
+                "_0" : 2
+              }
+            }
+          ],
+          "label" : "censer flare",
+          "subtitle" : "hold — +2 bolts"
+        }
+      }
+    },
+    {
+      "id" : "the_passing_bell",
+      "isDeath" : false,
+      "left" : {
+        "effects" : [
+
+        ],
+        "label" : "the bell",
+        "subtitle" : "a Grave relic"
+      },
+      "right" : {
+        "effects" : [
+
+        ],
+        "label" : "the bell",
+        "subtitle" : "a Grave relic"
+      },
+      "spine" : "grave",
+      "title" : "THE PASSING BELL",
+      "weapon" : {
+        "formA" : {
+          "effects" : [
+            {
+              "addBolts" : {
+                "_0" : 1
+              }
+            }
+          ],
+          "label" : "wide toll",
+          "subtitle" : "+1 bolt"
+        },
+        "formB" : {
+          "effects" : [
+            {
+              "multiply" : {
+                "_0" : "footing",
+                "_1" : 1.2
+              }
+            }
+          ],
+          "label" : "deep toll",
+          "subtitle" : "footing +20%"
+        },
+        "growthAxes" : [
+          {
+            "effects" : [
+              {
+                "multiply" : {
+                  "_0" : "essMul",
+                  "_1" : 1.15
+                }
+              }
+            ],
+            "label" : "resonance",
+            "subtitle" : "essence ×1.15"
+          },
+          {
+            "effects" : [
+              {
+                "multiply" : {
+                  "_0" : "footing",
+                  "_1" : 1.1
+                }
+              }
+            ],
+            "label" : "weight",
+            "subtitle" : "footing +10%"
+          }
+        ],
+        "id" : "the_passing_bell",
+        "signature" : {
+          "effects" : [
+            {
+              "smiteAllFoes" : {
+
+              }
+            }
+          ],
+          "label" : "death knell",
+          "subtitle" : "hold — smite every foe"
+        }
+      }
+    }
   ]
 }

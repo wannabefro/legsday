@@ -74,6 +74,9 @@ public struct RunState: Sendable {
     public internal(set) var deck: [CardDef] = []
     /// Death's deck — dealt (and cycled) once the drafted deck is dry.
     public internal(set) var deathDeck: [CardDef] = []
+    /// Weapons acquired this run, keyed by weapon id: form chosen and levels
+    /// accrued per growth axis (R13). Empty until the first weapon is claimed.
+    public internal(set) var weapons: [String: WeaponState] = [:]
     /// Cards drawn this run (graybox `drawn`).
     public internal(set) var drawn: Int = 0
     /// Essence needed to charge the next card; escalates per draw.
@@ -143,8 +146,15 @@ public struct RunState: Sendable {
             mix(c.offset); mix(c.rise); mix(c.tilt); mix(c.tiltVel); mix(Double(c.dir))
             mix(UInt64(c.committing ? 1 : 0))
             mix(UInt64(c.deathDealt ? 1 : 0))
+            mix(c.holdTime); mix(UInt64(c.signatureArmed ? 1 : 0))
         }
         if let g = cardGrabX { mix(g) }
+        for key in weapons.keys.sorted() { // sorted → stable across processes
+            let w = weapons[key]!
+            mix(UInt64(w.owned ? 1 : 0))
+            mix(UInt64(bitPattern: Int64(w.form ?? -1)))
+            for l in w.levels { mix(UInt64(bitPattern: Int64(l))) }
+        }
         for te in timedEffects { mix(te.until) }
         for m in motes {
             mix(UInt64(bitPattern: Int64(m.id)))

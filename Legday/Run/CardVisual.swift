@@ -12,6 +12,7 @@ final class CardVisual: SKNode {
     private let deathTag = CardVisual.text(size: 11, bold: false)
     private let leftLabel = CardVisual.text(size: 12, bold: false)
     private let rightLabel = CardVisual.text(size: 12, bold: false)
+    private let holdHint = CardVisual.text(size: 11, bold: false) // tier-3 signature (U11)
 
     init(sceneSize: CGSize) {
         super.init()
@@ -30,13 +31,16 @@ final class CardVisual: SKNode {
         leftLabel.horizontalAlignmentMode = .left
         rightLabel.position = CGPoint(x: 127, y: -52)
         rightLabel.horizontalAlignmentMode = .right
-        [spine, title, deathTag, leftLabel, rightLabel].forEach(body.addChild)
+        holdHint.position = CGPoint(x: 0, y: -72)
+        holdHint.fontColor = PlaceholderAtlas.rgb(0x6B5A3D)
+        [spine, title, deathTag, leftLabel, rightLabel, holdHint].forEach(body.addChild)
         addChild(body)
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) not used") }
 
-    func update(card: ActiveCard?, charge chargeValue: Double, essNeed: Double, sceneSize: CGSize) {
+    func update(card: ActiveCard?, offer: CardOffer?, charge chargeValue: Double,
+                essNeed: Double, sceneSize: CGSize) {
         guard let card else {
             body.isHidden = true
             charge.isHidden = false
@@ -56,12 +60,25 @@ final class CardVisual: SKNode {
         title.text = card.def.title
         deathTag.text = card.deathDealt ? "your deck is spent — Death deals" : ""
 
+        // The offer resolves weapon forms/growth at deal time (U11); ordinary
+        // cards pass their static L/R straight through.
+        let left = offer?.left ?? card.def.left
+        let right = offer?.right ?? card.def.right
         let w = sceneSize.width
         let lLit = card.offset < -w * 0.12, rLit = card.offset > w * 0.12
-        leftLabel.text = "← \(card.def.left.label)"
-        rightLabel.text = "\(card.def.right.label) →"
+        leftLabel.text = "← \(left.label)"
+        rightLabel.text = "\(right.label) →"
         leftLabel.fontColor = lLit ? PlaceholderAtlas.rgb(0x241C12) : PlaceholderAtlas.rgb(0x6B5A3D)
         rightLabel.fontColor = rLit ? PlaceholderAtlas.rgb(0x241C12) : PlaceholderAtlas.rgb(0x6B5A3D)
+
+        if let sig = offer?.signature {
+            holdHint.isHidden = false
+            holdHint.text = "⟡ hold — \(sig.label)"
+            holdHint.fontColor = card.signatureArmed
+                ? PlaceholderAtlas.rgb(0xC99A2E) : PlaceholderAtlas.rgb(0x6B5A3D)
+        } else {
+            holdHint.isHidden = true
+        }
     }
 
     private static func spineColor(_ spine: CardSpine) -> SKColor {

@@ -26,15 +26,20 @@ public struct CardDef: Equatable, Sendable, Codable, Identifiable {
     public var isDeath: Bool
     public var left: CardChoice
     public var right: CardChoice
+    /// Weapon cards carry a form/growth/signature spec (U11); the L/R shown for
+    /// such a card is resolved from weapon state at deal time, so `left`/`right`
+    /// here are only the neutral fallback labels. `nil` for ordinary cards.
+    public var weapon: WeaponDef?
 
     public init(id: String, title: String, spine: CardSpine, isDeath: Bool,
-                left: CardChoice, right: CardChoice) {
+                left: CardChoice, right: CardChoice, weapon: WeaponDef? = nil) {
         self.id = id
         self.title = title
         self.spine = spine
         self.isDeath = isDeath
         self.left = left
         self.right = right
+        self.weapon = weapon
     }
 }
 
@@ -57,6 +62,11 @@ public struct ActiveCard: Equatable, Sendable {
     public var dir: Int
     /// Dealt from Death's deck (R11).
     public let deathDealt: Bool
+    /// Real-time seconds the thumb has rested on the card without dragging — the
+    /// press-and-hold gesture for a tier-3 weapon's signature (U11/R2).
+    public var holdTime: Double
+    /// The signature is armed (held past the threshold); release commits it.
+    public var signatureArmed: Bool
 
     public init(def: CardDef, deathDealt: Bool) {
         self.def = def
@@ -67,5 +77,7 @@ public struct ActiveCard: Equatable, Sendable {
         self.committing = false
         self.dir = 0
         self.deathDealt = deathDealt
+        self.holdTime = 0
+        self.signatureArmed = false
     }
 }

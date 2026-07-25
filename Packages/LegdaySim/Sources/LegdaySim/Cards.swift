@@ -54,6 +54,8 @@ public enum CardLibrary {
 extension RunSim {
     private static let riseRate: Double = 5      // rise-in per second
     private static let slideSpeed: Double = 2000 // commit slide-off, px/s
+    static let holdArm: Double = 0.4             // hold seconds to arm a signature
+    static let holdSlop: Double = 24             // max drift (pt) that still counts as a hold
 
     /// Essence charges the next Fate Card; when full, the card is dealt and the
     /// cost escalates (graybox `essNeed += 1`). Only one card is up at a time.
@@ -104,23 +106,32 @@ extension RunSim {
         state.card = c
     }
 
-    /// Release: commit past the 30%-width threshold, else spring back to neutral.
+    /// Release: an armed signature (tier-3 hold) commits it; otherwise commit
+    /// past the 30%-width threshold, else spring back to neutral.
     mutating func releaseCard() {
         guard let c = state.card, !c.committing else { return }
-        if abs(c.offset) > state.width * 0.3 {
+        if c.signatureArmed, currentOffer()?.signature != nil {
+            commitSignature()
+        } else if abs(c.offset) > state.width * 0.3 {
             commitCard(c.offset > 0 ? 1 : -1)
         } else {
             var reset = c
             reset.offset = 0
+            reset.holdTime = 0
+            reset.signatureArmed = false
             state.card = reset
         }
     }
 
     /// Commit the chosen side: apply its effects once, then begin the slide-off.
+    /// Weapon cards route through form/growth acquisition instead of static L/R.
     mutating func commitCard(_ dir: Int) {
         guard var c = state.card, !c.committing else { return }
-        let choice = dir > 0 ? c.def.right : c.def.left
-        for e in choice.effects { apply(e) }
+        if let w = c.def.weapon {
+            commitWeaponChoice(w, dir: dir)
+        } else {
+            for e in (dir > 0 ? c.def.right : c.def.left).effects { apply(e) }
+        }
         c.committing = true
         c.dir = dir
         state.card = c
@@ -134,6 +145,19 @@ extension RunSim {
         let targetTilt = -c.offset / 900
         c.tiltVel += ((targetTilt - c.tilt) * 200 - 18 * c.tiltVel) * realDt
         c.tilt += c.tiltVel * realDt
+        // Press-and-hold: the thumb resting on the card (down, barely dragged)
+        // charges the signature; drifting past the slop cancels it (U11/R2).
+        if !c.committing {
+            if state.cardGrabX != nil, abs(c.offset) < Self.holdSlop {
+                c.holdTime += realDt
+                if c.holdTime >= Self.holdArm, currentOffer()?.signature != nil {
+                    c.signatureArmed = true
+                }
+            } else {
+                c.holdTime = 0
+                c.signatureArmed = false
+            }
+        }
         if c.committing {
             c.offset += Double(c.dir) * Self.slideSpeed * realDt
             if abs(c.offset) > state.width { state.card = nil; return }
