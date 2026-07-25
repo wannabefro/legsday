@@ -18,7 +18,7 @@ public struct RunSim {
     private static let velDecay: Double = 5.5      // knockback decay rate
 
     public let tunables: Tunables
-    public private(set) var state: RunState
+    public internal(set) var state: RunState
     /// Total fixed steps executed — exposes accumulator behavior for testing.
     public private(set) var stepsTaken: Int = 0
     private var accumulator: Double = 0
@@ -28,12 +28,13 @@ public struct RunSim {
         self.state = RunState(width: viewport.x, height: viewport.y, seed: seed)
     }
 
-    /// Effective scroll rate, px/s (per-run modifiers arrive in U6; ×1 for now).
-    public func scrollEff() -> Double { tunables.scroll }
+    /// Effective scroll rate, px/s (graybox `scrollEff`).
+    public func scrollEff() -> Double { tunables.scroll * state.mods.scrollMul }
 
     /// Advance by real elapsed `dt`, honoring the same `input` for each fixed
     /// step it produces. A `dt` above `maxFrameTime` is clamped (spike absorb).
     public mutating func tick(dt: Double, input: Input) {
+        state.frameEvents.removeAll(keepingCapacity: true) // render hints are per-tick
         accumulator += min(dt, Self.maxFrameTime)
         while accumulator >= Self.fixedStep {
             step(dt: Self.fixedStep, input: input)
@@ -49,6 +50,9 @@ public struct RunSim {
         state.worldY += scrollEff() * dt
         applyInput(input)
         integrateHero(dt: dt)
+        spawnFoes(dt: dt)
+        steerAndContact(dt: dt)
+        autoAttack(dt: dt)
     }
 
     /// Offset-follow: touch-down anchors (pointer, hero target); movement sets
@@ -59,7 +63,7 @@ public struct RunSim {
             state.anchor = (pointer: input.location, heroTarget: state.hero.target)
         case .moved:
             guard let anchor = state.anchor else { return }
-            let delta = (input.location - anchor.pointer) * Self.dragGain
+            let delta = (input.location - anchor.pointer) * (Self.dragGain * state.mods.gain)
             state.hero.target = anchor.heroTarget + delta
         case .ended:
             state.anchor = nil

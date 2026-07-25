@@ -27,6 +27,26 @@ public struct RunState: Sendable {
     public var worldY: Double = 0
     public var hero: Hero
 
+    /// Live foes (append on spawn, remove on death/cull — stable order).
+    public internal(set) var foes: [Foe] = []
+    /// Foes felled this run (graybox `kills`).
+    public internal(set) var kills: Int = 0
+    /// Total foes spawned this run — monotonic (spawn-rate testing).
+    public internal(set) var spawnedCount: Int = 0
+    /// Runtime modifiers (card effects mutate these in U6).
+    public internal(set) var mods = Mods()
+    /// Transient render hints produced this tick (bolts, hits, kills). Not
+    /// persistent state and excluded from `fingerprint`; consumed by the render
+    /// layer after each tick and cleared at the next tick's start.
+    public internal(set) var frameEvents: [FrameEvent] = []
+
+    /// Fractional spawn accumulator (graybox `spawnAcc`).
+    var spawnAcc: Double = 0
+    /// Auto-attack cooldown timer (graybox `atkT`).
+    var attackTimer: Double = 0
+    /// Monotonic foe id source (stable identity for render pooling).
+    var nextFoeId: Int = 0
+
     /// Drag anchor: pointer + hero-target at touch-down (offset follow).
     var anchor: (pointer: Vec2, heroTarget: Vec2)?
     /// Injected PRNG (KTD-1).
@@ -55,6 +75,15 @@ public struct RunState: Sendable {
         mix(hero.target.x); mix(hero.target.y)
         mix(hero.vel.x); mix(hero.vel.y)
         mix(hero.invuln); mix(hero.fogTime)
+        mix(UInt64(bitPattern: Int64(kills)))
+        mix(UInt64(bitPattern: Int64(spawnedCount)))
+        mix(spawnAcc); mix(attackTimer)
+        for f in foes {
+            mix(UInt64(bitPattern: Int64(f.id)))
+            mix(f.pos.x); mix(f.pos.y); mix(f.radius); mix(f.speed)
+            mix(UInt64(bitPattern: Int64(f.hp)))
+            mix(UInt64(f.elite ? 1 : 0))
+        }
         mix(rng.state)
         return h
     }

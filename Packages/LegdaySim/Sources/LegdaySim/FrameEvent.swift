@@ -1,0 +1,13 @@
+/// A transient, render-only signal emitted by the sim during a tick. These are
+/// one-way outputs (bolts, hit flashes, corpses) — they never feed back into
+/// sim math, preserving determinism (KTD-3). Gameplay consequences of a kill
+/// (fog pushback, mote drops, fog splash) are sim *state*, handled directly,
+/// not carried here.
+public enum FrameEvent: Equatable, Sendable {
+    /// An auto-attack bolt from the hero to a foe.
+    case attack(from: Vec2, to: Vec2)
+    /// The hero was shoved (hit flash origin).
+    case heroShoved(at: Vec2)
+    /// A foe was felled (corpse spawn in U9; fog splash scheduled in U4).
+    case foeDown(at: Vec2, elite: Bool)
+}
