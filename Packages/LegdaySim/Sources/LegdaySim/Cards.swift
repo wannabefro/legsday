@@ -129,7 +129,9 @@ extension RunSim {
     /// Weapon cards route through form/growth acquisition instead of static L/R.
     mutating func commitCard(_ dir: Int) {
         guard var c = state.card, !c.committing else { return }
-        if let w = c.def.weapon {
+        if let r = c.def.fusion {
+            if dir < 0 { fuseFusion(r) } else { declineFusion(r) } // left fuse, right decline
+        } else if let w = c.def.weapon {
             commitWeaponChoice(w, dir: dir, faction: c.def.faction)
         } else {
             // Apply the *resolved* side — for forks this is the time-appropriate

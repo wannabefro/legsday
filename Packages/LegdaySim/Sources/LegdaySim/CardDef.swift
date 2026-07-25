@@ -39,10 +39,14 @@ public struct CardDef: Equatable, Sendable, Codable, Identifiable {
     /// A world-owned mandatory fork (U13): risk vs safe, resolved by run time.
     /// Present → the card is a fork (zero-cost, no spring-back).
     public var fork: ForkDef?
+    /// A Death-dealt FUSION (U15): fuse (left) or decline (right). Carries the
+    /// recipe so the commit knows which weapons evolve.
+    public var fusion: FusionRecipe?
 
     public init(id: String, title: String, spine: CardSpine, isDeath: Bool,
                 left: CardChoice, right: CardChoice, weapon: WeaponDef? = nil,
-                faction: Faction? = nil, isThreat: Bool = false, fork: ForkDef? = nil) {
+                faction: Faction? = nil, isThreat: Bool = false, fork: ForkDef? = nil,
+                fusion: FusionRecipe? = nil) {
         self.id = id
         self.title = title
         self.spine = spine
@@ -53,6 +57,7 @@ public struct CardDef: Equatable, Sendable, Codable, Identifiable {
         self.faction = faction
         self.isThreat = isThreat
         self.fork = fork
+        self.fusion = fusion
     }
 }
 

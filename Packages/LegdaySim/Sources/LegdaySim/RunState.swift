@@ -97,6 +97,10 @@ public struct RunState: Sendable {
     /// Rival-faction offers queued by felled Heralds, dealt ahead of the
     /// cadence (U14) — the only in-run rival-card source.
     public internal(set) var pendingOffers: [CardDef] = []
+    /// A fusion recipe whose gate is met, awaiting its FUSION deal (U15).
+    public internal(set) var pendingFusion: FusionRecipe? = nil
+    /// Recipe keys declined this run — suppressed so they never re-fire (U15).
+    public internal(set) var suppressedFusions: [String] = []
     /// Cards drawn this run (graybox `drawn`).
     public internal(set) var drawn: Int = 0
     /// Essence needed to charge the next card; escalates per draw.
@@ -186,6 +190,8 @@ public struct RunState: Sendable {
             mix(h.slamTimer); mix(UInt64(h.guardian ? 1 : 0))
         }
         mix(UInt64(bitPattern: Int64(pendingOffers.count)))
+        mix(UInt64(pendingFusion == nil ? 0 : 1))
+        mix(UInt64(bitPattern: Int64(suppressedFusions.count)))
         for te in timedEffects { mix(te.until) }
         for m in motes {
             mix(UInt64(bitPattern: Int64(m.id)))

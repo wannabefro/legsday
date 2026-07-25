@@ -15,20 +15,24 @@ public struct CardCatalog: Codable, Equatable, Sendable {
     public var forks: [CardDef]
     /// Rival-faction offers yielded by felled Heralds (U14); one per faction.
     public var rivalOffers: [CardDef]
+    /// Fusion recipe table (U15) — not cards; FUSION cards are built at deal time.
+    public var fusions: [FusionRecipe]
     public var death: [CardDef]
 
     public init(player: [CardDef], weapons: [CardDef] = [], threats: [CardDef] = [],
-                forks: [CardDef] = [], rivalOffers: [CardDef] = [], death: [CardDef]) {
+                forks: [CardDef] = [], rivalOffers: [CardDef] = [],
+                fusions: [FusionRecipe] = [], death: [CardDef]) {
         self.player = player
         self.weapons = weapons
         self.threats = threats
         self.forks = forks
         self.rivalOffers = rivalOffers
+        self.fusions = fusions
         self.death = death
     }
 
     private enum CodingKeys: String, CodingKey {
-        case player, weapons, threats, forks, rivalOffers, death
+        case player, weapons, threats, forks, rivalOffers, fusions, death
     }
 
     public init(from decoder: Decoder) throws {
@@ -38,15 +42,17 @@ public struct CardCatalog: Codable, Equatable, Sendable {
         threats = try c.decodeIfPresent([CardDef].self, forKey: .threats) ?? []
         forks = try c.decodeIfPresent([CardDef].self, forKey: .forks) ?? []
         rivalOffers = try c.decodeIfPresent([CardDef].self, forKey: .rivalOffers) ?? []
+        fusions = try c.decodeIfPresent([FusionRecipe].self, forKey: .fusions) ?? []
         death = try c.decode([CardDef].self, forKey: .death)
     }
 
-    /// The in-code seed set (graybox parity + U11–U14 content pools).
+    /// The in-code seed set (graybox parity + U11–U15 content pools).
     public static let seed = CardCatalog(player: CardLibrary.playerSeed,
                                          weapons: CardLibrary.weaponSeed,
                                          threats: CardLibrary.threatSeed,
                                          forks: CardLibrary.forkSeed,
                                          rivalOffers: CardLibrary.rivalOfferSeed,
+                                         fusions: CardLibrary.fusionSeed,
                                          death: CardLibrary.deathSeed)
 }
 

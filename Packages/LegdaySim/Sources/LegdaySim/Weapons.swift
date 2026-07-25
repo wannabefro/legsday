@@ -95,6 +95,27 @@ public extension CardLibrary {
                                       effects: [.smiteAllFoes])),
             faction: .grave),
     ]
+
+    /// The Plague weapon lives *only* in the rival-offer pool (U14) — never the
+    /// draftable `weapons` pool — so a Church+Plague pair is reachable only by
+    /// felling a Plague Herald (the U15 rival-pair fusion path).
+    static let plagueWeapon = CardDef(id: "the_censer_rot", title: "THE CENSER-ROT",
+        spine: .plague, isDeath: false,
+        left: CardChoice(label: "the rot", subtitle: "a Plague relic", effects: []),
+        right: CardChoice(label: "the rot", subtitle: "a Plague relic", effects: []),
+        weapon: WeaponDef(id: "the_censer_rot",
+            formA: CardChoice(label: "spreading rot", subtitle: "+1 bolt",
+                              effects: [.addBolts(1)]),
+            formB: CardChoice(label: "clinging rot", subtitle: "essence ×1.2",
+                              effects: [.multiply(.essMul, 1.2)]),
+            growthAxes: [
+                CardChoice(label: "reach", subtitle: "magnet ×1.2", effects: [.multiply(.magnet, 1.2)]),
+                CardChoice(label: "virulence", subtitle: "attack 10% faster",
+                           effects: [.multiply(.attackCooldown, 0.9)]),
+            ],
+            signature: CardChoice(label: "pestilence", subtitle: "hold — +2 bolts",
+                                  effects: [.addBolts(2)])),
+        faction: .plague)
 }
 
 extension RunSim {

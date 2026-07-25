@@ -44,8 +44,7 @@ public extension CardLibrary {
     static let rivalOfferSeed: [CardDef] = [
         offer(id: "church_offer", title: "A CHURCH RELIC", spine: .gold, faction: .church,
               label: "take the ward", subtitle: "footing +25%", effects: [.multiply(.footing, 1.25)]),
-        offer(id: "plague_offer", title: "A PLAGUE RELIC", spine: .plague, faction: .plague,
-              label: "take the bile", subtitle: "essence ×1.4", effects: [.multiply(.essMul, 1.4)]),
+        plagueWeapon, // the Plague weapon — the only in-run path to a Church+Plague pair
         offer(id: "grave_offer", title: "A GRAVE RELIC", spine: .grave, faction: .grave,
               label: "take the lantern", subtitle: "magnet ×1.5", effects: [.multiply(.magnet, 1.5)]),
         offer(id: "wild_offer", title: "A WILD RELIC", spine: .rust, faction: .wild,

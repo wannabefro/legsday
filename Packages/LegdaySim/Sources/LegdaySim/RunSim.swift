@@ -92,6 +92,7 @@ public struct RunSim {
         updateHerald(dt: dt)
         updateMotes(dt: dt)
         maybeDealFork()  // mandatory forks take priority over essence-charged draws
+        checkFusionRecipes(); maybeDealFusion() // Death deals fusions ahead of the queue
         maybeDealOffer() // a felled Herald's rival offer deals ahead of the cadence
         maybeDrawCard()
     }

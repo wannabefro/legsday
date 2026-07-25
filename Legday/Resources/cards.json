@@ -266,6 +266,164 @@
       "title" : "THE THRESHOLD"
     }
   ],
+  "fusions" : [
+    {
+      "a" : "the_thurible",
+      "b" : "the_passing_bell",
+      "evolution" : {
+        "formA" : {
+          "effects" : [
+            {
+              "addBolts" : {
+                "_0" : 2
+              }
+            },
+            {
+              "multiply" : {
+                "_0" : "magnet",
+                "_1" : 1.3
+              }
+            }
+          ],
+          "label" : "the evolution",
+          "subtitle" : "born of fusion"
+        },
+        "formB" : {
+          "effects" : [
+            {
+              "addBolts" : {
+                "_0" : 2
+              }
+            },
+            {
+              "multiply" : {
+                "_0" : "magnet",
+                "_1" : 1.3
+              }
+            }
+          ],
+          "label" : "the evolution",
+          "subtitle" : "born of fusion"
+        },
+        "growthAxes" : [
+          {
+            "effects" : [
+              {
+                "addBolts" : {
+                  "_0" : 1
+                }
+              }
+            ],
+            "label" : "power",
+            "subtitle" : "+1 bolt"
+          },
+          {
+            "effects" : [
+              {
+                "multiply" : {
+                  "_0" : "magnet",
+                  "_1" : 1.15
+                }
+              }
+            ],
+            "label" : "reach",
+            "subtitle" : "magnet ×1.15"
+          }
+        ],
+        "id" : "the_requiem",
+        "signature" : {
+          "effects" : [
+            {
+              "smiteAllFoes" : {
+
+              }
+            }
+          ],
+          "label" : "cataclysm",
+          "subtitle" : "hold — smite every foe"
+        }
+      },
+      "rivalPair" : false
+    },
+    {
+      "a" : "the_thurible",
+      "b" : "the_censer_rot",
+      "evolution" : {
+        "formA" : {
+          "effects" : [
+            {
+              "addBolts" : {
+                "_0" : 3
+              }
+            },
+            {
+              "multiply" : {
+                "_0" : "magnet",
+                "_1" : 1.4
+              }
+            }
+          ],
+          "label" : "the evolution",
+          "subtitle" : "born of fusion"
+        },
+        "formB" : {
+          "effects" : [
+            {
+              "addBolts" : {
+                "_0" : 3
+              }
+            },
+            {
+              "multiply" : {
+                "_0" : "magnet",
+                "_1" : 1.4
+              }
+            }
+          ],
+          "label" : "the evolution",
+          "subtitle" : "born of fusion"
+        },
+        "growthAxes" : [
+          {
+            "effects" : [
+              {
+                "addBolts" : {
+                  "_0" : 1
+                }
+              }
+            ],
+            "label" : "power",
+            "subtitle" : "+1 bolt"
+          },
+          {
+            "effects" : [
+              {
+                "multiply" : {
+                  "_0" : "magnet",
+                  "_1" : 1.15
+                }
+              }
+            ],
+            "label" : "reach",
+            "subtitle" : "magnet ×1.15"
+          }
+        ],
+        "id" : "the_plague_saint",
+        "signature" : {
+          "effects" : [
+            {
+              "smiteAllFoes" : {
+
+              }
+            }
+          ],
+          "label" : "cataclysm",
+          "subtitle" : "hold — smite every foe"
+        }
+      },
+      "rivalPair" : true
+    }
+  ],
   "player" : [
     {
       "id" : "second_knuckle",
@@ -474,30 +632,88 @@
     },
     {
       "faction" : "plague",
-      "id" : "plague_offer",
+      "id" : "the_censer_rot",
       "isDeath" : false,
       "isThreat" : false,
       "left" : {
         "effects" : [
-          {
-            "multiply" : {
-              "_0" : "essMul",
-              "_1" : 1.4
-            }
-          }
+
         ],
-        "label" : "take the bile",
-        "subtitle" : "essence ×1.4"
+        "label" : "the rot",
+        "subtitle" : "a Plague relic"
       },
       "right" : {
         "effects" : [
 
         ],
-        "label" : "leave it",
-        "subtitle" : "nothing happens"
+        "label" : "the rot",
+        "subtitle" : "a Plague relic"
       },
       "spine" : "plague",
-      "title" : "A PLAGUE RELIC"
+      "title" : "THE CENSER-ROT",
+      "weapon" : {
+        "formA" : {
+          "effects" : [
+            {
+              "addBolts" : {
+                "_0" : 1
+              }
+            }
+          ],
+          "label" : "spreading rot",
+          "subtitle" : "+1 bolt"
+        },
+        "formB" : {
+          "effects" : [
+            {
+              "multiply" : {
+                "_0" : "essMul",
+                "_1" : 1.2
+              }
+            }
+          ],
+          "label" : "clinging rot",
+          "subtitle" : "essence ×1.2"
+        },
+        "growthAxes" : [
+          {
+            "effects" : [
+              {
+                "multiply" : {
+                  "_0" : "magnet",
+                  "_1" : 1.2
+                }
+              }
+            ],
+            "label" : "reach",
+            "subtitle" : "magnet ×1.2"
+          },
+          {
+            "effects" : [
+              {
+                "multiply" : {
+                  "_0" : "attackCooldown",
+                  "_1" : 0.9
+                }
+              }
+            ],
+            "label" : "virulence",
+            "subtitle" : "attack 10% faster"
+          }
+        ],
+        "id" : "the_censer_rot",
+        "signature" : {
+          "effects" : [
+            {
+              "addBolts" : {
+                "_0" : 2
+              }
+            }
+          ],
+          "label" : "pestilence",
+          "subtitle" : "hold — +2 bolts"
+        }
+      }
     },
     {
       "faction" : "grave",
