@@ -47,6 +47,10 @@ public struct ActiveCard: Equatable, Sendable {
     public var offset: Double
     /// Rise-in animation, 0…1 (graybox `anim`).
     public var rise: Double
+    /// Rotational-spring tilt (radians) and its velocity — the card tilts with
+    /// inertia toward the drag angle rather than rigidly following it (R20).
+    public var tilt: Double
+    public var tiltVel: Double
     /// True once committed and sliding away.
     public var committing: Bool
     /// Committed direction (−1 = left, +1 = right).
@@ -58,6 +62,8 @@ public struct ActiveCard: Equatable, Sendable {
         self.def = def
         self.offset = 0
         self.rise = 0
+        self.tilt = 0
+        self.tiltVel = 0
         self.committing = false
         self.dir = 0
         self.deathDealt = deathDealt

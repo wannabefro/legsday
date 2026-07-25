@@ -61,6 +61,12 @@ public struct RunState: Sendable {
     public internal(set) var dead: Bool = false
     /// The rippling fog surface (read-only feedback; rest line decides death).
     public internal(set) var fogSurface: SpringLine
+    /// The Pilgrim's lantern (physical feel, R20).
+    public internal(set) var lantern = Pendulum()
+    /// The Pilgrim's trailing cloak (physical feel, R20).
+    public internal(set) var cloak: VerletChain
+    /// Hero position last step — used to drive the lantern.
+    var prevHeroPos: Vec2
 
     /// The Fate Card currently in play (nil while charging).
     public internal(set) var card: ActiveCard?
@@ -105,6 +111,8 @@ public struct RunState: Sendable {
         let start = Vec2(width / 2, height * 0.42) // graybox hero spawn
         self.hero = Hero(pos: start, target: start, vel: .zero, invuln: 0, fogTime: 0)
         self.fogSurface = SpringLine(nodeCount: 48)
+        self.cloak = VerletChain(pin: start)
+        self.prevHeroPos = start
         self.anchor = nil
         self.rng = SeededRandom(seed: seed)
     }
@@ -132,7 +140,7 @@ public struct RunState: Sendable {
         mix(UInt64(bitPattern: Int64(deck.count)))
         mix(UInt64(bitPattern: Int64(deathDeck.count)))
         if let c = card {
-            mix(c.offset); mix(c.rise); mix(Double(c.dir))
+            mix(c.offset); mix(c.rise); mix(c.tilt); mix(c.tiltVel); mix(Double(c.dir))
             mix(UInt64(c.committing ? 1 : 0))
             mix(UInt64(c.deathDealt ? 1 : 0))
         }
@@ -144,6 +152,8 @@ public struct RunState: Sendable {
         }
         for v in fogSurface.heights { mix(v) }
         for v in fogSurface.velocities { mix(v) }
+        mix(lantern.angle); mix(lantern.angularVel)
+        for p in cloak.points { mix(p.x); mix(p.y) }
         for f in foes {
             mix(UInt64(bitPattern: Int64(f.id)))
             mix(f.pos.x); mix(f.pos.y); mix(f.radius); mix(f.speed)

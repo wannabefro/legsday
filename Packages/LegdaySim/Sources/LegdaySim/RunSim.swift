@@ -75,6 +75,7 @@ public struct RunSim {
         processTimedEffects()
         applyInput(input)
         integrateHero(dt: dt)
+        updateFeel(dt: dt)
         updateFog(dt: dt)
         spawnFoes(dt: dt)
         steerAndContact(dt: dt)

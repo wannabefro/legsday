@@ -18,6 +18,11 @@ final class RunScene: SKScene {
     private var cardLayer: CardVisual!
     private var foePool: NodePool!
     private var motePool: NodePool!
+    private var corpses: CorpseLayer!
+    private let feelNode = SKNode()   // cloak + lantern, behind the hero
+    private let cloakNode = SKShapeNode()
+    private let lanternLine = SKShapeNode()
+    private var lanternBob: SKSpriteNode!
 
     // Input: the first touch owns the run; others are ignored (R1/U8).
     private var owningTouch: UITouch?
@@ -33,13 +38,34 @@ final class RunScene: SKScene {
                      viewport: Vec2(size.width, size.height),
                      seed: 0x1E6DA9)
 
+        physicsWorld.gravity = CGVector(dx: 0, dy: -9)   // corpse tumble only
+
+        feelNode.zPosition = 9
         world.zPosition = 10
         effects.zPosition = 12
+        addChild(feelNode)
         addChild(world)
         addChild(effects)
 
+        cloakNode.strokeColor = SKColor(red: 0.5, green: 0.42, blue: 0.32, alpha: 0.9)
+        cloakNode.lineWidth = 4
+        lanternLine.strokeColor = SKColor(white: 0.5, alpha: 0.6)
+        lanternLine.lineWidth = 1.5
+        lanternBob = SKSpriteNode(texture: atlas.spark)
+        lanternBob.color = PlaceholderAtlas.rgb(0xC99A2E)
+        lanternBob.colorBlendFactor = 1
+        feelNode.addChild(cloakNode)
+        feelNode.addChild(lanternLine)
+        feelNode.addChild(lanternBob)
+
         heroNode = SKSpriteNode(texture: atlas.hero)
         world.addChild(heroNode)
+
+        // Corpse debris tumbles in a dedicated layer between feel and world.
+        let corpseNode = SKNode()
+        corpseNode.zPosition = 11
+        addChild(corpseNode)
+        corpses = CorpseLayer(parent: corpseNode, texture: atlas.foe)
 
         foePool = NodePool(parent: world) { [atlas] in SKSpriteNode(texture: atlas.foe) }
         motePool = NodePool(parent: world) { [atlas] in SKSpriteNode(texture: atlas.mote) }
@@ -114,9 +140,23 @@ final class RunScene: SKScene {
             node.position = self.pt(mote.pos)
         }
 
+        // Cloak (verlet) + lantern (pendulum), in scene space.
+        let cloakPath = CGMutablePath()
+        cloakPath.move(to: pt(s.cloak.points[0]))
+        for p in s.cloak.points.dropFirst() { cloakPath.addLine(to: pt(p)) }
+        cloakNode.path = cloakPath
+        let lanternLen = 26.0
+        let bobSim = Vec2(s.hero.pos.x + lanternLen * sin(s.lantern.angle),
+                          s.hero.pos.y + lanternLen * cos(s.lantern.angle))
+        let bob = pt(bobSim), pivot = pt(s.hero.pos)
+        lanternBob.position = bob
+        let ll = CGMutablePath(); ll.move(to: pivot); ll.addLine(to: bob)
+        lanternLine.path = ll
+
         // Fog: flat line + spring displacements, in scene space.
         let topY = size.height - CGFloat(sim.fogLineY())
         fog.update(topY: topY, heights: s.fogSurface.heights)
+        corpses.cull(belowY: topY)
 
         for event in s.frameEvents { spawn(event) }
 
@@ -140,7 +180,11 @@ final class RunScene: SKScene {
         case let .heroShoved(at):
             flash(at: pt(at), color: SKColor(white: 0.9, alpha: 0.9), radius: 20)
         case let .foeDown(at, elite):
-            flash(at: pt(at), color: PlaceholderAtlas.rgb(0xC99A2E), radius: elite ? 12 : 7)
+            let p = pt(at)
+            flash(at: p, color: PlaceholderAtlas.rgb(0xC99A2E), radius: elite ? 12 : 7)
+            // Pop up and outward; gravity tumbles it down toward the fog splash.
+            let dx = (p.x - size.width / 2) / size.width // −0.5…0.5
+            corpses.spawn(at: p, elite: elite, impulse: CGVector(dx: dx * 6, dy: 4))
         case let .moteCollected(at):
             flash(at: pt(at), color: PlaceholderAtlas.rgb(0x8A6FB3), radius: 6)
         case .moteLost:

@@ -49,7 +49,7 @@ final class CardVisual: SKNode {
 
         let risen = 0.4 * sceneSize.height - (1 - CGFloat(card.rise)) * 240
         body.position = CGPoint(x: sceneSize.width / 2 + CGFloat(card.offset), y: risen)
-        body.zRotation = -CGFloat(card.offset) / 900
+        body.zRotation = CGFloat(card.tilt) // rotational-spring inertia (R20)
 
         spine.fillColor = Self.spineColor(card.def.spine)
         spine.strokeColor = .clear

@@ -130,6 +130,10 @@ extension RunSim {
     /// the world is frozen). Removes the card when the slide completes.
     mutating func updateCardAnimation(realDt: Double) {
         guard var c = state.card else { return }
+        // Rotational-spring tilt toward the drag angle — inertia, not rigid (R20).
+        let targetTilt = -c.offset / 900
+        c.tiltVel += ((targetTilt - c.tilt) * 200 - 18 * c.tiltVel) * realDt
+        c.tilt += c.tiltVel * realDt
         if c.committing {
             c.offset += Double(c.dir) * Self.slideSpeed * realDt
             if abs(c.offset) > state.width { state.card = nil; return }
