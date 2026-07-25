@@ -92,6 +92,11 @@ public struct RunState: Sendable {
     public internal(set) var biome: Biome = .moor
     /// A risk-route shrine is pending — the U14 Herald-guardian hook (U13).
     public internal(set) var shrinePending: Bool = false
+    /// The living rival champion, if any — anchors the fog while alive (U14).
+    public internal(set) var herald: Herald? = nil
+    /// Rival-faction offers queued by felled Heralds, dealt ahead of the
+    /// cadence (U14) — the only in-run rival-card source.
+    public internal(set) var pendingOffers: [CardDef] = []
     /// Cards drawn this run (graybox `drawn`).
     public internal(set) var drawn: Int = 0
     /// Essence needed to charge the next card; escalates per draw.
@@ -175,6 +180,12 @@ public struct RunState: Sendable {
         mix(nextForkTime); mix(UInt64(bitPattern: Int64(forkCount)))
         mix(UInt64(bitPattern: Int64(Biome.allCases.firstIndex(of: biome) ?? 0)))
         mix(UInt64(shrinePending ? 1 : 0))
+        if let h = herald {
+            mix(UInt64(bitPattern: Int64(Faction.allCases.firstIndex(of: h.faction) ?? 0)))
+            mix(h.pos.x); mix(h.pos.y); mix(UInt64(bitPattern: Int64(h.hp)))
+            mix(h.slamTimer); mix(UInt64(h.guardian ? 1 : 0))
+        }
+        mix(UInt64(bitPattern: Int64(pendingOffers.count)))
         for te in timedEffects { mix(te.until) }
         for m in motes {
             mix(UInt64(bitPattern: Int64(m.id)))

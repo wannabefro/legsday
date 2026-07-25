@@ -444,6 +444,116 @@
       "title" : "THE TITHE"
     }
   ],
+  "rivalOffers" : [
+    {
+      "faction" : "church",
+      "id" : "church_offer",
+      "isDeath" : false,
+      "isThreat" : false,
+      "left" : {
+        "effects" : [
+          {
+            "multiply" : {
+              "_0" : "footing",
+              "_1" : 1.25
+            }
+          }
+        ],
+        "label" : "take the ward",
+        "subtitle" : "footing +25%"
+      },
+      "right" : {
+        "effects" : [
+
+        ],
+        "label" : "leave it",
+        "subtitle" : "nothing happens"
+      },
+      "spine" : "gold",
+      "title" : "A CHURCH RELIC"
+    },
+    {
+      "faction" : "plague",
+      "id" : "plague_offer",
+      "isDeath" : false,
+      "isThreat" : false,
+      "left" : {
+        "effects" : [
+          {
+            "multiply" : {
+              "_0" : "essMul",
+              "_1" : 1.4
+            }
+          }
+        ],
+        "label" : "take the bile",
+        "subtitle" : "essence ×1.4"
+      },
+      "right" : {
+        "effects" : [
+
+        ],
+        "label" : "leave it",
+        "subtitle" : "nothing happens"
+      },
+      "spine" : "plague",
+      "title" : "A PLAGUE RELIC"
+    },
+    {
+      "faction" : "grave",
+      "id" : "grave_offer",
+      "isDeath" : false,
+      "isThreat" : false,
+      "left" : {
+        "effects" : [
+          {
+            "multiply" : {
+              "_0" : "magnet",
+              "_1" : 1.5
+            }
+          }
+        ],
+        "label" : "take the lantern",
+        "subtitle" : "magnet ×1.5"
+      },
+      "right" : {
+        "effects" : [
+
+        ],
+        "label" : "leave it",
+        "subtitle" : "nothing happens"
+      },
+      "spine" : "grave",
+      "title" : "A GRAVE RELIC"
+    },
+    {
+      "faction" : "wild",
+      "id" : "wild_offer",
+      "isDeath" : false,
+      "isThreat" : false,
+      "left" : {
+        "effects" : [
+          {
+            "multiply" : {
+              "_0" : "gain",
+              "_1" : 1.18
+            }
+          }
+        ],
+        "label" : "take the thorn",
+        "subtitle" : "stride +18%"
+      },
+      "right" : {
+        "effects" : [
+
+        ],
+        "label" : "leave it",
+        "subtitle" : "nothing happens"
+      },
+      "spine" : "rust",
+      "title" : "A WILD RELIC"
+    }
+  ],
   "threats" : [
     {
       "faction" : "church",

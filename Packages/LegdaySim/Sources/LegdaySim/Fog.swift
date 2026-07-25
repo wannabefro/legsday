@@ -25,8 +25,10 @@ extension RunSim {
     /// Advance fog pressure, fire due splashes, ripple the surface, then resolve
     /// the grace/grip death timer against the flat rest line.
     mutating func updateFog(dt: Double) {
-        // Ramping creep (graybox: fogCreep · (0.7 + t·0.015)).
-        let creep = dt * tunables.fogCreep * (0.7 + state.time * 0.015)
+        // Ramping creep (graybox: fogCreep · (0.7 + t·0.015)); a living Herald
+        // anchors the fog, accelerating the creep (R16).
+        let heraldCreep = state.herald != nil ? Heralds.creepMult : 1
+        let creep = dt * tunables.fogCreep * (0.7 + state.time * 0.015) * heraldCreep
         state.fogPressure = min(Self.fogPressureCap, state.fogPressure + creep)
 
         firePendingSplashes()
@@ -65,7 +67,9 @@ extension RunSim {
     /// Kill consequences owned by U4: push the fog back and schedule the
     /// corpse's splash after a deterministic fall delay (KTD-3).
     mutating func applyFogKill(_ foe: Foe) {
-        let push = tunables.killPush * (foe.elite ? Self.eliteFogPushFactor : 1)
+        // A living Herald halves every kill-push — the fog holds while it lives (R16).
+        let heraldFactor = state.herald != nil ? Heralds.killPushFactor : 1
+        let push = tunables.killPush * (foe.elite ? Self.eliteFogPushFactor : 1) * heraldFactor
         state.fogPressure = max(0, state.fogPressure - push)
 
         let fallDistance = max(0, fogLineY() - foe.pos.y)

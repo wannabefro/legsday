@@ -81,6 +81,7 @@ public struct RunSim {
         state.time += dt
         state.worldY += scrollEff() * dt
         processTimedEffects()
+        maybeSpawnShrineHerald() // a risk-route shrine summons a guardian (U13→U14)
         applyInput(input)
         integrateHero(dt: dt)
         updateFeel(dt: dt)
@@ -88,8 +89,10 @@ public struct RunSim {
         spawnFoes(dt: dt)
         steerAndContact(dt: dt)
         autoAttack(dt: dt)
+        updateHerald(dt: dt)
         updateMotes(dt: dt)
-        maybeDealFork() // mandatory forks take priority over essence-charged draws
+        maybeDealFork()  // mandatory forks take priority over essence-charged draws
+        maybeDealOffer() // a felled Herald's rival offer deals ahead of the cadence
         maybeDrawCard()
     }
 

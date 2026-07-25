@@ -141,6 +141,7 @@ extension RunSim {
         // Accepting a faction offer (not a threat, not Death) builds affinity (U12).
         if let f = c.def.faction, !c.def.isDeath, !c.def.isThreat {
             state.affinity[f, default: 0] += 1
+            checkHostilityHeralds() // a crossing summons the rival champion (U14)
         }
         c.committing = true
         c.dir = dir

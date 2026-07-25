@@ -90,8 +90,16 @@ extension RunSim {
             .filter { $0.d < Self.attackRange }
             .sorted { $0.d < $1.d }
 
-        guard !inRange.isEmpty else { state.attackTimer = 0.12; return }
+        let heraldInRange = state.herald.map { (state.hero.pos - $0.pos).length < Self.attackRange } ?? false
+        guard !inRange.isEmpty || heraldInRange else { state.attackTimer = 0.12; return }
         state.attackTimer = state.mods.attackCooldown
+
+        // The Herald is durable: it soaks one bolt per cadence while in range (R16).
+        if heraldInRange, var h = state.herald {
+            state.frameEvents.append(.attack(from: state.hero.pos, to: h.pos))
+            h.hp -= 1
+            if h.hp <= 0 { fellHerald(h) } else { state.herald = h }
+        }
 
         for target in inRange.prefix(state.mods.bolts) {
             guard let i = state.foes.firstIndex(where: { $0.id == target.id }) else { continue }
