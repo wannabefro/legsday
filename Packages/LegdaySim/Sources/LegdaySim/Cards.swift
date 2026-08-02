@@ -112,8 +112,8 @@ extension RunSim {
         guard let c = state.card, !c.committing else { return }
         if c.signatureArmed, currentOffer()?.signature != nil {
             commitSignature()
-        } else if c.def.fork != nil {
-            commitCard(c.offset >= 0 ? 1 : -1) // mandatory: any release commits a side (R12)
+        } else if c.def.fork != nil || c.def.id == Finale.cardId {
+            commitCard(c.offset >= 0 ? 1 : -1) // mandatory: any release commits a side (R12/R17)
         } else if abs(c.offset) > state.width * 0.3 {
             commitCard(c.offset > 0 ? 1 : -1)
         } else {
@@ -131,6 +131,8 @@ extension RunSim {
         guard var c = state.card, !c.committing else { return }
         if let r = c.def.fusion {
             if dir < 0 { fuseFusion(r) } else { declineFusion(r) } // left fuse, right decline
+        } else if c.def.id == Finale.cardId {
+            commitFinale(dir) // mandatory; either side commits (R17)
         } else if let w = c.def.weapon {
             commitWeaponChoice(w, dir: dir, faction: c.def.faction)
         } else {

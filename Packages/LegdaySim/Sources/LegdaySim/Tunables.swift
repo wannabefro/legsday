@@ -33,6 +33,8 @@ public struct Tunables: Codable, Equatable, Sendable {
     public var firstCardCost: Double
     /// Amount each successive card's cost increases (graybox `essNeed += 1`).
     public var cardCostIncrement: Double
+    /// Run time at which Death arrives with the Finale card, seconds (R17).
+    public var finaleTime: Double
 
     public init(
         scroll: Double,
@@ -46,7 +48,8 @@ public struct Tunables: Codable, Equatable, Sendable {
         downBias: Double,
         cardSlow: Double,
         firstCardCost: Double,
-        cardCostIncrement: Double
+        cardCostIncrement: Double,
+        finaleTime: Double = 720
     ) {
         self.scroll = scroll
         self.spawn = spawn
@@ -60,6 +63,7 @@ public struct Tunables: Codable, Equatable, Sendable {
         self.cardSlow = cardSlow
         self.firstCardCost = firstCardCost
         self.cardCostIncrement = cardCostIncrement
+        self.finaleTime = finaleTime
     }
 }
 

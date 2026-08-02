@@ -47,8 +47,14 @@ public struct RunSim {
         }
     }
 
-    /// Effective scroll rate, px/s (graybox `scrollEff`).
-    public func scrollEff() -> Double { tunables.scroll * state.mods.scrollMul }
+    /// Effective scroll rate, px/s (graybox `scrollEff`). Once keep-running is
+    /// chosen it ramps without bound — the road accelerates forever (R17).
+    public func scrollEff() -> Double {
+        let base = tunables.scroll * state.mods.scrollMul
+        guard state.keepRunning else { return base }
+        let elapsed = state.time - tunables.finaleTime
+        return base * (1 + elapsed * Finale.keepRunningRamp)
+    }
 
     /// Advance by real elapsed `dt`, honoring the same `input` for each fixed
     /// step it produces. A `dt` above `maxFrameTime` is clamped (spike absorb).
@@ -101,6 +107,7 @@ public struct RunSim {
         updateMotes(dt: dt)
         maybeDealFork()  // mandatory forks take priority over essence-charged draws
         checkFusionRecipes(); maybeDealFusion() // Death deals fusions ahead of the queue
+        maybeDealFinale() // Death arrives on schedule, outranking everything else
         maybeDealOffer() // a felled Herald's rival offer deals ahead of the cadence
         maybeDrawCard()
     }

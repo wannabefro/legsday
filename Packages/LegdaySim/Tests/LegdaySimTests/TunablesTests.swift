@@ -18,7 +18,8 @@ private let canonicalJSON = """
   "downBias": 0.35,
   "cardSlow": 0.005,
   "firstCardCost": 4,
-  "cardCostIncrement": 1
+  "cardCostIncrement": 1,
+  "finaleTime": 720
 }
 """
 
@@ -39,6 +40,7 @@ struct TunablesTests {
         #expect(t.cardSlow == 0.005)
         #expect(t.firstCardCost == 4)
         #expect(t.cardCostIncrement == 1)
+        #expect(t.finaleTime == 720)
     }
 
     /// A JSON missing any key must fail decode — no silent defaults (U1 contract).

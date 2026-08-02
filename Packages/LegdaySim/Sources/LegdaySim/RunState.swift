@@ -108,6 +108,17 @@ public struct RunState: Sendable {
     public internal(set) var drawn: Int = 0
     /// Essence needed to charge the next card; escalates per draw.
     public internal(set) var essNeed: Double = 0
+    /// The Finale card has been dealt once (R17).
+    public internal(set) var finaleDealt: Bool = false
+    /// Keep-running chosen: the scroll ramps forever and only the fog ends the
+    /// run (R17).
+    public internal(set) var keepRunning: Bool = false
+    /// Turn & fight chosen: U19 enters the duel with the Reaper.
+    public internal(set) var duelRequested: Bool = false
+    /// The Reaper duel ended in a loss (U19) — result ending `.duelLoss`.
+    public internal(set) var deadInDuel: Bool = false
+    /// The Reaper duel was won (U19) — result ending `.duelWin`, shards ×3.
+    public internal(set) var duelWon: Bool = false
 
     /// Splashes queued from felled corpses, fired when their fall completes.
     var pendingSplashes: [PendingSplash] = []
@@ -167,6 +178,11 @@ public struct RunState: Sendable {
         mix(fogPressure); mix(UInt64(dead ? 1 : 0))
         mix(essence); mix(charge); mix(essNeed)
         mix(UInt64(bitPattern: Int64(drawn)))
+        mix(UInt64(finaleDealt ? 1 : 0))
+        mix(UInt64(keepRunning ? 1 : 0))
+        mix(UInt64(duelRequested ? 1 : 0))
+        mix(UInt64(deadInDuel ? 1 : 0))
+        mix(UInt64(duelWon ? 1 : 0))
         mix(UInt64(bitPattern: Int64(deck.count)))
         mix(UInt64(bitPattern: Int64(deathDeck.count)))
         if let c = card {

@@ -63,7 +63,8 @@ extension RunSim {
     /// are world-owned: dealt at zero essence cost, never advancing card cost or
     /// the drawn/threat counters.
     mutating func maybeDealFork() {
-        guard state.card == nil, state.time >= state.nextForkTime, !catalog.forks.isEmpty else { return }
+        guard state.card == nil, !state.keepRunning,
+              state.time >= state.nextForkTime, !catalog.forks.isEmpty else { return }
         let def = catalog.forks[state.forkCount % catalog.forks.count]
         state.forkCount += 1
         state.nextForkTime += Forks.cadence
