@@ -58,10 +58,11 @@ public enum Reaper {
 }
 
 extension RunSim {
-    /// The arena band for the duel, sized from the viewport (U19).
+    /// The arena band for the duel (U19). The floor sits above the static fog
+    /// line so the hero isn't clamped into it — only a slam can push it down.
     func duelArena() -> Arena {
         Arena(minX: 30, maxX: state.width - 30,
-              minY: state.height * 0.35, maxY: state.height - 60)
+              minY: state.height * 0.35, maxY: state.height - 160)
     }
 
     /// Enter the duel on "turn & fight": scroll halts and the arena fixes.

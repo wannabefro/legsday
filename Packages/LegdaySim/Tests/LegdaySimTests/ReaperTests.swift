@@ -39,6 +39,19 @@ struct ReaperTests {
         #expect(sim.scrollEff() > 0)
     }
 
+    /// The arena floor sits above the static fog line — entering the duel never
+    /// clamps the hero into the lethal fog (a dogfood-caught regression).
+    @Test func arenaFloorStaysAboveFogLine() {
+        var sim = makeSim()
+        sim.debugMutate { $0.duelRequested = true }
+        sim.tick(dt: RunSim.fixedStep, input: .idle) // enter the duel
+        let arena = sim.state.duel!.arena
+        let fogLine = sim.fogLineY()
+        #expect(arena.maxY < fogLine)
+        #expect(sim.state.hero.pos.y < fogLine)
+        #expect(!sim.state.dead)
+    }
+
     /// Hits accumulate and advance phases at thresholds; phase never regresses.
     @Test func hitsAdvancePhasesWithoutRegression() {
         var sim = makeSim()
@@ -74,11 +87,10 @@ struct ReaperTests {
     @Test func losingDuelProducesStandardObituary() {
         var sim = makeSim()
         sim.debugMutate { $0.duelRequested = true; $0.worldY = 3000 }
-        sim.tick(dt: RunSim.fixedStep, input: .idle)
-        // Park the hero in the fog until the grip completes.
-        sim.debugMutate { $0.hero.pos.y = 900; $0.hero.target.y = 900
-            $0.hero.fogTime = 3.0 }
-        for _ in 0..<Int(2.0 / RunSim.fixedStep) where !sim.state.dead {
+        sim.tick(dt: RunSim.fixedStep, input: .idle) // enter the duel
+        // Raise the fog above the arena floor and park the hero in it.
+        sim.debugMutate { $0.mods.fogAdd = 800; $0.hero.fogTime = 4.0 }
+        for _ in 0..<Int(1.0 / RunSim.fixedStep) where !sim.state.dead {
             sim.tick(dt: RunSim.fixedStep, input: .idle)
         }
         #expect(sim.state.dead)

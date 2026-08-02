@@ -45,6 +45,7 @@ final class RunScene: SKScene {
     private let weaponNode = SKNode() // the chain weapon's rope (U16)
     private let ropeLine = SKShapeNode()
     private var ropeHead = SKSpriteNode()
+    private let reaper = ReaperNode() // the duel's Reaper (U23)
 
     // Input: the first touch owns the run; others are ignored (R1/U8).
     private var owningTouch: UITouch?
@@ -94,6 +95,10 @@ final class RunScene: SKScene {
         weaponNode.addChild(ropeHead)
         weaponNode.isHidden = true
         addChild(weaponNode)
+
+        reaper.zPosition = 13 // above world (10) and corpses (11), below card
+        reaper.hide()
+        addChild(reaper)
 
         heroNode = SKSpriteNode(texture: atlas.hero)
         world.addChild(heroNode)
@@ -208,6 +213,14 @@ final class RunScene: SKScene {
             ropeHead.alpha = 0.55 + 0.45 * CGFloat(intensity)
         } else {
             weaponNode.isHidden = true
+        }
+
+        // The Reaper duel (U23): silhouette decay + telegraphs while it runs.
+        if let duel = s.duel {
+            let topY = size.height - CGFloat(sim.fogLineY())
+            reaper.update(duel: duel, fogTopY: topY, sceneSize: size)
+        } else {
+            reaper.hide()
         }
 
         // Fog: flat line + spring displacements, in scene space.
