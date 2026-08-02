@@ -11,19 +11,24 @@ struct LegdayApp: App {
     }
 }
 
-/// U1 root: hosts the (currently empty) run scene. U6/U22 replace this with the
-/// `GameFlow`-driven meta ↔ run navigation (KTD-6).
+/// U1 root, now GameFlow-driven (KTD-6/U17): draft screen (when unlocked) or
+/// the run. U22 extends this with title/meta navigation.
 struct RootView: View {
-    var body: some View {
-        SpriteView(scene: Self.scene,
-                   debugOptions: [.showsFPS, .showsNodeCount, .showsDrawCount])
-            .ignoresSafeArea()
-    }
+    @State private var flow = GameFlow()
 
-    // Created once and retained (never rebuilt inside `body`) per KTD-4/U7.
-    private static let scene: RunScene = {
-        let scene = RunScene()
-        scene.scaleMode = .resizeFill
-        return scene
-    }()
+    var body: some View {
+        Group {
+            switch flow.stage {
+            case .draft:
+                DraftView(cards: flow.draftableCards,
+                          collection: flow.collection,
+                          catalog: flow.catalog,
+                          onConfirm: { flow.confirm($0) })
+            case .run(let draft):
+                SpriteView(scene: flow.makeScene(for: draft, seed: 0x1E6DA9),
+                           debugOptions: [.showsFPS, .showsNodeCount, .showsDrawCount])
+                    .ignoresSafeArea()
+            }
+        }
+    }
 }

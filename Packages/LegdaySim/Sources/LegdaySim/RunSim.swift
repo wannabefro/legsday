@@ -31,13 +31,20 @@ public struct RunSim {
     private var accumulator: Double = 0
 
     public init(tunables: Tunables, viewport: Vec2, seed: UInt64,
-                catalog: CardCatalog = .seed, collection: [String: Int] = [:]) {
+                catalog: CardCatalog = .seed, collection: [String: Int] = [:],
+                draft: Draft? = nil) {
         self.tunables = tunables
         self.catalog = catalog
         self.collection = collection
         self.state = RunState(width: viewport.x, height: viewport.y, seed: seed)
         self.state.essNeed = tunables.firstCardCost
-        buildDeck()
+        if let draft {
+            buildDeck(draft: draft)
+        } else if !collection.isEmpty {
+            buildDeck(collection: collection)
+        } else {
+            buildDeck()
+        }
     }
 
     /// Effective scroll rate, px/s (graybox `scrollEff`).

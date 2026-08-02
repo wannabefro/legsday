@@ -1,18 +1,74 @@
-/// Deck management: the drafted deck is fuel; when it runs dry, Death deals from
-/// its own cycling deck (R11). No reshuffle of the player deck within a run.
+/// A completed draft (R9): up to 12 picked card ids, max 2 copies of any card,
+/// and the crowned Opener, guaranteed first draw.
+public struct Draft: Equatable, Sendable {
+    public var picks: [String]
+    public var opener: String?
+
+    public static let maxCards = 12
+    public static let maxCopies = 2
+    public static let collectionUnlock = 13
+
+    public init(picks: [String], opener: String?) {
+        self.picks = picks
+        self.opener = opener
+    }
+
+    /// Drafting unlocks once the collection holds 13+ cards (R9).
+    public static func isUnlocked(collection: [String: Int]) -> Bool {
+        collection.values.reduce(0, +) >= collectionUnlock
+    }
+
+    /// Structural guard: 12 picks max, 2 copies max, Opener among the picks.
+    public var isValid: Bool {
+        guard picks.count <= Self.maxCards else { return false }
+        guard let opener else { return true } // opener-less whole-collection path
+        guard picks.contains(opener) else { return false }
+        var counts: [String: Int] = [:]
+        for p in picks { counts[p, default: 0] += 1 }
+        return counts.values.allSatisfy { $0 <= Self.maxCopies }
+    }
+}
+
+/// Deck management: the drafted deck is fuel; when it runs dry, Death deals
+/// from its own cycling deck (R11).
 extension RunSim {
-    /// Build the run decks (U6 default: two copies of every player card, plus
-    /// Death's deck). U17's draft replaces the player-deck construction.
-    mutating func buildDeck() {
-        state.deck = shuffled(catalog.player + catalog.player)
+    /// U6 default deck: two copies of every player card, plus Death's deck.
+    mutating func buildDeck() {        state.deck = shuffled(catalog.player + catalog.player)
         state.deathDeck = shuffled(catalog.death)
         // Hostility is fixed at draft time: the deck's faction weighting decides
         // which rival threats interleave, and when (R10).
         state.scheduledThreats = Hostility.forecast(weights: deckFactionWeights())
     }
 
-    /// Deal the next card: from the drafted deck while it lasts, otherwise from
-    /// Death's deck (reshuffled when spent, cycling until the Finale).
+    /// Draft-built deck: the Opener first (guaranteed first draw), rest in
+    /// pick order.
+    mutating func buildDeck(draft: Draft) {
+        var defs = draft.picks.compactMap { catalog.card(id: $0) }
+        if let opener = draft.opener,
+           let i = defs.firstIndex(where: { $0.id == opener }) {
+            defs.swapAt(0, i)
+        }
+        state.deck = defs
+        state.deathDeck = shuffled(catalog.death)
+        state.scheduledThreats = Hostility.forecast(weights: deckFactionWeights())
+    }
+
+    /// Sub-13 path (R9): the run deck is the whole collection, every owned
+    /// copy, no draft and no Opener.
+    mutating func buildDeck(collection: [String: Int]) {
+        var defs: [CardDef] = []
+        for (id, copies) in collection.sorted(by: { $0.key < $1.key }) {
+            if let def = catalog.card(id: id) {
+                defs += Array(repeating: def, count: copies)
+            }
+        }
+        state.deck = defs
+        state.deathDeck = shuffled(catalog.death)
+        state.scheduledThreats = Hostility.forecast(weights: deckFactionWeights())
+    }
+
+    /// Deal the next card: the drafted deck while it lasts, else Death's deck
+    /// (reshuffled when spent, cycling until the Finale).
     mutating func drawCard() {
         // A scheduled rival threat interleaves at this ordinal without consuming
         // the drafted deck (R10) — it is an extra card, not a replacement.

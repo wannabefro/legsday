@@ -72,4 +72,9 @@ public extension CardCatalog {
         }
         return try decoded(from: Data(contentsOf: url))
     }
+
+    /// Resolve a card by id across every pool — the draft's picks are ids.
+    public func card(id: String) -> CardDef? {
+        (player + weapons + threats + forks + rivalOffers + death).first { $0.id == id }
+    }
 }

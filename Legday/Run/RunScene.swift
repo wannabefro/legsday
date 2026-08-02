@@ -8,6 +8,20 @@ final class RunScene: SKScene {
     private var sim: RunSim!
     private var atlas = PlaceholderAtlas()
     private var lastUpdate: TimeInterval = 0
+    private let draft: Draft?
+    private let collection: [String: Int]
+    private let seed: UInt64
+
+    /// A run built from a draft, or the sub-13 whole-collection path. Per-run
+    /// seed makes a failed run replayable.
+    init(draft: Draft?, collection: [String: Int], seed: UInt64) {
+        self.draft = draft
+        self.collection = collection
+        self.seed = seed
+        super.init(size: .zero)
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) not used") }
 
     private let world = SKNode()      // foes, motes, hero
     private let effects = SKNode()    // transient bolts/flashes
@@ -38,8 +52,10 @@ final class RunScene: SKScene {
 
         sim = RunSim(tunables: try! Tunables.bundled(),
                      viewport: Vec2(size.width, size.height),
-                     seed: 0x1E6DA9,
-                     catalog: try! CardCatalog.bundled()) // a run plays from cards.json (U10)
+                     seed: seed,
+                     catalog: try! CardCatalog.bundled(), // a run plays from cards.json (U10)
+                     collection: collection,
+                     draft: draft)
 
         physicsWorld.gravity = CGVector(dx: 0, dy: -9)   // corpse tumble only
 
