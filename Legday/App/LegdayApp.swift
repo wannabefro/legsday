@@ -31,7 +31,13 @@ struct RootView: View {
             case .results(let result):
                 ResultsView(result: result,
                             bestFathoms: flow.store.bestFathoms,
-                            onNextRun: { flow.nextDraft() })
+                            onNextRun: { flow.toReliquary() })
+            case .reliquary:
+                ReliquaryView(catalog: flow.catalog,
+                              owned: flow.store.collection,
+                              shards: flow.store.shards,
+                              onPull: { flow.pull() },
+                              onDone: { flow.nextDraft() })
             }
         }
     }

@@ -11,6 +11,7 @@ final class GameFlow {
         case draft
         case run(Draft)
         case results(RunResult)
+        case reliquary
     }
 
     /// The persisted meta state (collection, shards, best distance).
@@ -61,6 +62,21 @@ final class GameFlow {
     func finishRun(_ result: RunResult) {
         store.record(result)
         stage = .results(result)
+    }
+
+    /// The obituary leads to the Reliquary to spend shards (R19).
+    func toReliquary() {
+        stage = .reliquary
+    }
+
+    /// One pull: spend shards, draw from the seeded catalog, persist.
+    func pull() {
+        guard store.shards >= Collection.pullCost else { return }
+        var rng = SeededRandom(seed: UInt64.random(in: 1...UInt64.max))
+        var rel = Collection(pool: draftableCards, owned: store.collection)
+        let drawn = rel.pull(using: &rng)
+        store.spendShards(Collection.pullCost)
+        store.addToCollection(drawn)
     }
 
     /// Back to the draft for another run.
