@@ -236,6 +236,9 @@ extension RunSim {
         case .moteSink: state.mods.moteSink = op(state.mods.moteSink)
         case .spawnMul: state.mods.spawnMul = op(state.mods.spawnMul)
         case .fogAdd: state.mods.fogAdd = op(state.mods.fogAdd)
+        case .ropeLen: state.mods.ropeLen = op(state.mods.ropeLen)
+        case .ropeMass: state.mods.ropeMass = op(state.mods.ropeMass)
+        case .ropeThreshold: state.mods.ropeThreshold = op(state.mods.ropeThreshold)
         }
     }
 }

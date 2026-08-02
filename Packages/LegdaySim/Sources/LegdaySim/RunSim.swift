@@ -85,6 +85,7 @@ public struct RunSim {
         applyInput(input)
         integrateHero(dt: dt)
         updateFeel(dt: dt)
+        updateRope(dt: dt)
         updateFog(dt: dt)
         spawnFoes(dt: dt)
         steerAndContact(dt: dt)

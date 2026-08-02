@@ -100,6 +100,7 @@ extension RunSim {
         let combined = max(0, weaponUpgradeLevel(r.a)) + max(0, weaponUpgradeLevel(r.b))
         state.weapons[r.a] = nil
         state.weapons[r.b] = nil
+        if r.a == Chain.id || r.b == Chain.id { state.rope = nil }
         state.weapons[r.evolution.id] = WeaponState(owned: true, form: 0, levels: [combined, 0])
         for e in r.evolution.formA.effects { apply(e) } // the evolution's base power
 

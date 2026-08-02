@@ -2,6 +2,7 @@
 /// (see `Effect.addBolts`) and so is excluded here.
 public enum ModField: String, Equatable, Sendable, Codable {
     case attackCooldown, footing, magnet, gain, scrollMul, essMul, moteSink, spawnMul, fogAdd
+    case ropeLen, ropeMass, ropeThreshold
 }
 
 /// A Fate Card consequence, modeled as data (not a closure) so U10 can move

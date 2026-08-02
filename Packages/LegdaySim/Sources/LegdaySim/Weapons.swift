@@ -1,11 +1,7 @@
 import Foundation
 
-/// A weapon's form/growth/signature spec (R13). A weapon card is a `CardDef`
-/// carrying one of these. Choices reuse `CardChoice` (label + subtitle +
-/// effects), so a weapon's power is data like everything else (KTD-7):
-///   - `formA`/`formB`  — the two distinct behaviors chosen on the first draw.
-///   - `growthAxes`      — the two axes offered on every repeat draw.
-///   - `signature`       — the tier-3 press-and-hold option (nil below tier 3).
+/// A weapon's form/growth/signature spec (R13). A weapon card carries one of
+/// these; its power is data like everything else (KTD-7).
 public struct WeaponDef: Equatable, Sendable, Codable {
     public var id: String
     public var formA: CardChoice
@@ -28,7 +24,7 @@ public struct WeaponState: Equatable, Sendable {
     public var owned: Bool
     /// 0 = form A (left), 1 = form B (right); nil while unowned.
     public var form: Int?
-    /// Accrued level per growth axis (parallel to `WeaponDef.growthAxes`).
+    /// Accrued level per growth axis (parallel to `growthAxes`).
     public var levels: [Int]
 
     public init(owned: Bool = false, form: Int? = nil, levels: [Int] = []) {
@@ -94,6 +90,24 @@ public extension CardLibrary {
                 signature: CardChoice(label: "death knell", subtitle: "hold — smite every foe",
                                       effects: [.smiteAllFoes])),
             faction: .grave),
+        // Wild relic: a verlet chain that whips with kiting (R21).
+        CardDef(id: Chain.id, title: "THE WILD CHAIN", spine: .rust, isDeath: false,
+            left: CardChoice(label: "the chain", subtitle: "a Wild relic", effects: []),
+            right: CardChoice(label: "the chain", subtitle: "a Wild relic", effects: []),
+            weapon: WeaponDef(id: Chain.id,
+                formA: CardChoice(label: "long lash", subtitle: "far reach, fast whip",
+                                  effects: []),
+                formB: CardChoice(label: "heavy head", subtitle: "short, blunt, crushing",
+                                  effects: []),
+                growthAxes: [
+                    CardChoice(label: "reach", subtitle: "rope +20%",
+                               effects: [.multiply(.ropeLen, 1.2)]),
+                    CardChoice(label: "heft", subtitle: "head +30%",
+                               effects: [.multiply(.ropeMass, 1.3)]),
+                ],
+                signature: CardChoice(label: "whip-crack", subtitle: "hold — threshold ×0.8",
+                                      effects: [.multiply(.ropeThreshold, 0.8)])),
+            faction: .wild),
     ]
 
     /// The Plague weapon lives *only* in the rival-offer pool (U14) — never the
@@ -126,9 +140,7 @@ extension RunSim {
         min(3, max(1, collection[cardId] ?? 1))
     }
 
-    /// What the current card offers, resolved from weapon state. Ordinary cards
-    /// pass through their static L/R; weapon cards resolve forms (unowned) or
-    /// growth axes (owned), and surface the signature only at tier 3.
+    /// The resolved offer: static L/R, or forms/growth axes for weapon cards.
     public func currentOffer() -> CardOffer? {
         guard let c = state.card else { return nil }
         if let fork = c.def.fork { return forkOffer(fork) } // resolved by run time (U13)
@@ -145,9 +157,8 @@ extension RunSim {
         return CardOffer(left: left, right: right, signature: sig)
     }
 
-    /// Commit a weapon card's L/R: acquire the form on the first draw, else level
-    /// the chosen growth axis. Effects apply once; damage scales with the
-    /// weapon faction's affinity (R14, U12).
+    /// Commit a weapon card: acquire the form or level a growth axis. Damage
+    /// scales with faction affinity (R14).
     mutating func commitWeaponChoice(_ w: WeaponDef, dir: Int, faction: Faction?) {
         let mult = faction.map { affinityWeaponMultiplier(for: $0) } ?? 1
         var st = state.weapons[w.id] ?? WeaponState()
@@ -163,10 +174,13 @@ extension RunSim {
             for e in w.growthAxes[axis].effects { applyWeaponEffect(e, damageMult: mult) }
         }
         state.weapons[w.id] = st
+        if w.id == Chain.id, st.owned {
+            let base = (st.form == 1 ? Chain.heavyHead : Chain.longLash)
+            state.rope = ChainRope(pin: state.hero.pos, count: base.segments, segment: base.segment)
+        }
     }
 
-    /// Commit the tier-3 signature (the press-and-hold option): apply its effect
-    /// and slide the card away. Does not advance form or growth.
+    /// Commit the tier-3 press-and-hold signature: apply its effect, slide away.
     mutating func commitSignature() {
         guard var c = state.card, !c.committing,
               let sig = c.def.weapon?.signature else { return }
@@ -184,6 +198,51 @@ extension RunSim {
             state.mods.bolts += Int((Double(n) * damageMult).rounded())
         } else {
             apply(e)
+        }
+    }
+}
+
+extension RunSim {
+    /// The chain weapon's active rope config, from the chosen form scaled by
+    /// growth mods. Nil until the weapon is owned.
+    var chainConfig: (form: Chain.Form, segment: Double, headMass: Double, threshold: Double)? {
+        guard let w = state.weapons[Chain.id], w.owned else { return nil }
+        let base = (w.form == 1 ? Chain.heavyHead : Chain.longLash)
+        return (base, base.segment * state.mods.ropeLen,
+                base.headMass * state.mods.ropeMass,
+                base.threshold * state.mods.ropeThreshold)
+    }
+
+    /// Advance the verlet rope pinned to the hero (U16), then resolve the head's
+    /// whip damage against overlapping foes.
+    mutating func updateRope(dt: Double) {
+        guard let config = chainConfig, var rope = state.rope else { return }
+        rope.update(dt: dt, pin: state.hero.pos, segment: config.segment, headMass: config.headMass)
+        state.rope = rope
+        whipDamage(dt: dt, head: rope.head, speed: rope.headSpeed, config: config)
+    }
+
+    /// The head hits above a whip-speed threshold; fractional damage per foe.
+    mutating func whipDamage(dt: Double, head: Vec2, speed: Double, config: (form: Chain.Form, segment: Double, headMass: Double, threshold: Double)) {
+        guard speed > config.threshold else { return }
+        let mult = affinityWeaponMultiplier(for: .wild)
+        let rate = (speed - config.threshold) * config.form.damageScale * mult
+        var fell: [Foe] = []
+        for i in state.foes.indices {
+            let foe = state.foes[i]
+            guard (head - foe.pos).length < Chain.headRadius + foe.radius else { continue }
+            state.foes[i].whipAcc += rate * dt
+            let dmg = Int(state.foes[i].whipAcc)
+            guard dmg > 0 else { continue }
+            state.foes[i].whipAcc -= Double(dmg)
+            state.foes[i].hp -= dmg
+            if state.foes[i].hp <= 0 { fell.append(state.foes[i]) }
+        }
+        for f in fell {
+            state.foes.removeAll { $0.id == f.id }
+            state.kills += 1
+            state.frameEvents.append(.foeDown(at: f.pos, elite: f.elite))
+            onFoeFelled(f)
         }
     }
 }

@@ -22,6 +22,12 @@ public struct Mods: Equatable, Sendable {
     public var spawnMul: Double = 1
     /// Additive fog offset, px (raises the fog line when positive).
     public var fogAdd: Double = 0
+    /// Chain-weapon rope length multiplier (U16 growth).
+    public var ropeLen: Double = 1
+    /// Chain-weapon head-mass multiplier (U16 growth).
+    public var ropeMass: Double = 1
+    /// Chain-weapon whip-threshold multiplier (U16 growth).
+    public var ropeThreshold: Double = 1
 
     public init() {}
 }

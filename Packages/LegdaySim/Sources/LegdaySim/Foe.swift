@@ -8,6 +8,9 @@ public struct Foe: Equatable, Sendable, Identifiable {
     public var hp: Int
     public var speed: Double
     public var elite: Bool
+    /// Fractional whip damage accumulated from the chain weapon's head (U16);
+    /// each whole unit strips one HP.
+    public var whipAcc: Double
 
     public init(id: Int, pos: Vec2, radius: Double, hp: Int, speed: Double, elite: Bool) {
         self.id = id
@@ -16,5 +19,6 @@ public struct Foe: Equatable, Sendable, Identifiable {
         self.hp = hp
         self.speed = speed
         self.elite = elite
+        self.whipAcc = 0
     }
 }

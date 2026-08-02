@@ -2,9 +2,8 @@ import SpriteKit
 import UIKit
 import LegdaySim
 
-/// The render/sync layer (KTD-4): `update(_:)` feeds real dt into the sim's
-/// fixed-step accumulator, then mirrors the state snapshot onto pooled sprites.
-/// No gameplay lives here; the sim owns all state and time.
+/// The render/sync layer (KTD-4): feed the sim real dt, mirror its snapshot.
+/// No gameplay lives here.
 final class RunScene: SKScene {
     private var sim: RunSim!
     private var atlas = PlaceholderAtlas()
@@ -23,6 +22,9 @@ final class RunScene: SKScene {
     private let cloakNode = SKShapeNode()
     private let lanternLine = SKShapeNode()
     private var lanternBob: SKSpriteNode!
+    private let weaponNode = SKNode() // the chain weapon's rope (U16)
+    private let ropeLine = SKShapeNode()
+    private var ropeHead = SKSpriteNode()
 
     // Input: the first touch owns the run; others are ignored (R1/U8).
     private var owningTouch: UITouch?
@@ -42,6 +44,7 @@ final class RunScene: SKScene {
         physicsWorld.gravity = CGVector(dx: 0, dy: -9)   // corpse tumble only
 
         feelNode.zPosition = 9
+        weaponNode.zPosition = 10
         world.zPosition = 10
         effects.zPosition = 12
         addChild(feelNode)
@@ -58,6 +61,17 @@ final class RunScene: SKScene {
         feelNode.addChild(cloakNode)
         feelNode.addChild(lanternLine)
         feelNode.addChild(lanternBob)
+
+        // Chain weapon: a rust verlet rope; hidden until the chain is acquired.
+        ropeLine.strokeColor = SKColor(red: 0.55, green: 0.38, blue: 0.26, alpha: 0.95)
+        ropeLine.lineWidth = 3
+        ropeHead = SKSpriteNode(texture: atlas.foe)
+        ropeHead.color = PlaceholderAtlas.rgb(0xB23A2E)
+        ropeHead.colorBlendFactor = 1
+        weaponNode.addChild(ropeLine)
+        weaponNode.addChild(ropeHead)
+        weaponNode.isHidden = true
+        addChild(weaponNode)
 
         heroNode = SKSpriteNode(texture: atlas.hero)
         world.addChild(heroNode)
@@ -153,6 +167,22 @@ final class RunScene: SKScene {
         lanternBob.position = bob
         let ll = CGMutablePath(); ll.move(to: pivot); ll.addLine(to: bob)
         lanternLine.path = ll
+
+        // Chain weapon (U16): draw the rope when acquired; the head reads the
+        // whip speed so a fast crack visibly brightens.
+        if let rope = s.rope {
+            weaponNode.isHidden = false
+            let path = CGMutablePath()
+            path.move(to: pt(rope.points[0]))
+            for p in rope.points.dropFirst() { path.addLine(to: pt(p)) }
+            ropeLine.path = path
+            ropeHead.position = pt(rope.head)
+            let intensity = min(1, rope.headSpeed / 1200)
+            ropeHead.setScale(0.7 + 0.5 * CGFloat(intensity))
+            ropeHead.alpha = 0.55 + 0.45 * CGFloat(intensity)
+        } else {
+            weaponNode.isHidden = true
+        }
 
         // Fog: flat line + spring displacements, in scene space.
         let topY = size.height - CGFloat(sim.fogLineY())

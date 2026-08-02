@@ -65,6 +65,9 @@ public struct RunState: Sendable {
     public internal(set) var lantern = Pendulum()
     /// The Pilgrim's trailing cloak (physical feel, R20).
     public internal(set) var cloak: VerletChain
+    /// The chain weapon's verlet rope, once the Wild chain is acquired (U16).
+    /// Nil until the weapon's form is chosen; removed if a fusion takes it.
+    public internal(set) var rope: ChainRope?
     /// Hero position last step — used to drive the lantern.
     var prevHeroPos: Vec2
 
@@ -201,10 +204,15 @@ public struct RunState: Sendable {
         for v in fogSurface.velocities { mix(v) }
         mix(lantern.angle); mix(lantern.angularVel)
         for p in cloak.points { mix(p.x); mix(p.y) }
+        if let rope {
+            for p in rope.points { mix(p.x); mix(p.y) }
+            mix(rope.headSpeed)
+        }
         for f in foes {
             mix(UInt64(bitPattern: Int64(f.id)))
             mix(f.pos.x); mix(f.pos.y); mix(f.radius); mix(f.speed)
             mix(UInt64(bitPattern: Int64(f.hp)))
+            mix(f.whipAcc)
             mix(UInt64(f.elite ? 1 : 0))
         }
         mix(rng.state)

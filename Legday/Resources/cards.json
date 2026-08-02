@@ -1105,6 +1105,83 @@
           "subtitle" : "hold — smite every foe"
         }
       }
+    },
+    {
+      "faction" : "wild",
+      "id" : "the_wild_chain",
+      "isDeath" : false,
+      "isThreat" : false,
+      "left" : {
+        "effects" : [
+
+        ],
+        "label" : "the chain",
+        "subtitle" : "a Wild relic"
+      },
+      "right" : {
+        "effects" : [
+
+        ],
+        "label" : "the chain",
+        "subtitle" : "a Wild relic"
+      },
+      "spine" : "rust",
+      "title" : "THE WILD CHAIN",
+      "weapon" : {
+        "formA" : {
+          "effects" : [
+
+          ],
+          "label" : "long lash",
+          "subtitle" : "far reach, fast whip"
+        },
+        "formB" : {
+          "effects" : [
+
+          ],
+          "label" : "heavy head",
+          "subtitle" : "short, blunt, crushing"
+        },
+        "growthAxes" : [
+          {
+            "effects" : [
+              {
+                "multiply" : {
+                  "_0" : "ropeLen",
+                  "_1" : 1.2
+                }
+              }
+            ],
+            "label" : "reach",
+            "subtitle" : "rope +20%"
+          },
+          {
+            "effects" : [
+              {
+                "multiply" : {
+                  "_0" : "ropeMass",
+                  "_1" : 1.3
+                }
+              }
+            ],
+            "label" : "heft",
+            "subtitle" : "head +30%"
+          }
+        ],
+        "id" : "the_wild_chain",
+        "signature" : {
+          "effects" : [
+            {
+              "multiply" : {
+                "_0" : "ropeThreshold",
+                "_1" : 0.8
+              }
+            }
+          ],
+          "label" : "whip-crack",
+          "subtitle" : "hold — threshold ×0.8"
+        }
+      }
     }
   ]
 }
