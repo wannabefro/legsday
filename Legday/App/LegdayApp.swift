@@ -19,6 +19,8 @@ struct RootView: View {
     var body: some View {
         Group {
             switch flow.stage {
+            case .title:
+                TitleView(shards: flow.store.shards, onBegin: { flow.begin() })
             case .draft:
                 DraftView(cards: flow.draftableCards,
                           collection: flow.store.collection,

@@ -8,6 +8,7 @@ import LegdaySim
 @Observable
 final class GameFlow {
     enum Stage: Equatable {
+        case title
         case draft
         case run(Draft)
         case results(RunResult)
@@ -31,11 +32,14 @@ final class GameFlow {
             seeded.save()
             self.store = seeded
         }
-        if Draft.isUnlocked(collection: store.collection) {
-            stage = .draft
-        } else {
-            stage = .run(Draft(picks: [], opener: nil)) // sub-13: whole collection
-        }
+        stage = .title
+    }
+
+    /// Leave the title: draft if unlocked, otherwise straight to a run with
+    /// the whole collection (R9).
+    func begin() {
+        stage = Draft.isUnlocked(collection: store.collection) ? .draft
+            : .run(Draft(picks: [], opener: nil))
     }
 
     /// The draftable pool the UI shows — player cards plus weapons.
