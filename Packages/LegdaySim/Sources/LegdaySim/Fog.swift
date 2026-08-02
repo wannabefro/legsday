@@ -43,6 +43,7 @@ extension RunSim {
             state.hero.target.y += (state.heroGripped ? Self.gripPull : Self.gracePull) * dt
             if state.hero.fogTime - tunables.fogGrace > tunables.fogGrip {
                 state.dead = true
+                if state.duel != nil { state.deadInDuel = true }
             }
         } else {
             state.heroGripped = false

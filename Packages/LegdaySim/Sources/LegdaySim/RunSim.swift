@@ -47,9 +47,11 @@ public struct RunSim {
         }
     }
 
-    /// Effective scroll rate, px/s (graybox `scrollEff`). Once keep-running is
-    /// chosen it ramps without bound — the road accelerates forever (R17).
+    /// Effective scroll rate, px/s (graybox `scrollEff`). Zero during a duel —
+    /// the only code path that can halt the scroll (U19). Once keep-running is
+    /// chosen it ramps without bound (R17).
     public func scrollEff() -> Double {
+        if state.duel != nil { return 0 }
         let base = tunables.scroll * state.mods.scrollMul
         guard state.keepRunning else { return base }
         let elapsed = state.time - tunables.finaleTime
@@ -108,6 +110,8 @@ public struct RunSim {
         maybeDealFork()  // mandatory forks take priority over essence-charged draws
         checkFusionRecipes(); maybeDealFusion() // Death deals fusions ahead of the queue
         maybeDealFinale() // Death arrives on schedule, outranking everything else
+        maybeEnterDuel()  // the Finale's "turn & fight" zeroes the scroll (U19)
+        updateDuel(dt: dt) // the Reaper duel advances while it runs
         maybeDealOffer() // a felled Herald's rival offer deals ahead of the cadence
         maybeDrawCard()
     }

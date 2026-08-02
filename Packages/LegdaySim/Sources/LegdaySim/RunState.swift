@@ -119,6 +119,8 @@ public struct RunState: Sendable {
     public internal(set) var deadInDuel: Bool = false
     /// The Reaper duel was won (U19) — result ending `.duelWin`, shards ×3.
     public internal(set) var duelWon: Bool = false
+    /// The live duel (U19) — nil until the Finale's "turn & fight" is chosen.
+    public internal(set) var duel: DuelState? = nil
 
     /// Splashes queued from felled corpses, fired when their fall completes.
     var pendingSplashes: [PendingSplash] = []
@@ -183,6 +185,13 @@ public struct RunState: Sendable {
         mix(UInt64(duelRequested ? 1 : 0))
         mix(UInt64(deadInDuel ? 1 : 0))
         mix(UInt64(duelWon ? 1 : 0))
+        if let duel {
+            mix(UInt64(bitPattern: Int64(duel.phase)))
+            mix(UInt64(bitPattern: Int64(duel.hits)))
+            mix(duel.reaperPos.x); mix(duel.reaperPos.y)
+            mix(duel.telegraphTimer)
+            mix(UInt64(duel.telegraph == nil ? 0 : 1))
+        }
         mix(UInt64(bitPattern: Int64(deck.count)))
         mix(UInt64(bitPattern: Int64(deathDeck.count)))
         if let c = card {

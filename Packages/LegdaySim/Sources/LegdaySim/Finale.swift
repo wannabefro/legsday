@@ -72,12 +72,12 @@ extension RunSim {
         }
     }
 
-    /// The run's result payload (R18) — one shape for every ending.
+    /// The run's result payload (R18) — one shape for every ending. Shards are
+    /// one per 10 fathoms; a duel win triples them (U19), loss keeps base.
     public func result() -> RunResult {
         let ending: RunEnding = state.duelWon ? .duelWin : state.deadInDuel ? .duelLoss : .caught
         var shards = Int(state.fathoms / 10)
         if state.duelWon { shards *= 3 }
-        if state.deadInDuel { shards *= 2 }
         return RunResult(ending: ending, fathoms: state.fathoms,
                          felled: state.kills, cardsDrawn: state.drawn, shards: shards)
     }

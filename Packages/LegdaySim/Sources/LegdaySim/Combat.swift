@@ -79,11 +79,20 @@ extension RunSim {
 
     /// Auto-attack: fire up to `bolts` at the nearest in-range foes on cooldown.
     /// A kill counts, emits a corpse event, and (U4/U5) pushes the fog and drops
-    /// a mote.
+    /// a mote. During the duel every bolt lands on the Reaper instead (U19).
     mutating func autoAttack(dt: Double) {
         state.attackTimer -= dt
         guard state.attackTimer <= 0 else { return }
         guard !state.heroGripped else { return } // attacks muted in the grip (R4)
+
+        if state.duel != nil {
+            state.attackTimer = state.mods.attackCooldown
+            if let d = state.duel {
+                state.frameEvents.append(.attack(from: state.hero.pos, to: d.reaperPos))
+            }
+            hitReaper()
+            return
+        }
 
         let inRange = state.foes.enumerated()
             .map { (id: $0.element.id, d: (state.hero.pos - $0.element.pos).length) }
