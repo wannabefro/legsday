@@ -21,13 +21,17 @@ struct RootView: View {
             switch flow.stage {
             case .draft:
                 DraftView(cards: flow.draftableCards,
-                          collection: flow.collection,
+                          collection: flow.store.collection,
                           catalog: flow.catalog,
                           onConfirm: { flow.confirm($0) })
             case .run(let draft):
                 SpriteView(scene: flow.makeScene(for: draft, seed: 0x1E6DA9),
                            debugOptions: [.showsFPS, .showsNodeCount, .showsDrawCount])
                     .ignoresSafeArea()
+            case .results(let result):
+                ResultsView(result: result,
+                            bestFathoms: flow.store.bestFathoms,
+                            onNextRun: { flow.nextDraft() })
             }
         }
     }

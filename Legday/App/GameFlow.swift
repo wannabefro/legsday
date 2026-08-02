@@ -2,28 +2,35 @@ import SwiftUI
 import SpriteKit
 import LegdaySim
 
-/// KTD-6 shell split: SwiftUI meta screens, SpriteKit run. GameFlow owns
-/// navigation; U20/U22 extend it with results, title, and persistence.
+/// KTD-6 shell split: SwiftUI meta screens, SpriteKit run. GameFlow owns the
+/// navigation and the persisted meta Store (U20).
 @MainActor
 @Observable
 final class GameFlow {
     enum Stage: Equatable {
         case draft
         case run(Draft)
+        case results(RunResult)
     }
 
-    /// The collection of owned cards (id → copies). Seeded until U20's Store
-    /// and U21's Reliquary provide persistence.
-    var collection: [String: Int]
+    /// The persisted meta state (collection, shards, best distance).
+    var store: Store
     /// The card content a run plays from (bundled cards.json, U10).
     let catalog: CardCatalog
     private(set) var stage: Stage = .draft
 
-    init(collection: [String: Int] = GameFlow.seedCollection,
+    init(store: Store = Store(),
          catalog: CardCatalog = (try? CardCatalog.bundled()) ?? .seed) {
-        self.collection = collection
+        self.store = store
         self.catalog = catalog
-        if Draft.isUnlocked(collection: collection) {
+        // Seed the collection once so a first run has cards to draft.
+        if store.collection.isEmpty {
+            var seeded = store
+            seeded.collection = GameFlow.seedCollection
+            seeded.save()
+            self.store = seeded
+        }
+        if Draft.isUnlocked(collection: store.collection) {
             stage = .draft
         } else {
             stage = .run(Draft(picks: [], opener: nil)) // sub-13: whole collection
@@ -40,16 +47,30 @@ final class GameFlow {
         stage = .run(draft)
     }
 
-    /// The scene for the current stage. Created per run (never reused) so each
-    /// run gets a fresh sim (KTD-4).
+    /// A fresh scene per run (KTD-4); the run reports its result back once.
     func makeScene(for draft: Draft, seed: UInt64) -> RunScene {
-        let scene = RunScene(draft: draft, collection: collection, seed: seed)
+        let scene = RunScene(draft: draft, collection: store.collection,
+                             seed: seed) { [weak self] result in
+            self?.finishRun(result)
+        }
         scene.scaleMode = .resizeFill
         return scene
     }
 
+    /// Bank the run's shards and best distance, then show the obituary.
+    func finishRun(_ result: RunResult) {
+        store.record(result)
+        stage = .results(result)
+    }
+
+    /// Back to the draft for another run.
+    func nextDraft() {
+        stage = Draft.isUnlocked(collection: store.collection) ? .draft
+            : .run(Draft(picks: [], opener: nil))
+    }
+
     /// Seed collection: enough cards to unlock the draft (13+) and include
-    /// weapon variety. Placeholder until U20/U21.
+    /// weapon variety. First-run only; the Store persists thereafter.
     static let seedCollection: [String: Int] = [
         "second_knuckle": 2, "oath_of_footing": 2, "lantern_oil": 2,
         "pilgrims_pace": 2, "the_tithe": 2,

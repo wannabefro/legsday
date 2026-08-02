@@ -11,13 +11,19 @@ final class RunScene: SKScene {
     private let draft: Draft?
     private let collection: [String: Int]
     private let seed: UInt64
+    /// Called once when the run ends with its result (U20 routes to the
+    /// obituary).
+    let onRunEnded: (RunResult) -> Void
+    private var didReportDeath = false
 
     /// A run built from a draft, or the sub-13 whole-collection path. Per-run
     /// seed makes a failed run replayable.
-    init(draft: Draft?, collection: [String: Int], seed: UInt64) {
+    init(draft: Draft?, collection: [String: Int], seed: UInt64,
+         onRunEnded: @escaping (RunResult) -> Void) {
         self.draft = draft
         self.collection = collection
         self.seed = seed
+        self.onRunEnded = onRunEnded
         super.init(size: .zero)
     }
 
@@ -126,6 +132,10 @@ final class RunScene: SKScene {
         sim.tick(dt: dt, input: touchInput.current)
         touchInput.advance()
         syncRender()
+        if sim.state.dead, !didReportDeath {
+            didReportDeath = true
+            onRunEnded(sim.result())
+        }
     }
 
     // MARK: - Touch (first touch owns the run)

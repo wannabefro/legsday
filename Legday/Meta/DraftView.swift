@@ -183,7 +183,8 @@ struct DraftView: View {
 }
 
 /// Draft palette — the graybox gothic look in SwiftUI (U22/U24 refines).
-private struct DraftTheme {
+/// Shared gothic palette for the SwiftUI meta screens (U22/U24 refines).
+struct DraftTheme {
     static let shared = DraftTheme()
     let gold = Color(red: 0.79, green: 0.60, blue: 0.18)
     let parchment = Color(red: 0.90, green: 0.85, blue: 0.74)
