@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import LegdaySim
 
-/// U13 — world-owned mandatory forks on a ~90s clock (R12): zero essence cost,
+/// U13 — world-owned mandatory forks on a ~60s clock (R12): zero essence cost,
 /// no spring-back, risk vs safe, and no safe road past minute 8.
 struct ForkTests {
     private static let tunables = Tunables(
@@ -30,7 +30,7 @@ struct ForkTests {
             guardCount += 1
         }
         #expect(sim.state.card?.def.fork != nil)
-        #expect(abs(sim.state.time - Forks.cadence) < 1.5) // ~90s within tolerance
+        #expect(abs(sim.state.time - Forks.cadence) < 1.5) // ~60s within tolerance
         #expect(sim.state.charge == 0)                     // dealt with no essence
         #expect(sim.state.essNeed == Self.tunables.firstCardCost) // cost not advanced
         #expect(sim.state.drawn == 0)                      // not a drafted draw

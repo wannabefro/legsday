@@ -88,7 +88,7 @@ public struct RunState: Sendable {
     public internal(set) var scheduledThreats: [ThreatInsertion] = []
     /// Run time at which the next mandatory fork deals (U13); starts one
     /// cadence in (`Forks.cadence`).
-    public internal(set) var nextForkTime: Double = 90
+    public internal(set) var nextForkTime: Double = Forks.cadence
     /// Forks dealt so far — cycles the fork pool deterministically.
     public internal(set) var forkCount: Int = 0
     /// Current biome, swapped by forks (render palette tag, U13/U24).

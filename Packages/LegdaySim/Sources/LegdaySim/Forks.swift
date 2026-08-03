@@ -26,7 +26,7 @@ public struct ForkDef: Equatable, Sendable, Codable {
 /// Fork scheduling constants (R12).
 public enum Forks {
     /// Cadence between mandatory forks, seconds.
-    public static let cadence: Double = 90
+    public static let cadence: Double = 60
     /// Past this run time the safe road is replaced by a second risk flavor.
     public static let lateThreshold: Double = 480 // minute 8
 }

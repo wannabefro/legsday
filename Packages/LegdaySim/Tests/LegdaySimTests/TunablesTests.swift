@@ -8,18 +8,18 @@ import Testing
 private let canonicalJSON = """
 {
   "scroll": 78,
-  "spawn": 1.7,
+  "spawn": 0.3,
   "shove": 120,
   "iframes": 0.55,
   "fogGrace": 0.8,
   "fogGrip": 2.4,
-  "fogCreep": 1.1,
+  "fogCreep": 1.5,
   "killPush": 0.9,
   "downBias": 0.35,
   "cardSlow": 0.005,
-  "firstCardCost": 4,
-  "cardCostIncrement": 1,
-  "finaleTime": 720
+  "firstCardCost": 20,
+  "cardCostIncrement": 5,
+  "finaleTime": 150
 }
 """
 
@@ -29,18 +29,18 @@ struct TunablesTests {
     @Test func decodesToGrayboxDefaults() throws {
         let t = try Tunables.decoded(from: Data(canonicalJSON.utf8))
         #expect(t.scroll == 78)
-        #expect(t.spawn == 1.7)
+        #expect(t.spawn == 0.3)
         #expect(t.shove == 120)
         #expect(t.iframes == 0.55)
         #expect(t.fogGrace == 0.8)
         #expect(t.fogGrip == 2.4)
-        #expect(t.fogCreep == 1.1)
+        #expect(t.fogCreep == 1.5)
         #expect(t.killPush == 0.9)
         #expect(t.downBias == 0.35)
         #expect(t.cardSlow == 0.005)
-        #expect(t.firstCardCost == 4)
-        #expect(t.cardCostIncrement == 1)
-        #expect(t.finaleTime == 720)
+        #expect(t.firstCardCost == 20)
+        #expect(t.cardCostIncrement == 5)
+        #expect(t.finaleTime == 150)
     }
 
     /// A JSON missing any key must fail decode — no silent defaults (U1 contract).
