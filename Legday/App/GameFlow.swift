@@ -20,6 +20,11 @@ final class GameFlow {
     /// The card content a run plays from (bundled cards.json, U10).
     let catalog: CardCatalog
     private(set) var stage: Stage = .draft
+    /// Last pulled relic and its reveal state — held here so the Reliquary
+    /// view (recreated on store change) keeps the banner.
+    var lastPull: String?
+    var revealShown = false
+    private var revealTask: Task<Void, Never>?
 
     init(store: Store = Store(),
          catalog: CardCatalog = (try? CardCatalog.bundled()) ?? .seed) {
@@ -73,14 +78,28 @@ final class GameFlow {
         stage = .reliquary
     }
 
-    /// One pull: spend shards, draw from the seeded catalog, persist.
-    func pull() {
-        guard store.shards >= Collection.pullCost else { return }
+    /// One pull: spend shards, draw, persist; returns the drawn card id.
+    func pull() -> String {
+        guard store.shards >= Collection.pullCost else { return "" }
         var rng = SeededRandom(seed: UInt64.random(in: 1...UInt64.max))
         var rel = Collection(pool: draftableCards, owned: store.collection)
         let drawn = rel.pull(using: &rng)
+        lastPull = drawn
+        revealShown = true
         store.spendShards(Collection.pullCost)
         store.addToCollection(drawn)
+        revealTask?.cancel()
+        revealTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(6))
+            self?.revealShown = false
+        }
+        return drawn
+    }
+
+    /// Dismiss the pull reveal early (navigation away).
+    func dismissReveal() {
+        revealTask?.cancel()
+        revealShown = false
     }
 
     /// Back to the draft for another run.
@@ -89,10 +108,9 @@ final class GameFlow {
             : .run(Draft(picks: [], opener: nil))
     }
 
-    /// Cold-start collection: a small subset of the draftable pool (R9's
-    /// sub-13 path), so pulls unlock cards and the draft appears at 13+.
+    /// Cold-start collection: a subset of the draftable pool (R9 sub-13), so
+    /// pulls unlock cards and the draft appears at 13+.
     static let seedCollection: [String: Int] = [
         "second_knuckle": 2, "oath_of_footing": 2, "lantern_oil": 2,
         "the_thurible": 1,
-    ]
-}
+    ]}

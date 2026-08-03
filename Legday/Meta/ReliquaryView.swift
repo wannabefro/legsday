@@ -6,7 +6,9 @@ struct ReliquaryView: View {
     let catalog: CardCatalog
     let owned: [String: Int]
     let shards: Int
-    let onPull: () -> Void
+    let lastPull: String?
+    let revealShown: Bool
+    let onPull: () -> String
     let onDone: () -> Void
 
     private var pool: [CardDef] { catalog.player + catalog.weapons }
@@ -23,14 +25,24 @@ struct ReliquaryView: View {
                 footer
             }
             .padding(.horizontal, 24)
+            if revealShown, let id = lastPull {
+                revealBanner(id)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
         }
     }
 
     private var header: some View {
         VStack(spacing: 4) {
-            Text("THE RELIQUARY")
-                .font(.custom("Georgia-Bold", size: 22))
-                .foregroundStyle(theme.gold)
+            HStack(alignment: .firstTextBaseline) {
+                Text("THE RELIQUARY")
+                    .font(.custom("Georgia-Bold", size: 22))
+                    .foregroundStyle(theme.gold)
+                Spacer()
+                Text("◈ \(shards)")
+                    .font(.custom("Georgia-Bold", size: 15))
+                    .foregroundStyle(shards >= Collection.pullCost ? theme.gold : theme.muted)
+            }
             Text("\(pool.count - unownedCount)/\(pool.count) relics recovered")
                 .font(.custom("Georgia", size: 13))
                 .foregroundStyle(theme.muted)
@@ -65,7 +77,7 @@ struct ReliquaryView: View {
     private var footer: some View {
         VStack(spacing: 8) {
             Button {
-                onPull()
+                _ = onPull()
             } label: {
                 HStack {
                     Text("PULL A RELIC")
@@ -89,6 +101,30 @@ struct ReliquaryView: View {
             .foregroundStyle(theme.muted)
         }
         .padding(.bottom, 8)
+    }
+
+    /// Reveal what a pull yielded: a new relic, or a dupe tiering an owned one.
+    private func revealBanner(_ id: String) -> some View {
+        let isNew = (owned[id] ?? 0) == 1
+        return VStack(spacing: 4) {
+            Text(isNew ? "NEW RELIC" : "TIER UP")
+                .font(.custom("Georgia-Bold", size: 13))
+                .foregroundStyle(theme.ink)
+            Text("\(catalog.card(id: id)?.title ?? id)")
+                .font(.custom("Georgia-Bold", size: 15))
+                .foregroundStyle(theme.ink)
+        }
+        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity)
+        .background(isNew ? theme.gold : theme.selected, in: RoundedRectangle(cornerRadius: 8))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(isNew ? theme.gold : theme.muted.opacity(0.5), lineWidth: 1)
+        )
+        .padding(.horizontal, 24)
+        .padding(.bottom, 90)
+        .frame(maxWidth: .infinity, alignment: .bottom)
+        .zIndex(1)
     }
 
     private var theme: DraftTheme { DraftTheme.shared }

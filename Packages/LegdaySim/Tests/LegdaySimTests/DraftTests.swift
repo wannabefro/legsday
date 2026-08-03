@@ -24,6 +24,13 @@ struct DraftTests {
         #expect(Draft(picks: picks, opener: nil).isValid) // sub-13 whole-collection form
     }
 
+    /// A small collection drafts fewer than 12 — up to the max is valid.
+    @Test func smallerDraftIsValid() {
+        let picks = Array(Self.ids.prefix(6)) // six distinct, one copy each
+        #expect(picks.count < Draft.maxCards)
+        #expect(Draft(picks: picks, opener: picks.first).isValid)
+    }
+
     /// A 13th pick is rejected; exactly 12 is fine.
     @Test func thirteenthPickIsRejected() {
         // 8 distinct cards: 13 picks via repeats, none over 2.

@@ -38,6 +38,8 @@ struct RootView: View {
                 ReliquaryView(catalog: flow.catalog,
                               owned: flow.store.collection,
                               shards: flow.store.shards,
+                              lastPull: flow.lastPull,
+                              revealShown: flow.revealShown,
                               onPull: { flow.pull() },
                               onDone: { flow.nextDraft() })
             }

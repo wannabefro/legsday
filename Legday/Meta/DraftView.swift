@@ -145,21 +145,31 @@ struct DraftView: View {
     }
 
     private var footer: some View {
-        Button {
+        // Ready when 12 picked, or every owned copy is drafted.
+        let exhausted = picks.count == self.maxPickable
+        let ready = (picks.count == Draft.maxCards || exhausted) && opener != nil
+        return Button {
             onConfirm(Draft(picks: picks, opener: opener))
         } label: {
-            Text(picks.count == Draft.maxCards && opener != nil
+            Text(ready
                  ? "BEGIN THE CLIMB"
-                 : "CROWN \(Draft.maxCards - picks.count) MORE, THEN YOUR OPENER")
+                 : (opener == nil
+                    ? "CROWN YOUR OPENER — LONG-PRESS A PICKED CARD"
+                    : "PICK \(Draft.maxCards - picks.count) MORE"))
                 .font(.custom("Georgia-Bold", size: 15))
                 .foregroundStyle(theme.ink)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
                 .background(theme.gold, in: RoundedRectangle(cornerRadius: 8))
         }
-        .disabled(picks.count != Draft.maxCards || opener == nil)
-        .opacity(picks.count == Draft.maxCards && opener != nil ? 1 : 0.5)
+        .disabled(!ready)
+        .opacity(ready ? 1 : 0.5)
         .padding(.bottom, 8)
+    }
+
+    /// The most picks possible: every owned card at its 2-copy cap.
+    private var maxPickable: Int {
+        cards.reduce(0) { $0 + min(Draft.maxCopies, collection[$1.id] ?? 0) }
     }
 
     private func copiesText(picked: Int, owned: Int) -> String {
@@ -182,7 +192,6 @@ struct DraftView: View {
     private var theme: DraftTheme { DraftTheme.shared }
 }
 
-/// Draft palette — the graybox gothic look in SwiftUI (U22/U24 refines).
 /// Shared gothic palette for the SwiftUI meta screens (U22/U24 refines).
 struct DraftTheme {
     static let shared = DraftTheme()
