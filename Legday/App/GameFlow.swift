@@ -89,11 +89,10 @@ final class GameFlow {
             : .run(Draft(picks: [], opener: nil))
     }
 
-    /// Seed collection: enough cards to unlock the draft (13+) and include
-    /// weapon variety. First-run only; the Store persists thereafter.
+    /// Cold-start collection: a small subset of the draftable pool (R9's
+    /// sub-13 path), so pulls unlock cards and the draft appears at 13+.
     static let seedCollection: [String: Int] = [
         "second_knuckle": 2, "oath_of_footing": 2, "lantern_oil": 2,
-        "pilgrims_pace": 2, "the_tithe": 2,
-        "the_thurible": 1, "the_passing_bell": 1, "the_wild_chain": 1,
+        "the_thurible": 1,
     ]
 }
