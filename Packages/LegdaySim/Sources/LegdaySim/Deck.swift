@@ -29,11 +29,24 @@ public struct Draft: Equatable, Sendable {
     }
 }
 
-/// Deck management: the drafted deck is fuel; when it runs dry, Death deals
-/// from its own cycling deck (R11).
+/// When Death takes the deck (R21).
+public enum DeathDeck {
+    /// Fraction of the run after which an exhausted deck falls to Death. Before
+    /// it the deck reshuffles, so "Death deals" is a late beat, not the default.
+    public static let gateFraction = 0.6
+
+    public static func gateTime(finaleTime: Double) -> Double {
+        finaleTime * gateFraction
+    }
+}
+
+/// Deck management: the drafted deck is fuel; it reshuffles while the run is
+/// young, and darkens into Death's deck past the gate (R11/R21).
 extension RunSim {
     /// U6 default deck: two copies of every player card, plus Death's deck.
-    mutating func buildDeck() {        state.deck = shuffled(catalog.player + catalog.player)
+    mutating func buildDeck() {
+        state.deck = shuffled(catalog.player + catalog.player)
+        state.deckSource = state.deck
         state.deathDeck = shuffled(catalog.death)
         // Hostility is fixed at draft time: the deck's faction weighting decides
         // which rival threats interleave, and when (R10).
@@ -49,6 +62,7 @@ extension RunSim {
             defs.swapAt(0, i)
         }
         state.deck = defs
+        state.deckSource = defs
         state.deathDeck = shuffled(catalog.death)
         state.scheduledThreats = Hostility.forecast(weights: deckFactionWeights())
     }
@@ -63,6 +77,7 @@ extension RunSim {
             }
         }
         state.deck = defs
+        state.deckSource = defs
         state.deathDeck = shuffled(catalog.death)
         state.scheduledThreats = Hostility.forecast(weights: deckFactionWeights())
     }
@@ -78,6 +93,13 @@ extension RunSim {
             state.drawn += 1
             state.card = ActiveCard(def: threat, deathDealt: false)
             return
+        }
+        // A deck spent before the gate reshuffles and cycles; only past it does
+        // Death take over (R21).
+        if state.deck.isEmpty,
+           state.time < DeathDeck.gateTime(finaleTime: tunables.finaleTime),
+           !state.deckSource.isEmpty {
+            state.deck = shuffled(state.deckSource)
         }
         let def: CardDef
         let fromDeath: Bool

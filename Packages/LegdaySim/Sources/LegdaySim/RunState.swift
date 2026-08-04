@@ -77,6 +77,8 @@ public struct RunState: Sendable {
     public internal(set) var deck: [CardDef] = []
     /// Death's deck — dealt (and cycled) once the drafted deck is dry.
     public internal(set) var deathDeck: [CardDef] = []
+    /// The deck as built, kept so an early-run exhaustion reshuffles it (R21).
+    public internal(set) var deckSource: [CardDef] = []
     /// Weapons acquired this run, keyed by weapon id: form chosen and levels
     /// accrued per growth axis (R13). Empty until the first weapon is claimed.
     public internal(set) var weapons: [String: WeaponState] = [:]

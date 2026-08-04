@@ -14,6 +14,7 @@ private func makeSim(seed: UInt64 = 21) -> RunSim {
 }
 private let step = RunSim.fixedStep
 private func knuckle() -> CardDef { CardLibrary.playerSeed.first { $0.id == "second_knuckle" }! }
+private let gate = DeathDeck.gateTime(finaleTime: cardDefaults.finaleTime)
 
 struct CardTests {
 
@@ -32,10 +33,11 @@ struct CardTests {
         #expect(sim.state.essNeed == 6)
     }
 
-    /// AE3 (R11): once the drafted deck is spent, the next card comes from
-    /// Death's deck (flagged), and Death's deck cycles.
-    @Test func deckExhaustionDealsDeathAndCycles() {
+    /// AE3 (R11/R21): past the gate a spent deck falls to Death (flagged), and
+    /// Death's deck cycles.
+    @Test func deckExhaustionDealsDeathAndCyclesPastTheGate() {
         var sim = makeSim()
+        sim.debugMutate { $0.time = gate + 1 }
         let deckSize = CardLibrary.playerSeed.count * 2
         for _ in 0..<deckSize {
             sim.drawCard()
@@ -52,6 +54,40 @@ struct CardTests {
             #expect(sim.state.card!.deathDealt == true)
             sim.debugMutate { $0.card = nil }
         }
+    }
+
+    /// R21: before the gate the player's own deck reshuffles instead, so an
+    /// early run never collapses onto the three Death cards.
+    @Test func deckReshufflesBeforeTheGate() {
+        var sim = makeSim()
+        let deckSize = CardLibrary.playerSeed.count * 2
+        for _ in 0..<(deckSize * 2 + 3) {
+            sim.drawCard()
+            #expect(sim.state.card!.deathDealt == false)
+            sim.debugMutate { $0.card = nil }
+        }
+        #expect(sim.state.deckSource.count == deckSize)
+    }
+
+    /// R21 boundary: the gate is exclusive — at exactly gateTime Death deals.
+    @Test func deathTakesTheDeckAtTheGateItself() {
+        var sim = makeSim()
+        sim.debugMutate { $0.time = gate; $0.deck = [] }
+        sim.drawCard()
+        #expect(sim.state.card!.deathDealt == true)
+
+        var young = makeSim()
+        young.debugMutate { $0.time = gate.nextDown; $0.deck = [] }
+        young.drawCard()
+        #expect(young.state.card!.deathDealt == false)
+    }
+
+    /// R21 guard: with no deck to reshuffle, Death deals however young the run.
+    @Test func emptyDeckSourceFallsToDeathBeforeTheGate() {
+        var sim = makeSim()
+        sim.debugMutate { $0.time = 0; $0.deck = []; $0.deckSource = [] }
+        sim.drawCard()
+        #expect(sim.state.card!.deathDealt == true)
     }
 
     /// AE2 (R8): while a card is up, the world nearly freezes but the Pilgrim
