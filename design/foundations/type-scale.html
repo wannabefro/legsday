@@ -1,0 +1,92 @@
+<!-- @dsCard group="Foundations" -->
+<title>Type scale</title>
+<style>
+  :root{
+    --ground:#0F0C0A;--panel:#1B1714;--edge:#3A2E22;
+    --parchment:#E9DCBC;--muted:#8C7A57;--muted-lo:#6B5A3D;--gold:#C99A2E;--warn:#7A2E1E;
+    --serif:Georgia,"Times New Roman",serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  body{background:var(--ground);color:var(--parchment);font-family:var(--serif);
+       margin:0;padding:24px;font-size:16px;line-height:1.5}
+  h1{font-size:20px;color:var(--gold);margin:0 0 4px}
+  .sub{color:var(--muted);font-size:12px;margin:0 0 22px}
+  h2{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+     color:var(--muted);margin:26px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--edge);
+     font-weight:400}
+  .row{display:flex;align-items:baseline;gap:16px;padding:9px 0;
+       border-bottom:1px solid var(--edge)}
+  .row:last-child{border-bottom:0}
+  .spec{font-family:var(--mono);font-size:10px;color:var(--muted-lo);
+        letter-spacing:.06em;white-space:nowrap;min-width:112px}
+  .use{font-family:var(--mono);font-size:10px;color:var(--muted);
+       margin-left:auto;white-space:nowrap}
+  .sample{flex:1;min-width:0}
+  .caps{letter-spacing:.14em;text-transform:uppercase}
+  .note{background:var(--panel);border:1px solid var(--edge);border-left:3px solid var(--warn);
+        border-radius:3px;padding:12px 14px;font-size:13.5px;margin-top:12px}
+  .wrap{overflow-x:auto}
+  table{border-collapse:collapse;font-family:var(--mono);font-size:11px;margin-top:8px}
+  td{padding:2px 12px 2px 0;color:var(--muted);white-space:nowrap}
+</style>
+
+<h1>Type scale</h1>
+<p class="sub">Georgia, the face the app already ships. Six steps replacing thirteen ad-hoc sizes.</p>
+
+<h2>The scale</h2>
+<div class="row">
+  <span class="spec">44 / 700 / .18em</span>
+  <span class="sample caps" style="font-size:44px;font-weight:700;letter-spacing:.18em">Legday</span>
+  <span class="use">wordmark only</span>
+</div>
+<div class="row">
+  <span class="spec">28 / 700</span>
+  <span class="sample" style="font-size:28px;font-weight:700">The fog has you</span>
+  <span class="use">screen title</span>
+</div>
+<div class="row">
+  <span class="spec">20 / 700</span>
+  <span class="sample" style="font-size:20px;font-weight:700">THE SECOND KNUCKLE</span>
+  <span class="use">card title, section</span>
+</div>
+<div class="row">
+  <span class="spec">16 / 400</span>
+  <span class="sample" style="font-size:16px">attack 20% faster</span>
+  <span class="use">body, card sides</span>
+</div>
+<div class="row">
+  <span class="spec">14 / 400</span>
+  <span class="sample" style="font-size:14px;color:var(--muted)">fog +26 for 30s</span>
+  <span class="use">price, secondary</span>
+</div>
+<div class="row">
+  <span class="spec">12 / 400 / .14em</span>
+  <span class="sample caps" style="font-size:12px;color:var(--muted)">27 felled · 5 fates</span>
+  <span class="use">label — the floor</span>
+</div>
+
+<h2>Twelve is the floor, and it is a rule</h2>
+<div class="note">
+  The meta screens run at 9 to 11 point in a serif on a dark ground, in two columns. That is
+  audit finding 10, and it is the reason everything the Reliquary and the Draft explain about
+  a relic lands in the least readable type on the screen. Nothing below 12 ships.
+  <div class="wrap"><table>
+    <tr><td>DraftView.swift:102,107,111</td><td>9pt</td><td>→ 12</td></tr>
+    <tr><td>DraftView.swift:89</td><td>11pt</td><td>→ 16</td></tr>
+    <tr><td>ReliquaryView.swift:60</td><td>10pt</td><td>→ 16</td></tr>
+    <tr><td>ReliquaryView.swift:65</td><td>9pt</td><td>→ 12</td></tr>
+    <tr><td>CardVisual.swift:13,14</td><td>12pt</td><td>→ 16</td></tr>
+  </table></div>
+</div>
+
+<h2>Two treatments, and only two</h2>
+<div class="row">
+  <span class="spec">sentence</span>
+  <span class="sample" style="font-size:16px">the climb is the only health</span>
+  <span class="use">anything the world says</span>
+</div>
+<div class="row">
+  <span class="spec">caps + .14em</span>
+  <span class="sample caps" style="font-size:16px;font-weight:700">Begin the climb</span>
+  <span class="use">anything you press</span>
+</div>

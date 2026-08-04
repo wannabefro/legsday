@@ -7,34 +7,48 @@ struct ResultsView: View {
     let result: RunResult
     let bestFathoms: Double
     let onNextRun: () -> Void
+    let onTitle: () -> Void
 
     var body: some View {
         ZStack {
-            Color(red: 0.09, green: 0.07, blue: 0.06).ignoresSafeArea()
-            VStack(spacing: 16) {
+            theme.ground.ignoresSafeArea()
+            VStack(spacing: 14) {
                 Spacer()
                 Text(endingTitle)
-                    .font(.custom("Georgia-Bold", size: 24))
+                    .font(.custom("Georgia-Bold", size: 28))
                     .foregroundStyle(endingGold)
+                    .multilineTextAlignment(.center)
                 Text(endingSubtitle)
-                    .font(.custom("Georgia", size: 13))
+                    .font(.custom("Georgia", size: 12))
                     .foregroundStyle(theme.muted)
                 obituaryCard
                 bestLine
                 Spacer()
+                // The label names where it goes; it opened the Reliquary while
+                // calling itself a new run.
                 Button {
+                    Haptics.select()
                     onNextRun()
                 } label: {
-                    Text("RAISE ANOTHER")
-                        .font(.custom("Georgia-Bold", size: 15))
+                    Text("SPEND YOUR SHARDS")
+                        .font(.custom("Georgia-Bold", size: 16))
+                        .tracking(2)
                         .foregroundStyle(theme.ink)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .padding(.vertical, 6)
                         .background(theme.gold, in: RoundedRectangle(cornerRadius: 8))
                 }
-                .padding(.bottom, 8)
+                Button("BACK TO THE TITLE") { Haptics.select(); onTitle() }
+                    .font(.custom("Georgia", size: 12))
+                    .tracking(1)
+                    .foregroundStyle(theme.muted)
+                    .frame(minHeight: 44)
             }
             .padding(.horizontal, 24)
+            .padding(.bottom, 8)
+        }
+        .onAppear {
+            if result.ending == .duelWin { Haptics.triumph() } else { Haptics.blow() }
         }
     }
 
@@ -58,10 +72,12 @@ struct ResultsView: View {
         HStack {
             Text(label.uppercased())
                 .font(.custom("Georgia", size: 12))
+                .tracking(1.2)
                 .foregroundStyle(theme.muted)
             Spacer()
             Text(value)
-                .font(.custom("Georgia-Bold", size: 14))
+                .font(.custom("Georgia-Bold", size: 16))
+                .monospacedDigit()
                 .foregroundStyle(gold ? theme.gold : theme.parchment)
         }
     }

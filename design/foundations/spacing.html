@@ -1,0 +1,67 @@
+<!-- @dsCard group="Foundations" -->
+<title>Spacing &amp; geometry</title>
+<style>
+  :root{
+    --ground:#0F0C0A;--panel:#1B1714;--edge:#3A2E22;
+    --parchment:#E9DCBC;--muted:#8C7A57;--muted-lo:#6B5A3D;--gold:#C99A2E;--warn:#7A2E1E;
+    --serif:Georgia,"Times New Roman",serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  body{background:var(--ground);color:var(--parchment);font-family:var(--serif);
+       margin:0;padding:24px;font-size:16px;line-height:1.5}
+  h1{font-size:20px;color:var(--gold);margin:0 0 4px}
+  .sub{color:var(--muted);font-size:12px;margin:0 0 22px}
+  h2{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+     color:var(--muted);margin:26px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--edge);
+     font-weight:400}
+  .row{display:flex;align-items:center;gap:14px;padding:7px 0}
+  .bar{background:var(--gold);height:14px;border-radius:1px}
+  .spec{font-family:var(--mono);font-size:11px;color:var(--muted);min-width:64px}
+  .use{font-family:var(--mono);font-size:10px;color:var(--muted-lo);margin-left:auto}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  .box{background:var(--panel);border:1px solid var(--edge);border-radius:3px;padding:11px 12px}
+  .box .k{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+          color:var(--muted-lo)}
+  .box .v{font-size:15px;margin-top:2px}
+  .note{background:var(--panel);border:1px solid var(--edge);border-left:3px solid var(--warn);
+        border-radius:3px;padding:12px 14px;font-size:13.5px;margin-top:12px}
+</style>
+
+<h1>Spacing &amp; geometry</h1>
+<p class="sub">A 4pt base. Every gap in the app resolves to one of six steps.</p>
+
+<h2>The steps</h2>
+<div class="row"><span class="spec">4</span><div class="bar" style="width:4px"></div>
+  <span class="use">inside a label pair</span></div>
+<div class="row"><span class="spec">8</span><div class="bar" style="width:8px"></div>
+  <span class="use">grid gap, cell rows</span></div>
+<div class="row"><span class="spec">12</span><div class="bar" style="width:12px"></div>
+  <span class="use">cell padding</span></div>
+<div class="row"><span class="spec">16</span><div class="bar" style="width:16px"></div>
+  <span class="use">screen gutter</span></div>
+<div class="row"><span class="spec">24</span><div class="bar" style="width:24px"></div>
+  <span class="use">between sections</span></div>
+<div class="row"><span class="spec">32</span><div class="bar" style="width:32px"></div>
+  <span class="use">above a screen's one action</span></div>
+
+<h2>Fixed geometry</h2>
+<div class="grid">
+  <div class="box"><div class="k">Fate card</div><div class="v">290 × 196</div></div>
+  <div class="box"><div class="k">Commit threshold</div><div class="v">30% of width</div></div>
+  <div class="box"><div class="k">Card corner</div><div class="v">12</div></div>
+  <div class="box"><div class="k">Cell corner</div><div class="v">6</div></div>
+  <div class="box"><div class="k">Button corner</div><div class="v">8</div></div>
+  <div class="box"><div class="k">Spine rule</div><div class="v">258 × 4</div></div>
+  <div class="box"><div class="k">Min tap target</div><div class="v">44 × 44</div></div>
+  <div class="box"><div class="k">Card rise</div><div class="v">0.4 × height</div></div>
+</div>
+
+<h2>Two rules the current build breaks</h2>
+<div class="note">
+  <strong>Nothing is anchored across a screen edge.</strong> The charge meter is positioned at
+  <code>y = k × 66 − 33</code> against a scene origin of zero, so it is fully below the glass
+  until half charge. Anchor to the safe area, never to the raw edge.
+  <br><br>
+  <strong>One column below 380pt of width.</strong> Both meta grids are two columns of 9pt.
+  A column that cannot hold 12pt type is not a column.
+</div>

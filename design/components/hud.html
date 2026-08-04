@@ -1,0 +1,89 @@
+<!-- @dsCard group="Run" -->
+<title>HUD</title>
+<style>
+  :root{
+    --ground:#0F0C0A;--panel:#1B1714;--edge:#3A2E22;
+    --parchment:#E9DCBC;--muted-hi:#B0A17C;--muted:#8C7A57;--muted-lo:#6B5A3D;
+    --gold:#C99A2E;--grave:#8A6FB3;--inkspine:#050303;--warn:#7A2E1E;
+    --serif:Georgia,"Times New Roman",serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  body{background:var(--ground);color:var(--parchment);font-family:var(--serif);
+       margin:0;padding:24px;font-size:16px;line-height:1.5}
+  h1{font-size:20px;color:var(--gold);margin:0 0 4px}
+  .sub{color:var(--muted);font-size:12px;margin:0 0 22px;max-width:54ch}
+  h2{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+     color:var(--muted);margin:28px 0 6px;padding-bottom:6px;border-bottom:1px solid var(--edge);
+     font-weight:400}
+  .state{font-size:12.5px;color:var(--muted);margin:0 0 14px;max-width:58ch}
+
+  .bar{background:var(--ground);border:1px solid var(--edge);border-radius:6px;
+       padding:12px 14px;max-width:380px}
+  .top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+       color:var(--muted-hi);font-weight:700;font-size:16px;
+       font-variant-numeric:tabular-nums}
+  .mods{color:var(--muted);font-size:12px;letter-spacing:.06em;margin-top:6px;
+        white-space:nowrap;overflow-x:auto}
+  .pips{display:flex;gap:3px;margin-top:9px;align-items:center}
+  .pip{width:9px;height:14px;border-radius:2px;background:var(--muted-hi);opacity:.85}
+  .pip.spent{background:transparent;border:1px solid rgba(176,161,124,.3)}
+  .pip.death{background:var(--inkspine);border:1px solid rgba(176,161,124,.45)}
+  .gate{width:1px;height:18px;background:var(--warn);margin:0 4px}
+  .legend{font-family:var(--mono);font-size:9.5px;color:var(--muted-lo);
+          letter-spacing:.08em;margin-top:6px}
+  .note{background:var(--panel);border:1px solid var(--edge);border-left:3px solid var(--warn);
+        border-radius:3px;padding:12px 14px;font-size:13.5px;margin-top:16px;max-width:60ch}
+  code{font-family:var(--mono);font-size:12px;color:var(--gold)}
+  .glyph{color:var(--grave)}
+</style>
+
+<h1>HUD</h1>
+<p class="sub">Top safe area only. Three fixed numbers, the live modifiers, and the deck.</p>
+
+<h2>A run with no cards taken</h2>
+<p class="state">The modifier line is empty, so it stays quiet until it has something to say.</p>
+<div class="bar">
+  <div class="top"><span class="glyph">✧ 12</span><span>84 FATHOMS</span><span>3 felled</span></div>
+  <div class="pips">
+    <span class="pip"></span><span class="pip"></span><span class="pip"></span>
+    <span class="pip"></span><span class="pip"></span><span class="pip"></span>
+    <span class="pip"></span><span class="gate"></span>
+    <span class="pip death"></span><span class="pip death"></span><span class="pip death"></span>
+  </div>
+</div>
+
+<h2>Mid-run</h2>
+<p class="state">Only the fields a card changed. A faster attack reads as positive, and magnet
+reads against its own baseline of 34 rather than 1.</p>
+<div class="bar">
+  <div class="top"><span class="glyph">✧ 47</span><span>318 FATHOMS</span><span>27 felled</span></div>
+  <div class="mods">footing +35% · atk +25% · magnet +60% · essence +100% · fog +26</div>
+  <div class="pips">
+    <span class="pip spent"></span><span class="pip spent"></span><span class="pip spent"></span>
+    <span class="pip spent"></span><span class="pip"></span><span class="pip"></span>
+    <span class="pip"></span><span class="gate"></span>
+    <span class="pip death"></span><span class="pip death"></span><span class="pip death"></span>
+  </div>
+  <div class="legend">DECK · GATE · DEATH</div>
+</div>
+
+<h2>Past the gate</h2>
+<p class="state">The deck is spent and will not reshuffle again. Every pip left is Death's.</p>
+<div class="bar">
+  <div class="top"><span class="glyph">✧ 8</span><span>602 FATHOMS</span><span>61 felled</span></div>
+  <div class="mods">footing +35% · atk +25% · scroll +12% · fog +90 · spawns +50%</div>
+  <div class="pips">
+    <span class="pip spent"></span><span class="pip spent"></span><span class="pip spent"></span>
+    <span class="pip spent"></span><span class="pip spent"></span><span class="pip spent"></span>
+    <span class="pip spent"></span><span class="gate"></span>
+    <span class="pip death"></span><span class="pip death"></span><span class="pip death"></span>
+  </div>
+</div>
+
+<div class="note">
+  <strong>Audit findings 05 and 06.</strong> Essence takes its own mark — <span
+  class="glyph">✧</span> — because ◈ currently means both essence and shards, and the two never
+  convert. And the deck stops being a number: <code>"5 fates"</code> named an undefined word on
+  a count that now climbs back up when the deck reshuffles. Pips show the reshuffle happening
+  and mark where Death takes over, which a decreasing integer never could.
+</div>

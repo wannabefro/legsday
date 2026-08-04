@@ -1,18 +1,24 @@
 import SpriteKit
 import LegdaySim
 
-/// Persistent HUD in the top safe area only (R5): essence, fathoms, felled,
-/// fates remaining. A camera-independent scene child pinned to the top.
+/// Persistent HUD in the top safe area only (R5). Three fixed readings, the live
+/// modifiers, and the deck as pips — a count called "fates" named nothing and
+/// climbed back up whenever the deck reshuffled.
 final class HudNode: SKNode {
     private let essenceLabel = HudNode.label(align: .left)
     private let fathomsLabel = HudNode.label(align: .center)
     private let statusLabel = HudNode.label(align: .right)
-    /// What the cards have done to this run — the only readout of live mods.
     private let modsLabel = HudNode.label(align: .left)
+    private let pips = SKNode()
     private let sceneSize: CGSize
+    private let pipsY: CGFloat
+
+    private static let muted = SKColor(red: 0.69, green: 0.63, blue: 0.49, alpha: 1)
+    private static let dim = SKColor(red: 0.55, green: 0.50, blue: 0.38, alpha: 1)
 
     init(sceneSize: CGSize, safeTop: CGFloat) {
         self.sceneSize = sceneSize
+        self.pipsY = sceneSize.height - safeTop - 62
         super.init()
         let y = sceneSize.height - safeTop - 24
         essenceLabel.position = CGPoint(x: 18, y: y)
@@ -20,17 +26,21 @@ final class HudNode: SKNode {
         statusLabel.position = CGPoint(x: sceneSize.width - 18, y: y)
         modsLabel.position = CGPoint(x: 18, y: y - 20)
         modsLabel.fontSize = 12
-        modsLabel.fontColor = SKColor(red: 0.55, green: 0.50, blue: 0.38, alpha: 1)
-        [essenceLabel, fathomsLabel, statusLabel, modsLabel].forEach(addChild)
+        modsLabel.fontColor = Self.dim
+        pips.position = CGPoint(x: 18, y: pipsY)
+        [essenceLabel, fathomsLabel, statusLabel, modsLabel, pips].forEach(addChild)
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) not used") }
 
-    func update(essence: Double, fathoms: Double, felled: Int, fates: Int, mods: Mods) {
-        essenceLabel.text = "◈ \(Int(essence))"
+    func update(essence: Double, fathoms: Double, felled: Int, mods: Mods,
+                deck: DeckReading) {
+        // ✧ is essence, spent inside the run. ◈ is shards, which outlive it.
+        essenceLabel.text = "✧ \(Int(essence))"
         fathomsLabel.text = "\(Int(fathoms)) FATHOMS"
-        statusLabel.text = "\(felled) felled · \(fates) fates"
+        statusLabel.text = "\(felled) felled"
         modsLabel.text = HudNode.modsSummary(mods)
+        syncPips(deck)
     }
 
     /// Only what a card has changed. A run with no cards taken shows nothing.
@@ -52,6 +62,55 @@ final class HudNode: SKNode {
         return parts.joined(separator: " · ")
     }
 
+    /// Rebuild the pip row: your remaining deck, the gate, then Death's cards.
+    private func syncPips(_ d: DeckReading) {
+        pips.removeAllChildren()
+        var x: CGFloat = 0
+        for i in 0..<d.deckSize {
+            let spent = i >= d.remaining
+            pips.addChild(Self.pip(at: x, spent: spent, death: false))
+            x += 12
+        }
+        if d.deathSize > 0 {
+            let gate = SKShapeNode(rectOf: CGSize(width: 1, height: 18))
+            gate.fillColor = d.pastGate ? PlaceholderAtlas.rgb(0x7A2E1E) : Self.dim
+            gate.strokeColor = .clear
+            gate.position = CGPoint(x: x + 4, y: 0)
+            pips.addChild(gate)
+            x += 12
+            for _ in 0..<d.deathSize {
+                pips.addChild(Self.pip(at: x, spent: false, death: true))
+                x += 12
+            }
+        }
+    }
+
+    private static func pip(at x: CGFloat, spent: Bool, death: Bool) -> SKShapeNode {
+        let n = SKShapeNode(rectOf: CGSize(width: 9, height: 14), cornerRadius: 2)
+        n.position = CGPoint(x: x, y: 0)
+        if death {
+            n.fillColor = PlaceholderAtlas.rgb(0x050303)
+            n.strokeColor = muted.withAlphaComponent(0.45)
+        } else if spent {
+            n.fillColor = .clear
+            n.strokeColor = muted.withAlphaComponent(0.3)
+        } else {
+            n.fillColor = muted.withAlphaComponent(0.85)
+            n.strokeColor = .clear
+        }
+        n.lineWidth = 1
+        return n
+    }
+
+    private static func label(align: SKLabelHorizontalAlignmentMode) -> SKLabelNode {
+        let l = SKLabelNode(fontNamed: "Georgia-Bold")
+        l.fontSize = 16
+        l.fontColor = muted
+        l.horizontalAlignmentMode = align
+        l.verticalAlignmentMode = .center
+        return l
+    }
+
     private static func pct(_ x: Double) -> String {
         let d = (x - 1) * 100
         return "\(d >= 0 ? "+" : "")\(Int(d.rounded()))%"
@@ -60,13 +119,12 @@ final class HudNode: SKNode {
     private static func signed(_ x: Double) -> String {
         "\(x >= 0 ? "+" : "")\(Int(x.rounded()))"
     }
+}
 
-    private static func label(align: SKLabelHorizontalAlignmentMode) -> SKLabelNode {
-        let l = SKLabelNode(fontNamed: "Georgia-Bold")
-        l.fontSize = 15
-        l.fontColor = SKColor(red: 0.69, green: 0.63, blue: 0.49, alpha: 1) // #B0A17C
-        l.horizontalAlignmentMode = align
-        l.verticalAlignmentMode = .center
-        return l
-    }
+/// What the HUD needs to draw the deck, gathered in one value.
+struct DeckReading: Equatable {
+    let deckSize: Int
+    let remaining: Int
+    let deathSize: Int
+    let pastGate: Bool
 }

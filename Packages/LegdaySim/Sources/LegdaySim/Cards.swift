@@ -54,8 +54,12 @@ public enum CardLibrary {
 extension RunSim {
     private static let riseRate: Double = 5      // rise-in per second
     private static let slideSpeed: Double = 2000 // commit slide-off, px/s
-    static let holdArm: Double = 0.4             // hold seconds to arm a signature
+    /// Hold seconds to arm a signature. The view draws progress toward it.
+    public static let holdArm: Double = 0.4
     static let holdSlop: Double = 24             // max drift (pt) that still counts as a hold
+    /// Fraction of screen width a drag must pass to commit. The view draws it,
+    /// so the highlight cannot disagree with the rule (R22).
+    public static let commitThreshold: Double = 0.3
 
     /// Essence charges the next Fate Card; when full, the card is dealt and the
     /// cost escalates (graybox `essNeed += 1`). Only one card is up at a time.
@@ -114,7 +118,7 @@ extension RunSim {
             commitSignature()
         } else if c.def.fork != nil || c.def.id == Finale.cardId {
             commitCard(c.offset >= 0 ? 1 : -1) // mandatory: any release commits a side (R12/R17)
-        } else if abs(c.offset) > state.width * 0.3 {
+        } else if abs(c.offset) > state.width * Self.commitThreshold {
             commitCard(c.offset > 0 ? 1 : -1)
         } else {
             var reset = c

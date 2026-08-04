@@ -35,6 +35,7 @@ final class RunScene: SKScene {
     private var fog: FogNode!
     private var hud: HudNode!
     private var cardLayer: CardVisual!
+    private var chargeTrack: ChargeTrack!
     private var foePool: NodePool!
     private var motePool: NodePool!
     private var corpses: CorpseLayer!
@@ -116,7 +117,13 @@ final class RunScene: SKScene {
         fog.zPosition = 20
         addChild(fog)
 
-        cardLayer = CardVisual(sceneSize: size)
+        chargeTrack = ChargeTrack(sceneSize: size,
+                                  safeBottom: view.safeAreaInsets.bottom,
+                                  cornerTexture: atlas.cardCharge)
+        chargeTrack.zPosition = 35
+        addChild(chargeTrack)
+
+        cardLayer = CardVisual()
         cardLayer.zPosition = 40
         addChild(cardLayer)
 
@@ -230,10 +237,13 @@ final class RunScene: SKScene {
 
         for event in s.frameEvents { spawn(event) }
 
-        cardLayer.update(card: s.card, offer: sim.currentOffer(), charge: s.charge,
-                         essNeed: s.essNeed, sceneSize: size)
-        hud.update(essence: s.essence, fathoms: s.fathoms, felled: s.kills,
-                   fates: s.deck.count, mods: s.mods)
+        cardLayer.update(card: s.card, offer: sim.currentOffer(), sceneSize: size)
+        chargeTrack.update(charge: s.charge, need: s.essNeed, cardUp: s.card != nil)
+        hud.update(essence: s.essence, fathoms: s.fathoms, felled: s.kills, mods: s.mods,
+                   deck: DeckReading(deckSize: s.deckSource.count,
+                                     remaining: s.deck.count,
+                                     deathSize: sim.catalog.death.count,
+                                     pastGate: sim.pastDeathGate))
     }
 
     /// Cosmetic-only transient effects (SKAction is fine here — never gameplay).

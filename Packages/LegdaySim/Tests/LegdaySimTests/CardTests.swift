@@ -82,6 +82,38 @@ struct CardTests {
         #expect(young.state.card!.deathDealt == false)
     }
 
+    /// R22: the view draws `commitThreshold`, so the constant must be the one
+    /// the sim actually enforces. A highlight that disagrees with the rule is
+    /// the defect this locks shut. Boundary, not a value near it.
+    @Test func commitThresholdIsExactlyWhatCommits() {
+        let edge = viewport.x * RunSim.commitThreshold
+
+        var below = makeSim()
+        below.debugMutate { $0.card = ActiveCard(def: knuckle(), deathDealt: false) }
+        below.dragCard(offset: edge)          // at the threshold, not past it
+        below.releaseCard()
+        #expect(below.state.card!.committing == false)
+        #expect(below.state.card!.offset == 0) // sprung back, nothing applied
+
+        var above = makeSim()
+        above.debugMutate { $0.card = ActiveCard(def: knuckle(), deathDealt: false) }
+        above.dragCard(offset: edge.nextUp)
+        above.releaseCard()
+        #expect(above.state.card!.committing == true)
+    }
+
+    /// The HUD marks the gate, so the sim must answer where it is.
+    @Test func pastDeathGateFlipsAtTheGateTime() {
+        var sim = makeSim()
+        let gateTime = sim.deathGateTime
+        #expect(gateTime == cardDefaults.finaleTime * DeathDeck.gateFraction)
+        #expect(sim.pastDeathGate == false)
+        sim.debugMutate { $0.time = gateTime.nextDown }
+        #expect(sim.pastDeathGate == false)
+        sim.debugMutate { $0.time = gateTime }
+        #expect(sim.pastDeathGate == true)
+    }
+
     /// R21 guard: with no deck to reshuffle, Death deals however young the run.
     @Test func emptyDeckSourceFallsToDeathBeforeTheGate() {
         var sim = makeSim()

@@ -1,0 +1,77 @@
+<!-- @dsCard group="Meta" -->
+<title>Buttons &amp; navigation</title>
+<style>
+  :root{
+    --ground:#0F0C0A;--panel:#1B1714;--raised:#2A2119;--edge:#3A2E22;
+    --parchment:#E9DCBC;--ink:#241C12;--muted:#8C7A57;--muted-lo:#6B5A3D;
+    --gold:#C99A2E;--warn:#7A2E1E;
+    --serif:Georgia,"Times New Roman",serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  body{background:var(--ground);color:var(--parchment);font-family:var(--serif);
+       margin:0;padding:24px;font-size:16px;line-height:1.5}
+  h1{font-size:20px;color:var(--gold);margin:0 0 4px}
+  .sub{color:var(--muted);font-size:12px;margin:0 0 22px;max-width:54ch}
+  h2{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+     color:var(--muted);margin:28px 0 6px;padding-bottom:6px;border-bottom:1px solid var(--edge);
+     font-weight:400}
+  .state{font-size:12.5px;color:var(--muted);margin:0 0 14px;max-width:58ch}
+  .col{display:flex;flex-direction:column;gap:10px;max-width:340px}
+
+  .btn{border-radius:8px;padding:14px 16px;text-align:center;font-weight:700;
+       font-size:16px;letter-spacing:.14em;text-transform:uppercase;min-height:44px;
+       box-sizing:border-box}
+  .primary{background:var(--gold);color:var(--ink)}
+  .primary.off{opacity:.45}
+  .secondary{background:transparent;color:var(--muted);
+             border:1px solid var(--edge);font-weight:400}
+  .quiet{background:transparent;color:var(--muted);letter-spacing:.1em;
+         font-weight:400;padding:10px}
+  .hint{font-size:12px;color:var(--muted);text-align:center}
+  .cap{font-family:var(--mono);font-size:10px;color:var(--muted-lo);letter-spacing:.08em}
+  .note{background:var(--panel);border:1px solid var(--edge);border-left:3px solid var(--warn);
+        border-radius:3px;padding:12px 14px;font-size:13.5px;margin-top:16px;max-width:60ch}
+  .pause{width:44px;height:44px;border:1px solid var(--edge);border-radius:8px;
+         display:flex;align-items:center;justify-content:center;color:var(--muted-hi,#B0A17C);
+         font-size:15px;background:rgba(15,12,10,.75)}
+  table{border-collapse:collapse;font-family:var(--mono);font-size:11px;margin-top:8px}
+  td{padding:3px 12px 3px 0;color:var(--muted);white-space:nowrap;vertical-align:top}
+  td:last-child{color:var(--gold)}
+  .wrap{overflow-x:auto}
+</style>
+
+<h1>Buttons &amp; navigation</h1>
+<p class="sub">One gold action per screen. Everything else is quiet. A label always names its
+destination.</p>
+
+<h2>Primary — the screen's one action</h2>
+<div class="col">
+  <div class="btn primary">Begin the climb</div>
+  <p class="cap">enabled</p>
+  <div class="btn primary off">Crown your Opener</div>
+  <p class="cap">disabled — the label says what unblocks it, not that it is disabled</p>
+</div>
+
+<h2>Secondary and quiet</h2>
+<div class="col">
+  <div class="btn secondary">Spend your shards</div>
+  <div class="btn quiet">Back to the title</div>
+</div>
+
+<h2>In-run</h2>
+<p class="state">The run has one control that is not the Pilgrim: a pause, in the top safe
+area, 44 × 44.</p>
+<div class="pause">❙❙</div>
+
+<h2>Labels name destinations</h2>
+<div class="note">
+  <strong>Audit findings 03 and 04.</strong> The obituary's only button reads RAISE ANOTHER and
+  opens the Reliquary. And once you press BEGIN, no route returns to the title and no pause
+  exists, so a run ends only when you die.
+  <div class="wrap"><table>
+    <tr><td>Obituary → Reliquary</td><td>"RAISE ANOTHER"</td><td>→ "Spend your shards"</td></tr>
+    <tr><td>Reliquary → run</td><td>"TO THE DRAFT"</td><td>→ "Begin the climb" when locked</td></tr>
+    <tr><td>Obituary → title</td><td>absent</td><td>→ "Back to the title"</td></tr>
+    <tr><td>Run → paused</td><td>absent</td><td>→ pause, resume, abandon</td></tr>
+  </table></div>
+</div>

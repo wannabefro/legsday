@@ -1,0 +1,111 @@
+<!-- @dsCard group="Foundations" -->
+<title>Palette</title>
+<style>
+  :root{
+    --ground:#0F0C0A;--panel:#1B1714;--raised:#2A2119;--edge:#3A2E22;
+    --parchment:#E9DCBC;--ink:#241C12;
+    --muted-hi:#B0A17C;--muted:#8C7A57;--muted-lo:#6B5A3D;
+    --gold:#C99A2E;--rust:#C06430;--grave:#8A6FB3;--plague:#8FA03A;--inkspine:#050303;
+    --warn:#7A2E1E;
+    --serif:Georgia,"Times New Roman",serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  body{background:var(--ground);color:var(--parchment);font-family:var(--serif);
+       margin:0;padding:24px;font-size:16px;line-height:1.5}
+  h1{font-size:20px;color:var(--gold);margin:0 0 4px;font-weight:700}
+  .sub{color:var(--muted);font-size:12px;margin:0 0 24px}
+  h2{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+     color:var(--muted);margin:24px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--edge);
+     font-weight:400}
+  .swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:8px}
+  .sw{border:1px solid var(--edge);border-radius:3px;overflow:hidden}
+  .chip{height:52px}
+  .meta{padding:7px 8px;background:var(--panel)}
+  .name{font-size:12px;line-height:1.3}
+  .hex{font-family:var(--mono);font-size:10.5px;color:var(--muted);letter-spacing:.04em}
+  .role{font-family:var(--mono);font-size:9.5px;color:var(--muted-lo);letter-spacing:.06em}
+  .conflict{background:var(--panel);border:1px solid var(--edge);border-left:3px solid var(--warn);
+            border-radius:3px;padding:12px 14px;margin-top:10px;font-size:13.5px}
+  .conflict table{border-collapse:collapse;width:100%;margin-top:8px;
+                  font-family:var(--mono);font-size:11px}
+  .conflict td{padding:3px 10px 3px 0;color:var(--muted-hi);white-space:nowrap}
+  .conflict td:last-child{color:var(--gold)}
+  .wrap{overflow-x:auto}
+</style>
+
+<h1>Palette</h1>
+<p class="sub">Pulled from DraftTheme.swift, PlaceholderAtlas.swift and CardVisual.swift.</p>
+
+<h2>Ground — the world behind everything</h2>
+<div class="swatches">
+  <div class="sw"><div class="chip" style="background:#0F0C0A"></div>
+    <div class="meta"><div class="name">Ground</div><div class="hex">#0F0C0A</div>
+    <div class="role">scene, every screen</div></div></div>
+  <div class="sw"><div class="chip" style="background:#1B1714"></div>
+    <div class="meta"><div class="name">Panel</div><div class="hex">#1B1714</div>
+    <div class="role">cells, tiles</div></div></div>
+  <div class="sw"><div class="chip" style="background:#2A2119"></div>
+    <div class="meta"><div class="name">Raised</div><div class="hex">#2A2119</div>
+    <div class="role">picked, selected</div></div></div>
+  <div class="sw"><div class="chip" style="background:#3A2E22"></div>
+    <div class="meta"><div class="name">Edge</div><div class="hex">#3A2E22</div>
+    <div class="role">hairlines</div></div></div>
+</div>
+
+<h2>Parchment — the card, and what is written on it</h2>
+<div class="swatches">
+  <div class="sw"><div class="chip" style="background:#E9DCBC"></div>
+    <div class="meta"><div class="name">Parchment</div><div class="hex">#E9DCBC</div>
+    <div class="role">card body, hero</div></div></div>
+  <div class="sw"><div class="chip" style="background:#241C12"></div>
+    <div class="meta"><div class="name">Ink</div><div class="hex">#241C12</div>
+    <div class="role">text on parchment</div></div></div>
+  <div class="sw"><div class="chip" style="background:#7A2E1E"></div>
+    <div class="meta"><div class="name">Price</div><div class="hex">#7A2E1E</div>
+    <div class="role">what a side costs</div></div></div>
+</div>
+
+<h2>Muted — one scale, three steps</h2>
+<div class="swatches">
+  <div class="sw"><div class="chip" style="background:#B0A17C"></div>
+    <div class="meta"><div class="name">Muted high</div><div class="hex">#B0A17C</div>
+    <div class="role">HUD, on ground</div></div></div>
+  <div class="sw"><div class="chip" style="background:#8C7A57"></div>
+    <div class="meta"><div class="name">Muted</div><div class="hex">#8C7A57</div>
+    <div class="role">secondary text</div></div></div>
+  <div class="sw"><div class="chip" style="background:#6B5A3D"></div>
+    <div class="meta"><div class="name">Muted low</div><div class="hex">#6B5A3D</div>
+    <div class="role">on parchment, dormant</div></div></div>
+</div>
+
+<h2>Spines — the five bands, and the only saturated colour in the game</h2>
+<div class="swatches">
+  <div class="sw"><div class="chip" style="background:#C99A2E"></div>
+    <div class="meta"><div class="name">Gold</div><div class="hex">#C99A2E</div>
+    <div class="role">Church · every primary action</div></div></div>
+  <div class="sw"><div class="chip" style="background:#C06430"></div>
+    <div class="meta"><div class="name">Rust</div><div class="hex">#C06430</div>
+    <div class="role">Wild</div></div></div>
+  <div class="sw"><div class="chip" style="background:#8A6FB3"></div>
+    <div class="meta"><div class="name">Grave</div><div class="hex">#8A6FB3</div>
+    <div class="role">Grave · motes</div></div></div>
+  <div class="sw"><div class="chip" style="background:#8FA03A"></div>
+    <div class="meta"><div class="name">Plague</div><div class="hex">#8FA03A</div>
+    <div class="role">Plague</div></div></div>
+  <div class="sw"><div class="chip" style="background:#050303"></div>
+    <div class="meta"><div class="name">Inkspine</div><div class="hex">#050303</div>
+    <div class="role">Death deals</div></div></div>
+</div>
+
+<h2>Settled here — the code held two palettes</h2>
+<div class="conflict">
+  The SwiftUI meta screens and the SpriteKit run each defined the same roles at different
+  values. This file picks one of each rather than averaging them: the card owns parchment,
+  the scene owns ground, and the three accidental greys become one scale.
+  <div class="wrap"><table>
+    <tr><td>ground</td><td>#171211 meta</td><td>#0F0C0A run</td><td>→ #0F0C0A</td></tr>
+    <tr><td>parchment</td><td>#E6D8BD meta</td><td>#E9DCBC card</td><td>→ #E9DCBC</td></tr>
+    <tr><td>muted</td><td>#8C7D66 meta</td><td>#6B5A3D card</td><td>→ 3-step scale</td></tr>
+    <tr><td>grave</td><td>#8A70B3 meta</td><td>#8A6FB3 spine</td><td>→ #8A6FB3</td></tr>
+  </table></div>
+</div>

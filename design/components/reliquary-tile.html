@@ -1,0 +1,119 @@
+<!-- @dsCard group="Meta" -->
+<title>Reliquary tile</title>
+<style>
+  :root{
+    --ground:#0F0C0A;--panel:#1B1714;--raised:#2A2119;--edge:#3A2E22;
+    --parchment:#E9DCBC;--ink:#241C12;--muted:#8C7A57;--muted-lo:#6B5A3D;
+    --gold:#C99A2E;--rust:#C06430;--grave:#8A6FB3;--plague:#8FA03A;--warn:#7A2E1E;
+    --serif:Georgia,"Times New Roman",serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  body{background:var(--ground);color:var(--parchment);font-family:var(--serif);
+       margin:0;padding:24px;font-size:16px;line-height:1.5}
+  h1{font-size:20px;color:var(--gold);margin:0 0 4px}
+  .sub{color:var(--muted);font-size:12px;margin:0 0 22px;max-width:54ch}
+  h2{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+     color:var(--muted);margin:28px 0 6px;padding-bottom:6px;border-bottom:1px solid var(--edge);
+     font-weight:400}
+  .state{font-size:12.5px;color:var(--muted);margin:0 0 14px;max-width:58ch}
+  .col{display:flex;flex-direction:column;gap:8px;max-width:340px}
+
+  .tile{background:var(--panel);border:1px solid var(--edge);border-radius:6px;
+        padding:12px;display:flex;gap:12px;align-items:flex-start;min-height:44px}
+  .tile.locked{opacity:.5}
+  .band{width:4px;align-self:stretch;border-radius:2px;flex:0 0 auto}
+  .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+  .name{font-size:16px;font-weight:700}
+  .does{font-size:12px;color:var(--muted)}
+  .own{font-size:12px;color:var(--gold);font-variant-numeric:tabular-nums}
+  .own.none{color:var(--muted-lo)}
+
+  .head{background:var(--panel);border:1px solid var(--edge);border-radius:8px;
+        padding:14px;max-width:340px;display:flex;flex-direction:column;gap:4px}
+  .hrow{display:flex;justify-content:space-between;align-items:baseline}
+  .htitle{font-size:20px;font-weight:700;color:var(--gold)}
+  .shards{font-size:16px;font-weight:700;color:var(--gold)}
+  .hline{font-size:12px;color:var(--muted)}
+  .gate{font-size:12px;color:var(--gold)}
+  .meter{height:4px;background:rgba(201,154,46,.16);border-radius:2px;margin-top:5px;
+         overflow:hidden}
+  .meter i{display:block;height:100%;background:var(--gold)}
+
+  .pullbtn{background:var(--gold);color:var(--ink);border-radius:8px;padding:13px 16px;
+           display:flex;justify-content:space-between;align-items:center;font-weight:700;
+           letter-spacing:.14em;text-transform:uppercase;font-size:16px;max-width:340px}
+  .pity{font-size:12px;color:var(--muted);text-align:center;max-width:340px}
+  .pity.soon{color:var(--gold)}
+  .note{background:var(--panel);border:1px solid var(--edge);border-left:3px solid var(--warn);
+        border-radius:3px;padding:12px 14px;font-size:13.5px;margin-top:16px;max-width:60ch}
+</style>
+
+<h1>Reliquary tile</h1>
+<p class="sub">Shards buy pulls. A pull yields a relic you do not own, or another copy of one
+you do. Every tile says which, and what another copy is worth.</p>
+
+<h2>Header — the two gates, both visible</h2>
+<p class="state">Relics recovered, and progress toward the 13-card draft gate that the entire
+cold start is built around.</p>
+<div class="head">
+  <div class="hrow"><span class="htitle">THE RELIQUARY</span><span class="shards">◈ 64</span></div>
+  <div class="hline">5/8 relics recovered</div>
+  <div class="gate">9/13 cards — the draft opens at 13</div>
+  <div class="meter"><i style="width:69%"></i></div>
+</div>
+
+<h2>Tiles</h2>
+<div class="col" style="margin-top:14px">
+  <div class="tile">
+    <span class="band" style="background:var(--grave)"></span>
+    <div class="body">
+      <span class="name">LANTERN OIL</span>
+      <span class="does">magnet ×1.6 / +4 essence now</span>
+      <span class="own">×3 in your deck</span>
+    </div>
+  </div>
+
+  <div class="tile">
+    <span class="band" style="background:var(--rust)"></span>
+    <div class="body">
+      <span class="name">THE THURIBLE</span>
+      <span class="does">a weapon — its form is chosen in the run</span>
+      <span class="own">×2 — signature at 3</span>
+    </div>
+  </div>
+
+  <div class="tile">
+    <span class="band" style="background:var(--rust)"></span>
+    <div class="body">
+      <span class="name">THE FLAIL</span>
+      <span class="does">a weapon — its form is chosen in the run</span>
+      <span class="own">×3 — signature unlocked</span>
+    </div>
+  </div>
+
+  <div class="tile locked">
+    <span class="band" style="background:var(--plague)"></span>
+    <div class="body">
+      <span class="name">PILGRIM'S PACE</span>
+      <span class="does">stride +15% / essence ×2</span>
+      <span class="own none">unrecovered</span>
+    </div>
+  </div>
+</div>
+
+<h2>Pull</h2>
+<div class="col" style="margin-top:14px">
+  <div class="pullbtn"><span>Pull a relic</span><span>◈ 20</span></div>
+  <div class="pity">a new relic guaranteed within 6 pulls</div>
+</div>
+<div class="col" style="margin-top:14px">
+  <div class="pullbtn"><span>Pull a relic</span><span>◈ 20</span></div>
+  <div class="pity soon">the next pull is a new relic, guaranteed</div>
+</div>
+
+<div class="note">
+  <strong>Audit finding 14, and the pity fix.</strong> Two columns of 9pt clamped every relic
+  to a name; one column at 16pt holds the relic, what it does and what a duplicate buys. The
+  pity line is only honest because the counter now persists — it previously reset on every
+  pull, so the ten-pull guarantee could never be reached.
+</div>

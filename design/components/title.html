@@ -1,0 +1,83 @@
+<!-- @dsCard group="Meta" -->
+<title>Title</title>
+<style>
+  :root{
+    --ground:#0F0C0A;--panel:#1B1714;--edge:#3A2E22;
+    --parchment:#E9DCBC;--ink:#241C12;--muted:#8C7A57;--muted-lo:#6B5A3D;
+    --gold:#C99A2E;--warn:#7A2E1E;
+    --serif:Georgia,"Times New Roman",serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  body{background:var(--ground);color:var(--parchment);font-family:var(--serif);
+       margin:0;padding:24px;font-size:16px;line-height:1.5}
+  h1{font-size:20px;color:var(--gold);margin:0 0 4px}
+  .sub{color:var(--muted);font-size:12px;margin:0 0 22px;max-width:54ch}
+  h2{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+     color:var(--muted);margin:28px 0 6px;padding-bottom:6px;border-bottom:1px solid var(--edge);
+     font-weight:400}
+  .state{font-size:12.5px;color:var(--muted);margin:0 0 14px;max-width:58ch}
+  .stack{display:flex;flex-wrap:wrap;gap:18px}
+
+  .screen{width:280px;height:430px;background:var(--ground);border:1px solid var(--edge);
+          border-radius:10px;padding:26px 20px;display:flex;flex-direction:column;
+          box-sizing:border-box;flex:0 0 auto;max-width:100%;position:relative;overflow:hidden}
+  .fogline{position:absolute;left:0;right:0;bottom:0;height:120px;
+           background:linear-gradient(to top,rgba(138,111,179,.20),transparent)}
+  .mark{margin-top:auto;text-align:center}
+  .word{font-size:44px;font-weight:700;letter-spacing:.18em;color:var(--gold);line-height:1}
+  .tag{font-size:12px;color:var(--muted);margin-top:10px}
+  .stats{margin-top:auto;display:flex;flex-direction:column;gap:5px;text-align:center;
+         position:relative}
+  .best{font-size:12px;color:var(--muted)}
+  .shards{font-size:16px;font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums}
+  .btn{background:var(--gold);color:var(--ink);border-radius:8px;padding:14px;
+       text-align:center;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+       font-size:16px;margin-top:18px;position:relative}
+  .quiet{color:var(--muted);font-size:12px;letter-spacing:.1em;text-transform:uppercase;
+         text-align:center;margin-top:12px;position:relative}
+  .note{background:var(--panel);border:1px solid var(--edge);border-left:3px solid var(--warn);
+        border-radius:3px;padding:12px 14px;font-size:13.5px;margin-top:16px;max-width:60ch}
+  .cap{font-family:var(--mono);font-size:10px;color:var(--muted-lo);letter-spacing:.08em;
+       margin-top:8px;text-align:center}
+</style>
+
+<h1>Title</h1>
+<p class="sub">The entry point, and today a screen you pass through exactly once — nothing
+routes back to it. It should be where a returning run starts and where the meta state lives.</p>
+
+<h2>First launch, and returning</h2>
+<p class="state">On a first launch there is nothing banked, so the screen carries only the
+wordmark. On return it holds the two numbers that persist across runs.</p>
+<div class="stack">
+  <div>
+    <div class="screen">
+      <div class="fogline"></div>
+      <div class="mark"><div class="word">LEGDAY</div>
+        <div class="tag">the climb is the only health</div></div>
+      <div class="stats"></div>
+      <div class="btn">Begin the climb</div>
+    </div>
+    <div class="cap">first launch</div>
+  </div>
+
+  <div>
+    <div class="screen">
+      <div class="fogline"></div>
+      <div class="mark"><div class="word">LEGDAY</div>
+        <div class="tag">the climb is the only health</div></div>
+      <div class="stats">
+        <span class="best">best climb — 918 fathoms</span>
+        <span class="shards">◈ 64</span>
+      </div>
+      <div class="btn">Begin the climb</div>
+      <div class="quiet">The Reliquary</div>
+    </div>
+    <div class="cap">returning — shards are reachable without dying first</div>
+  </div>
+</div>
+
+<div class="note">
+  <strong>Audit finding 04.</strong> The stage graph never returns to the title after BEGIN,
+  so the shard count here is shown once — before you have any shards — and the Reliquary can
+  only be reached by dying. Both are one route each.
+</div>

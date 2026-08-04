@@ -1,0 +1,108 @@
+<!-- @dsCard group="Run" -->
+<title>Charge track</title>
+<style>
+  :root{
+    --ground:#0F0C0A;--panel:#1B1714;--edge:#3A2E22;
+    --parchment:#E9DCBC;--muted-hi:#B0A17C;--muted:#8C7A57;--muted-lo:#6B5A3D;
+    --gold:#C99A2E;--card:#CDBB92;--warn:#7A2E1E;
+    --serif:Georgia,"Times New Roman",serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  body{background:var(--ground);color:var(--parchment);font-family:var(--serif);
+       margin:0;padding:24px;font-size:16px;line-height:1.5}
+  h1{font-size:20px;color:var(--gold);margin:0 0 4px}
+  .sub{color:var(--muted);font-size:12px;margin:0 0 22px;max-width:54ch}
+  h2{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+     color:var(--muted);margin:28px 0 6px;padding-bottom:6px;border-bottom:1px solid var(--edge);
+     font-weight:400}
+  .state{font-size:12.5px;color:var(--muted);margin:0 0 14px;max-width:56ch}
+
+  .phone{width:200px;height:250px;background:var(--ground);border:1px solid var(--edge);
+         border-radius:10px;position:relative;overflow:hidden;flex:0 0 auto}
+  .phone .safe{position:absolute;inset:0;border:1px dashed rgba(140,122,87,.22);
+               border-radius:9px;margin:10px}
+  .stack{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}
+  .cap{font-family:var(--mono);font-size:10px;color:var(--muted-lo);
+       letter-spacing:.08em;margin-top:7px;text-align:center}
+
+  /* Broken: centre-anchored sprite against a raw scene edge. */
+  .old{position:absolute;right:14px;width:23px;height:33px;background:var(--card);
+       border-radius:3px;transform:rotate(7deg)}
+
+  /* Fixed: a track inside the safe area, with a visible empty state. */
+  .track{position:absolute;right:18px;bottom:26px;width:10px;height:120px;
+         background:rgba(176,161,124,.13);border:1px solid rgba(176,161,124,.3);
+         border-radius:5px;overflow:hidden}
+  .track i{position:absolute;left:0;right:0;bottom:0;background:var(--gold);border-radius:5px}
+  .track.full i{box-shadow:0 0 10px rgba(201,154,46,.85)}
+  .pip{position:absolute;right:15px;bottom:152px;width:16px;height:16px;
+       border-radius:3px;background:var(--card);transform:rotate(7deg);opacity:0}
+  .pip.on{opacity:1}
+  .edge-mark{position:absolute;left:0;right:0;bottom:0;height:1px;background:var(--warn)}
+
+  .note{background:var(--panel);border:1px solid var(--edge);border-left:3px solid var(--warn);
+        border-radius:3px;padding:12px 14px;font-size:13.5px;margin-top:16px;max-width:60ch}
+  code{font-family:var(--mono);font-size:12px;color:var(--gold)}
+</style>
+
+<h1>Charge track</h1>
+<p class="sub">The one signal for "when does my next Fate Card arrive". Essence fills it;
+when it tops out a card is dealt and the next one costs more.</p>
+
+<h2>What ships today</h2>
+<p class="state">A 46 × 66 sprite, centre-anchored, positioned at
+<code>y = k × 66 − 33</code> against a scene origin of zero. The red line is the bottom of the
+screen. Below half charge the node is entirely under it.</p>
+<div class="stack">
+  <div>
+    <div class="phone"><div class="old" style="bottom:-16px"></div><div class="edge-mark"></div></div>
+    <div class="cap">k = 0 · invisible</div>
+  </div>
+  <div>
+    <div class="phone"><div class="old" style="bottom:-8px"></div><div class="edge-mark"></div></div>
+    <div class="cap">k = 0.25 · invisible</div>
+  </div>
+  <div>
+    <div class="phone"><div class="old" style="bottom:0"></div><div class="edge-mark"></div></div>
+    <div class="cap">k = 0.5 · first pixel</div>
+  </div>
+  <div>
+    <div class="phone"><div class="old" style="bottom:16px"></div><div class="edge-mark"></div></div>
+    <div class="cap">k = 1 · dealt</div>
+  </div>
+</div>
+
+<h2>The track</h2>
+<p class="state">A fixed rail inside the safe area with a visible empty state, so the meter
+reads as filling rather than arriving. The card corner appears above it only at full, as the
+deal itself.</p>
+<div class="stack">
+  <div>
+    <div class="phone"><div class="safe"></div>
+      <div class="track"><i style="height:0"></i></div></div>
+    <div class="cap">empty · the rail is still there</div>
+  </div>
+  <div>
+    <div class="phone"><div class="safe"></div>
+      <div class="track"><i style="height:25%"></i></div></div>
+    <div class="cap">k = 0.25</div>
+  </div>
+  <div>
+    <div class="phone"><div class="safe"></div>
+      <div class="track"><i style="height:70%"></i></div></div>
+    <div class="cap">k = 0.7</div>
+  </div>
+  <div>
+    <div class="phone"><div class="safe"></div>
+      <div class="track full"><i style="height:100%"></i></div>
+      <div class="pip on"></div></div>
+    <div class="cap">k = 1 · the corner rises</div>
+  </div>
+</div>
+
+<div class="note">
+  <strong>Audit finding 01.</strong> Two changes. Anchor the track to the safe area rather
+  than the raw scene edge, and give it an empty state — a meter with no track cannot show a
+  low value at all. The rising card corner stays, but it now means "dealt", which is the one
+  moment it was ever legible.
+</div>

@@ -25,6 +25,11 @@ final class GameFlow {
     var lastPull: String?
     var revealShown = false
     private var revealTask: Task<Void, Never>?
+    /// Held per run, because `body` re-evaluates and a fresh seed each time
+    /// would rebuild the scene mid-run.
+    private(set) var runSeed: UInt64 = 0
+    /// The run's pause overlay. Only the player sets it.
+    var paused = false
 
     init(store: Store = Store(),
          catalog: CardCatalog = (try? CardCatalog.bundled()) ?? .seed) {
@@ -44,7 +49,25 @@ final class GameFlow {
     /// the whole collection (R9).
     func begin() {
         stage = Draft.isUnlocked(collection: store.collection) ? .draft
-            : .run(Draft(picks: [], opener: nil))
+            : startRun(Draft(picks: [], opener: nil))
+    }
+
+    /// Every run gets its own seed. A fixed one made each climb identical.
+    private func startRun(_ draft: Draft) -> Stage {
+        runSeed = UInt64.random(in: 1...UInt64.max)
+        paused = false
+        return .run(draft)
+    }
+
+    /// Abandon the run in progress and return to the title. No shards banked.
+    func abandonRun() {
+        paused = false
+        stage = .title
+    }
+
+    func toTitle() {
+        paused = false
+        stage = .title
     }
 
     /// The draftable pool the UI shows — player cards plus weapons.
@@ -54,7 +77,7 @@ final class GameFlow {
 
     /// Confirm the draft and enter the run.
     func confirm(_ draft: Draft) {
-        stage = .run(draft)
+        stage = startRun(draft)
     }
 
     /// A fresh scene per run (KTD-4); the run reports its result back once.
@@ -113,7 +136,12 @@ final class GameFlow {
     /// Back to the draft for another run.
     func nextDraft() {
         stage = Draft.isUnlocked(collection: store.collection) ? .draft
-            : .run(Draft(picks: [], opener: nil))
+            : startRun(Draft(picks: [], opener: nil))
+    }
+
+    /// The Reliquary, reachable from the title rather than only by dying.
+    func openReliquary() {
+        stage = .reliquary
     }
 
     /// Cold-start collection: a subset of the draftable pool (R9 sub-13), so
@@ -138,11 +166,6 @@ final class GameFlow {
         store.shards = 0
         store.bestFathoms = 0
         store.save()
-    }
-
-    /// Testing seam: the Reliquary is normally only reachable after a run.
-    func debugToReliquary() {
-        stage = .reliquary
     }
 #endif
 }

@@ -1,0 +1,150 @@
+<!-- @dsCard group="Run" -->
+<title>Fate Card</title>
+<style>
+  :root{
+    --ground:#0F0C0A;--panel:#1B1714;--edge:#3A2E22;
+    --parchment:#E9DCBC;--ink:#241C12;--muted:#8C7A57;--muted-lo:#6B5A3D;
+    --gold:#C99A2E;--rust:#C06430;--grave:#8A6FB3;--plague:#8FA03A;--inkspine:#050303;
+    --price:#7A2E1E;--warn:#7A2E1E;
+    --serif:Georgia,"Times New Roman",serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  body{background:var(--ground);color:var(--parchment);font-family:var(--serif);
+       margin:0;padding:24px;font-size:16px;line-height:1.5}
+  h1{font-size:20px;color:var(--gold);margin:0 0 4px}
+  .sub{color:var(--muted);font-size:12px;margin:0 0 22px;max-width:52ch}
+  h2{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+     color:var(--muted);margin:28px 0 6px;padding-bottom:6px;border-bottom:1px solid var(--edge);
+     font-weight:400}
+  .state{font-size:12.5px;color:var(--muted);margin:0 0 12px;max-width:56ch}
+  .stack{display:flex;flex-wrap:wrap;gap:20px}
+
+  .card{width:290px;height:196px;background:var(--parchment);border-radius:12px;
+        border:1px solid rgba(36,28,18,.45);position:relative;color:var(--ink);
+        box-sizing:border-box;max-width:100%;overflow:hidden;flex:0 0 auto}
+  .spine{position:absolute;top:8px;left:16px;right:16px;height:4px;border-radius:2px}
+  .title{position:absolute;top:34px;left:0;right:0;text-align:center;
+         font-weight:700;font-size:20px}
+  .tag{position:absolute;top:64px;left:0;right:0;text-align:center;
+       font-size:12px;color:var(--muted-lo);letter-spacing:.06em}
+  .side{position:absolute;bottom:56px;font-size:16px;max-width:46%}
+  .price{position:absolute;bottom:34px;font-size:14px;max-width:46%}
+  .l{left:18px;text-align:left}.r{right:18px;text-align:right}
+  .dim{color:var(--muted-lo)}.dimp{color:var(--muted)}
+  .lit{color:var(--ink);font-weight:700}.litp{color:var(--price)}
+  .hold{position:absolute;bottom:12px;left:0;right:0;text-align:center;
+        font-size:12px;color:var(--muted-lo)}
+  .holdbar{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);
+           width:120px;height:2px;background:rgba(36,28,18,.2);border-radius:1px}
+  .holdbar i{display:block;height:100%;background:var(--gold);border-radius:1px}
+
+  /* The commit threshold, drawn. Finding 02. */
+  .fill{position:absolute;top:0;bottom:0;width:0;background:rgba(201,154,46,.16);
+        border-right:2px solid rgba(201,154,46,.5)}
+  .fill.left{left:0}.fill.right{right:0;border-right:0;border-left:2px solid rgba(201,154,46,.5)}
+  .fill.locked{background:rgba(201,154,46,.3)}
+  .locked-mark{position:absolute;top:8px;font-size:11px;font-family:var(--mono);
+               color:var(--price);letter-spacing:.1em}
+
+  .note{background:var(--panel);border:1px solid var(--edge);border-left:3px solid var(--warn);
+        border-radius:3px;padding:12px 14px;font-size:13.5px;margin-top:16px;max-width:60ch}
+  code{font-family:var(--mono);font-size:12px;color:var(--gold)}
+</style>
+
+<h1>Fate Card</h1>
+<p class="sub">290 × 196. The single most-repeated interaction in the game: drag it left or
+right past 30% of screen width to commit that side. Every side carries a label and its price.</p>
+
+<h2>At rest</h2>
+<p class="state">Both sides legible, neither claimed. This is the state the player reads in,
+while the world runs at 0.5% speed behind it.</p>
+<div class="stack">
+  <div class="card">
+    <div class="spine" style="background:var(--gold)"></div>
+    <div class="title">OATH OF FOOTING</div>
+    <div class="side l dim">← footing +35%</div>
+    <div class="price l dimp">shoves resisted</div>
+    <div class="side r dim">motes worth ×2 →</div>
+    <div class="price r dimp">motes sink 30% faster</div>
+  </div>
+</div>
+
+<h2>Dragging, below the threshold</h2>
+<p class="state">The fill tracks the thumb and the side brightens with it. Nothing is claimed
+yet, and the card does not pretend otherwise — this is the state the build gets wrong.</p>
+<div class="stack">
+  <div class="card">
+    <div class="fill left" style="width:52%"></div>
+    <div class="spine" style="background:var(--gold)"></div>
+    <div class="title">OATH OF FOOTING</div>
+    <div class="side l" style="color:#4A3A22">← footing +35%</div>
+    <div class="price l dimp">shoves resisted</div>
+    <div class="side r dim">motes worth ×2 →</div>
+    <div class="price r dimp">motes sink 30% faster</div>
+  </div>
+</div>
+
+<h2>Past the threshold — committed on release</h2>
+<p class="state">The fill locks, the side goes bold, and a mark states it. Release now and the
+effect applies; release before this and it springs back.</p>
+<div class="stack">
+  <div class="card">
+    <div class="fill left locked" style="width:100%"></div>
+    <div class="spine" style="background:var(--gold)"></div>
+    <div class="title">OATH OF FOOTING</div>
+    <div class="locked-mark l" style="left:18px">RELEASE TO TAKE</div>
+    <div class="side l lit">← footing +35%</div>
+    <div class="price l litp">shoves resisted</div>
+    <div class="side r dim">motes worth ×2 →</div>
+    <div class="price r dimp">motes sink 30% faster</div>
+  </div>
+</div>
+
+<div class="note">
+  <strong>Audit finding 02.</strong> The build lights a side at <code>0.12 × width</code> and
+  commits at <code>0.3 × width</code>. Through that gap the card says you chose, then springs
+  back and applies nothing. The fill above replaces the binary highlight: it is continuous, so
+  it cannot disagree with the threshold, and the threshold becomes a place on the card rather
+  than an invisible number.
+</div>
+
+<h2>Death deals</h2>
+<p class="state">Past 60% of the run, an exhausted deck falls to Death. The inkspine band and
+the tag are the only signals; both sides of a Death card cost you something.</p>
+<div class="stack">
+  <div class="card">
+    <div class="spine" style="background:var(--inkspine)"></div>
+    <div class="title">THE TOLL</div>
+    <div class="tag">your deck is spent — Death deals</div>
+    <div class="side l dim">← pay half your essence</div>
+    <div class="price l dimp">he keeps ledgers</div>
+    <div class="side r dim">the fog climbs →</div>
+    <div class="price r dimp">+34 forever</div>
+  </div>
+</div>
+
+<h2>A weapon at tier 3 — the signature</h2>
+<p class="state">Hold the card still for 0.4s to arm the signature instead of taking a side.
+The bar is the fix for finding 11: the sim tracks that time and the build never draws it.</p>
+<div class="stack">
+  <div class="card">
+    <div class="spine" style="background:var(--rust)"></div>
+    <div class="title">THE THURIBLE</div>
+    <div class="side l dim">← longer chain</div>
+    <div class="price l dimp">reach +20%</div>
+    <div class="side r dim">heavier head →</div>
+    <div class="price r dimp">mass +30%</div>
+    <div class="hold">⟡ hold — the censer swings wide</div>
+    <div class="holdbar"><i style="width:45%"></i></div>
+  </div>
+  <div class="card">
+    <div class="spine" style="background:var(--rust)"></div>
+    <div class="title">THE THURIBLE</div>
+    <div class="side l dim">← longer chain</div>
+    <div class="price l dimp">reach +20%</div>
+    <div class="side r dim">heavier head →</div>
+    <div class="price r dimp">mass +30%</div>
+    <div class="hold" style="color:var(--gold);font-weight:700">⟡ armed — release to swing</div>
+    <div class="holdbar"><i style="width:100%"></i></div>
+  </div>
+</div>

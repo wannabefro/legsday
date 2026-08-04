@@ -43,6 +43,14 @@ public enum DeathDeck {
 /// Deck management: the drafted deck is fuel; it reshuffles while the run is
 /// young, and darkens into Death's deck past the gate (R11/R21).
 extension RunSim {
+    /// Run time at which an exhausted deck stops reshuffling.
+    public var deathGateTime: Double {
+        DeathDeck.gateTime(finaleTime: tunables.finaleTime)
+    }
+
+    /// True once the deck will no longer reshuffle — the HUD marks it.
+    public var pastDeathGate: Bool { state.time >= deathGateTime }
+
     /// U6 default deck: two copies of every player card, plus Death's deck.
     mutating func buildDeck() {
         state.deck = shuffled(catalog.player + catalog.player)
