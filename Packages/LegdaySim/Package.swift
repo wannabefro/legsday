@@ -12,9 +12,12 @@ let package = Package(
     ],
     products: [
         .library(name: "LegdaySim", targets: ["LegdaySim"]),
+        // Host-only: the app links the library product explicitly.
+        .executable(name: "legdaybot", targets: ["LegdayBot"]),
     ],
     targets: [
         .target(name: "LegdaySim"),
+        .executableTarget(name: "LegdayBot", dependencies: ["LegdaySim"]),
         .testTarget(name: "LegdaySimTests", dependencies: ["LegdaySim"]),
     ]
 )

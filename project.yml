@@ -19,6 +19,7 @@ targets:
       - Legday
     dependencies:
       - package: LegdaySim
+        product: LegdaySim
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.legday.app
