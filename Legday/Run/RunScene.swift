@@ -232,7 +232,8 @@ final class RunScene: SKScene {
 
         cardLayer.update(card: s.card, offer: sim.currentOffer(), charge: s.charge,
                          essNeed: s.essNeed, sceneSize: size)
-        hud.update(essence: s.essence, fathoms: s.fathoms, felled: s.kills, fates: s.deck.count)
+        hud.update(essence: s.essence, fathoms: s.fathoms, felled: s.kills,
+                   fates: s.deck.count, mods: s.mods)
     }
 
     /// Cosmetic-only transient effects (SKAction is fine here — never gameplay).

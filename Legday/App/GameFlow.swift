@@ -78,15 +78,23 @@ final class GameFlow {
         stage = .reliquary
     }
 
+    /// Pulls left until the pity guarantee forces a new relic (R19).
+    var pullsToGuarantee: Int {
+        max(0, Collection.pityGuarantee - store.pity)
+    }
+
     /// One pull: spend shards, draw, persist; returns the drawn card id.
+    /// The pity counter is carried in and back out, or the guarantee never fires.
     func pull() -> String {
         guard store.shards >= Collection.pullCost else { return "" }
         var rng = SeededRandom(seed: UInt64.random(in: 1...UInt64.max))
-        var rel = Collection(pool: draftableCards, owned: store.collection)
+        var rel = Collection(pool: draftableCards, owned: store.collection,
+                             pity: store.pity)
         let drawn = rel.pull(using: &rng)
         lastPull = drawn
         revealShown = true
         store.spendShards(Collection.pullCost)
+        store.pity = rel.pity
         store.addToCollection(drawn)
         revealTask?.cancel()
         revealTask = Task { @MainActor [weak self] in
@@ -113,4 +121,28 @@ final class GameFlow {
     static let seedCollection: [String: Int] = [
         "second_knuckle": 2, "oath_of_footing": 2, "lantern_oil": 2,
         "the_thurible": 1,
-    ]}
+    ]
+
+#if DEBUG
+    /// Testing seam: own every draftable card at max tier and bank shards, so a
+    /// playtest reaches the draft, the weapons and the Reliquary without grinding.
+    func debugUnlockAll() {
+        for c in draftableCards { store.collection[c.id] = Collection.maxTier }
+        store.shards += Collection.pullCost * 25
+        store.save()
+    }
+
+    /// Testing seam: back to the cold start, to replay the sub-13 gate.
+    func debugResetProgress() {
+        store.collection = GameFlow.seedCollection
+        store.shards = 0
+        store.bestFathoms = 0
+        store.save()
+    }
+
+    /// Testing seam: the Reliquary is normally only reachable after a run.
+    func debugToReliquary() {
+        stage = .reliquary
+    }
+#endif
+}

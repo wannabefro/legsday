@@ -20,7 +20,15 @@ struct RootView: View {
         Group {
             switch flow.stage {
             case .title:
+#if DEBUG
+                TitleView(shards: flow.store.shards,
+                          onBegin: { flow.begin() },
+                          onUnlockAll: { flow.debugUnlockAll() },
+                          onReset: { flow.debugResetProgress() },
+                          onReliquary: { flow.debugToReliquary() })
+#else
                 TitleView(shards: flow.store.shards, onBegin: { flow.begin() })
+#endif
             case .draft:
                 DraftView(cards: flow.draftableCards,
                           collection: flow.store.collection,
@@ -40,6 +48,7 @@ struct RootView: View {
                               shards: flow.store.shards,
                               lastPull: flow.lastPull,
                               revealShown: flow.revealShown,
+                              pullsToGuarantee: flow.pullsToGuarantee,
                               onPull: { flow.pull() },
                               onDone: { flow.nextDraft() })
             }

@@ -6,12 +6,14 @@ import LegdaySim
 /// offset. U8 adds the touch interaction and the full CardNode treatment.
 final class CardVisual: SKNode {
     private let charge = SKSpriteNode()
-    private let body = SKShapeNode(rectOf: CGSize(width: 290, height: 172), cornerRadius: 12)
+    private let body = SKShapeNode(rectOf: CGSize(width: 290, height: 196), cornerRadius: 12)
     private let spine = SKShapeNode(rectOf: CGSize(width: 258, height: 4))
     private let title = CardVisual.text(size: 17, bold: true)
     private let deathTag = CardVisual.text(size: 11, bold: false)
     private let leftLabel = CardVisual.text(size: 12, bold: false)
     private let rightLabel = CardVisual.text(size: 12, bold: false)
+    private let leftPrice = CardVisual.text(size: 10, bold: false)
+    private let rightPrice = CardVisual.text(size: 10, bold: false)
     private let holdHint = CardVisual.text(size: 11, bold: false) // tier-3 signature (U11)
 
     init(sceneSize: CGSize) {
@@ -23,17 +25,22 @@ final class CardVisual: SKNode {
         body.fillColor = PlaceholderAtlas.rgb(0xE9DCBC)
         body.strokeColor = SKColor(white: 0.14, alpha: 0.45)
         body.lineWidth = 1
-        spine.position = CGPoint(x: 0, y: 78)
-        title.position = CGPoint(x: 0, y: 44)
-        deathTag.position = CGPoint(x: 0, y: 26)
+        spine.position = CGPoint(x: 0, y: 90)
+        title.position = CGPoint(x: 0, y: 54)
+        deathTag.position = CGPoint(x: 0, y: 34)
         deathTag.fontColor = PlaceholderAtlas.rgb(0x6B5A3D)
-        leftLabel.position = CGPoint(x: -127, y: -52)
+        leftLabel.position = CGPoint(x: -127, y: -38)
         leftLabel.horizontalAlignmentMode = .left
-        rightLabel.position = CGPoint(x: 127, y: -52)
+        rightLabel.position = CGPoint(x: 127, y: -38)
         rightLabel.horizontalAlignmentMode = .right
-        holdHint.position = CGPoint(x: 0, y: -72)
+        leftPrice.position = CGPoint(x: -127, y: -54)
+        leftPrice.horizontalAlignmentMode = .left
+        rightPrice.position = CGPoint(x: 127, y: -54)
+        rightPrice.horizontalAlignmentMode = .right
+        holdHint.position = CGPoint(x: 0, y: -74)
         holdHint.fontColor = PlaceholderAtlas.rgb(0x6B5A3D)
-        [spine, title, deathTag, leftLabel, rightLabel, holdHint].forEach(body.addChild)
+        [spine, title, deathTag, leftLabel, rightLabel,
+         leftPrice, rightPrice, holdHint].forEach(body.addChild)
         addChild(body)
     }
 
@@ -68,8 +75,13 @@ final class CardVisual: SKNode {
         let lLit = card.offset < -w * 0.12, rLit = card.offset > w * 0.12
         leftLabel.text = "← \(left.label)"
         rightLabel.text = "\(right.label) →"
+        // The subtitle is the price. Drawing it is what makes the choice readable.
+        leftPrice.text = left.subtitle
+        rightPrice.text = right.subtitle
         leftLabel.fontColor = lLit ? PlaceholderAtlas.rgb(0x241C12) : PlaceholderAtlas.rgb(0x6B5A3D)
         rightLabel.fontColor = rLit ? PlaceholderAtlas.rgb(0x241C12) : PlaceholderAtlas.rgb(0x6B5A3D)
+        leftPrice.fontColor = lLit ? PlaceholderAtlas.rgb(0x7A2E1E) : PlaceholderAtlas.rgb(0x8C7A57)
+        rightPrice.fontColor = rLit ? PlaceholderAtlas.rgb(0x7A2E1E) : PlaceholderAtlas.rgb(0x8C7A57)
 
         if let sig = offer?.signature {
             holdHint.isHidden = false

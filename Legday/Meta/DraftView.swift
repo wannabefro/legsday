@@ -97,6 +97,11 @@ struct DraftView: View {
                         .foregroundStyle(theme.gold)
                 }
             }
+            // What the card does. The spine name alone told the player nothing.
+            Text(ReliquaryView.effectSummary(card))
+                .font(.custom("Georgia", size: 9))
+                .lineLimit(2)
+                .foregroundStyle(theme.muted)
             HStack {
                 Text(spineName(card))
                     .font(.custom("Georgia", size: 9))
@@ -108,7 +113,7 @@ struct DraftView: View {
             }
         }
         .padding(8)
-        .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: 74, alignment: .leading)
         .background(picked > 0 ? theme.selected : theme.panel,
                     in: RoundedRectangle(cornerRadius: 6))
         .overlay(

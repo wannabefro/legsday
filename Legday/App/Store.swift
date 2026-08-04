@@ -8,16 +8,32 @@ public struct Store {
     public var shards: Int
     /// Best distance climbed (fathoms) — only overwritten on improvement (R17).
     public var bestFathoms: Double
+    /// Pulls since the last new relic. Persisted, or the pity guarantee never
+    /// reaches 10 and never fires.
+    public var pity: Int
 
     public struct Meta: Codable, Equatable {
         public var collection: [String: Int]
         public var shards: Int
         public var bestFathoms: Double
+        public var pity: Int
 
-        public init(collection: [String: Int], shards: Int, bestFathoms: Double) {
+        public init(collection: [String: Int], shards: Int, bestFathoms: Double,
+                    pity: Int = 0) {
             self.collection = collection
             self.shards = shards
             self.bestFathoms = bestFathoms
+            self.pity = pity
+        }
+
+        /// `pity` arrived after the first saves shipped. Decoding it as required
+        /// would throw on an older file, and Store treats a throw as no save.
+        public init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            collection = try c.decode([String: Int].self, forKey: .collection)
+            shards = try c.decode(Int.self, forKey: .shards)
+            bestFathoms = try c.decode(Double.self, forKey: .bestFathoms)
+            pity = try c.decodeIfPresent(Int.self, forKey: .pity) ?? 0
         }
     }
 
@@ -31,10 +47,12 @@ public struct Store {
             self.collection = meta.collection
             self.shards = meta.shards
             self.bestFathoms = meta.bestFathoms
+            self.pity = meta.pity
         } else {
             self.collection = [:]
             self.shards = 0
             self.bestFathoms = 0
+            self.pity = 0
         }
     }
 
@@ -60,7 +78,8 @@ public struct Store {
 
     /// Atomic write: encode to a temp file, then rename over the target.
     public func save() {
-        let meta = Meta(collection: collection, shards: shards, bestFathoms: bestFathoms)
+        let meta = Meta(collection: collection, shards: shards,
+                        bestFathoms: bestFathoms, pity: pity)
         guard let data = try? JSONEncoder().encode(meta) else { return }
         let temp = fileURL.appendingPathExtension("tmp")
         try? data.write(to: temp, options: .atomic)
