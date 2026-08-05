@@ -22,7 +22,7 @@ struct ForkTests {
     /// A fork deals after 450 fathoms of climb, with zero essence.
     @Test func forkDealsAtCadenceForFree() {
         var sim = makeSim()
-        // Tick with the hero alive and no cards; climb 449 fathoms then 1 more.
+        // Tick with the hero alive and no cards; climb to 449.5 then past 450.5.
         sim.debugMutate { $0.hero.pos.y = 180; $0.hero.target.y = 180
             $0.charge = 0; $0.card = nil }
         while sim.state.fathoms < Ascent.forkCadenceFathoms - 0.5,
