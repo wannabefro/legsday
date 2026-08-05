@@ -29,18 +29,16 @@ public struct Draft: Equatable, Sendable {
     }
 }
 
-/// Only these factions seed a threat card on stage entry (design/ascent-stages.md).
-private let seedingFactions: Set<Faction> = [.plague, .grave, .church]
-
 /// When Death takes the deck (R21).
 public enum DeathDeck {
     /// Death takes an exhausted deck past THE SPIRE (unit 4).
     public static let gateFathoms = Ascent.spireFathoms
 }
 
-/// Deck management: the drafted deck is fuel; it reshuffles while the run is
-/// young, and darkens into Death's deck past the gate (R11/R21).
 extension RunSim {
+    /// Only these factions seed a threat card on stage entry.
+    private static let seedingFactions: Set<Faction> = [.plague, .grave, .church]
+
     /// Fathoms at which an exhausted deck stops reshuffling.
     public var deathGateFathoms: Double { DeathDeck.gateFathoms }
 
@@ -121,7 +119,7 @@ extension RunSim {
 
     /// Shuffle a stage's threat card into the remaining deck once (unit 5).
     mutating func seedStageThreat(_ stage: AscentStage) {
-        guard let faction = stage.faction, seedingFactions.contains(faction),
+        guard let faction = stage.faction, Self.seedingFactions.contains(faction),
               let threat = catalog.threats.first(where: { $0.faction == faction }) else { return }
         guard !state.seededStages.contains(stage.id) else { return }
         state.seededStages.insert(stage.id)
