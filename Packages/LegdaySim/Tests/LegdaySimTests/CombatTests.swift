@@ -96,8 +96,6 @@ struct CombatTests {
         // Hold the hero high and out of the fog so the run doesn't end mid-sample
         // (this isolates the spawn ramp from the fog/shove loop).
         func keepAlive(_ s: inout RunSim) {
-            // Pin the hero out of the fog and suppress cards so the world never
-            // slows — isolating the spawn ramp from the fog/card systems.
             s.debugMutate {
                 $0.hero.pos.y = 180; $0.hero.target.y = 180; $0.hero.vel = .zero
                 $0.card = nil; $0.charge = 0
@@ -113,9 +111,9 @@ struct CombatTests {
         for _ in 0..<60 { keepAlive(&sim); sim.tick(dt: 1.0 / 60, input: .idle) }
         let delta120 = sim.state.spawnedCount - c120
 
-        // Expected: ~1.23 spawns/s at t≈0, ~11.4 at t≈120.
+        // Expected: ~1.23 spawns/s at t≈0, ~14.8 at t≈120 (THE OSSUARY stage ×1.30).
         #expect(delta0 >= 1 && delta0 <= 3)
-        #expect(delta120 >= 8 && delta120 <= 14)
+        #expect(delta120 >= 12 && delta120 <= 18)
         #expect(delta120 > delta0 * 4)
     }
 }

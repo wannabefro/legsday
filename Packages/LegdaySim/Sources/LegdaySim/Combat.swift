@@ -14,7 +14,7 @@ extension RunSim {
     /// Spawns per second at the current time and stage (the spawn ramp).
     func spawnRate() -> Double {
         let ramp: Double = 0.7 + state.time * 0.05
-        let stageSpawn = Ascent.stage(atFathoms: state.fathoms).spawn
+        let stageSpawn = state.stage.spawn
         return tunables.spawn * stageSpawn * state.mods.spawnMul * ramp
     }
 
