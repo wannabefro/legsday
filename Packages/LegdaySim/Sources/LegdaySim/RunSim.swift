@@ -52,7 +52,7 @@ public struct RunSim {
     /// chosen it ramps without bound (R17).
     public func scrollEff() -> Double {
         if state.duel != nil { return 0 }
-        let base = tunables.scroll * state.mods.scrollMul
+        let base = tunables.scroll * state.stage.scroll * state.mods.scrollMul
         guard state.keepRunning else { return base }
         let elapsed = state.time - tunables.finaleTime
         return base * (1 + elapsed * Finale.keepRunningRamp)
@@ -95,6 +95,13 @@ public struct RunSim {
         stepsTaken += 1
         state.time += dt
         state.worldY += scrollEff() * dt
+
+        // Resolve the current stage; entering one emits the banner event.
+        let stage = Ascent.stage(atFathoms: state.fathoms)
+        if stage.id != state.stage.id {
+            state.stage = stage
+            state.frameEvents.append(.stageEntered(stage))
+        }
         processTimedEffects()
         maybeSpawnShrineHerald() // a risk-route shrine summons a guardian (U13→U14)
         applyInput(input)

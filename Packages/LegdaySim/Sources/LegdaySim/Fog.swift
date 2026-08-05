@@ -28,7 +28,8 @@ extension RunSim {
         // Ramping creep (graybox: fogCreep · (0.7 + t·0.015)); a living Herald
         // anchors the fog, accelerating the creep (R16).
         let heraldCreep = state.herald != nil ? Heralds.creepMult : 1
-        let creep = dt * tunables.fogCreep * (0.7 + state.time * 0.015) * heraldCreep
+        let creep = dt * tunables.fogCreep * state.stage.fogCreep
+            * (0.7 + state.time * 0.015) * heraldCreep
         state.fogPressure = min(Self.fogPressureCap, state.fogPressure + creep)
 
         firePendingSplashes()

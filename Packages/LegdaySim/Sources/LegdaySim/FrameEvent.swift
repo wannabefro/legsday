@@ -14,4 +14,6 @@ public enum FrameEvent: Equatable, Sendable {
     case moteCollected(at: Vec2)
     /// An essence mote was lost to the fog.
     case moteLost(at: Vec2)
+    /// The climb entered a new Ascent stage (the render shows a banner).
+    case stageEntered(AscentStage)
 }

@@ -11,10 +11,16 @@ extension RunSim {
     static let eliteShoveFactor: Double = 1.7
     static let eliteFogPushFactor: Double = 3          // used by U4 fog pushback
 
+    /// Spawns per second at the current time and stage (the spawn ramp).
+    func spawnRate() -> Double {
+        let ramp: Double = 0.7 + state.time * 0.05
+        let stageSpawn = Ascent.stage(atFathoms: state.fathoms).spawn
+        return tunables.spawn * stageSpawn * state.mods.spawnMul * ramp
+    }
+
     /// Spawn foes on the ramping clock (graybox `spawnAcc`).
     mutating func spawnFoes(dt: Double) {
-        let ramp: Double = 0.7 + state.time * 0.05
-        let rate: Double = tunables.spawn * state.mods.spawnMul * ramp
+        let rate = spawnRate()
         state.spawnAcc += dt * rate
         while state.spawnAcc > 1 {
             state.spawnAcc -= 1

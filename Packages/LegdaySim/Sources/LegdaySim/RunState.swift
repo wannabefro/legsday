@@ -95,6 +95,8 @@ public struct RunState: Sendable {
     public internal(set) var forkCount: Int = 0
     /// Current biome, swapped by forks (render palette tag, U13/U24).
     public internal(set) var biome: Biome = .moor
+    /// The current Ascent stage, resolved from `fathoms` each step (unit 2).
+    public internal(set) var stage: AscentStage = Ascent.stages[0]
     /// A risk-route shrine is pending — the U14 Herald-guardian hook (U13).
     public internal(set) var shrinePending: Bool = false
     /// The living rival champion, if any — anchors the fog while alive (U14).
@@ -213,6 +215,7 @@ public struct RunState: Sendable {
         for t in scheduledThreats { mix(UInt64(bitPattern: Int64(t.atDraw))) }
         mix(nextForkTime); mix(UInt64(bitPattern: Int64(forkCount)))
         mix(UInt64(bitPattern: Int64(Biome.allCases.firstIndex(of: biome) ?? 0)))
+        mix(UInt64(Ascent.stages.firstIndex(of: stage) ?? 0))
         mix(UInt64(shrinePending ? 1 : 0))
         if let h = herald {
             mix(UInt64(bitPattern: Int64(Faction.allCases.firstIndex(of: h.faction) ?? 0)))
