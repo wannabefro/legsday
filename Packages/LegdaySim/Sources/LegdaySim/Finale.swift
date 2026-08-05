@@ -34,7 +34,7 @@ public struct RunResult: Equatable, Sendable {
     }
 }
 
-/// Death's arrival (R17): the ink-spined Finale deals on entry to THE RECKONING;
+/// Death's arrival (R17): the Finale deals on entry to THE RECKONING;
 /// keep-running ramps the scroll until the fog ends the run.
 public enum Finale {
     /// The Finale card's stable id (built in code, not from cards.json).

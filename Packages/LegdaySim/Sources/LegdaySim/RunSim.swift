@@ -116,7 +116,7 @@ public struct RunSim {
         updateMotes(dt: dt)
         maybeDealFork()  // mandatory forks take priority over essence-charged draws
         checkFusionRecipes(); maybeDealFusion() // Death deals fusions ahead of the queue
-        maybeDealFinale() // Death arrives on schedule, outranking everything else
+        maybeDealFinale() // Death deals on entry to THE RECKONING (unit 4)
         maybeEnterDuel()  // the Finale's "turn & fight" zeroes the scroll (U19)
         updateDuel(dt: dt) // the Reaper duel advances while it runs
         maybeDealOffer() // a felled Herald's rival offer deals ahead of the cadence
