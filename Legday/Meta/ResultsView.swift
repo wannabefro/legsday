@@ -21,6 +21,9 @@ struct ResultsView: View {
                 Text(endingSubtitle)
                     .font(.custom("Georgia", size: 12))
                     .foregroundStyle(theme.muted)
+                Text(endingLine)
+                    .font(.custom("Georgia", size: 11))
+                    .foregroundStyle(theme.muted)
                 obituaryCard
                 bestLine
                 Spacer()
@@ -104,6 +107,11 @@ struct ResultsView: View {
         case .duelLoss: return "the duel was lost"
         case .caught: return "the road ends where it began"
         }
+    }
+
+    private var endingLine: String {
+        let stage = Ascent.stage(atFathoms: result.fathoms)
+        return "in \(stage.name), at \(Int(result.fathoms)) fathoms"
     }
 
     private var endingGold: Color {

@@ -9,6 +9,7 @@ final class HudNode: SKNode {
     private let fathomsLabel = HudNode.label(align: .center)
     private let statusLabel = HudNode.label(align: .right)
     private let modsLabel = HudNode.label(align: .left)
+    private let stageLabel = HudNode.label(align: .center)
     private let pips = SKNode()
     private let sceneSize: CGSize
     private let pipsY: CGFloat
@@ -27,19 +28,23 @@ final class HudNode: SKNode {
         modsLabel.position = CGPoint(x: 18, y: y - 20)
         modsLabel.fontSize = 12
         modsLabel.fontColor = Self.dim
+        stageLabel.position = CGPoint(x: sceneSize.width / 2, y: y - 40)
+        stageLabel.fontSize = 12
+        stageLabel.fontColor = Self.dim
         pips.position = CGPoint(x: 18, y: pipsY)
-        [essenceLabel, fathomsLabel, statusLabel, modsLabel, pips].forEach(addChild)
+        [essenceLabel, fathomsLabel, statusLabel, modsLabel, stageLabel, pips].forEach(addChild)
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) not used") }
 
     func update(essence: Double, fathoms: Double, felled: Int, mods: Mods,
-                deck: DeckReading) {
+                deck: DeckReading, stage: String) {
         // ✧ is essence, spent inside the run. ◈ is shards, which outlive it.
         essenceLabel.text = "✧ \(Int(essence))"
         fathomsLabel.text = "\(Int(fathoms)) FATHOMS"
         statusLabel.text = "\(felled) felled"
         modsLabel.text = HudNode.modsSummary(mods)
+        stageLabel.text = stage
         syncPips(deck)
     }
 

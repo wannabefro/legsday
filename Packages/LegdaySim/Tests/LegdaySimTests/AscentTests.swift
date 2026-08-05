@@ -84,4 +84,20 @@ struct AscentTests {
         let spire = sim.spawnRate()
         #expect(abs(spire / low - 1.50) < 0.001)
     }
+
+    /// Entering a stage emits one stageEntered frame event.
+    @Test func stageEntryEmitsEvent() {
+        let t = Tunables(scroll: 78, spawn: 0, shove: 120, iframes: 0.55,
+                         fogGrace: 0.8, fogGrip: 2.4, fogCreep: 1.1, killPush: 0.9,
+                         downBias: 0.35, cardSlow: 0.005, firstCardCost: 4,
+                         cardCostIncrement: 1)
+        var sim = RunSim(tunables: t, viewport: Vec2(393, 852), seed: 3)
+        sim.debugMutate { $0.worldY = 280 * 10 }
+        sim.tick(dt: RunSim.fixedStep, input: .idle)
+        let entered = sim.state.frameEvents.compactMap { event -> String? in
+            if case let .stageEntered(s) = event { return s.name }
+            return nil
+        }
+        #expect(entered == ["THE ORCHARD"])
+    }
 }

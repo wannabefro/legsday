@@ -48,7 +48,7 @@ final class RunScene: SKScene {
     private var ropeHead = SKSpriteNode()
     private let reaper = ReaperNode() // the duel's Reaper (U23)
 
-    // Input: the first touch owns the run; others are ignored (R1/U8).
+    private let stageBanner = SKLabelNode(fontNamed: "Georgia-Bold")
     private var owningTouch: UITouch?
     private var touchInput = TouchInputAccumulator()
 
@@ -130,6 +130,13 @@ final class RunScene: SKScene {
         hud = HudNode(sceneSize: size, safeTop: view.safeAreaInsets.top)
         hud.zPosition = 50
         addChild(hud)
+
+        stageBanner.fontSize = 22
+        stageBanner.fontColor = PlaceholderAtlas.rgb(0xC99A2E)
+        stageBanner.position = CGPoint(x: size.width / 2, y: size.height * 0.6)
+        stageBanner.alpha = 0
+        stageBanner.zPosition = 55
+        addChild(stageBanner)
     }
 
     /// sim y-down / origin top-left → scene y-up / origin bottom-left.
@@ -243,7 +250,8 @@ final class RunScene: SKScene {
                    deck: DeckReading(deckSize: s.deckSource.count,
                                      remaining: s.deck.count,
                                      deathSize: sim.catalog.death.count,
-                                     pastGate: sim.pastDeathGate))
+                                     pastGate: sim.pastDeathGate),
+                   stage: s.stage.name)
     }
 
     /// Cosmetic-only transient effects (SKAction is fine here — never gameplay).
@@ -271,8 +279,14 @@ final class RunScene: SKScene {
             flash(at: pt(at), color: PlaceholderAtlas.rgb(0x8A6FB3), radius: 6)
         case .moteLost:
             break
-        }
-    }
+        case let .stageEntered(stage):
+            stageBanner.text = stage.name
+            stageBanner.run(.sequence([
+                .group([.fadeIn(withDuration: 0.15), .scale(to: 1.1, duration: 0.15)]),
+                .wait(forDuration: 1.7),
+                .fadeOut(withDuration: 0.4),
+            ]))
+        }    }
 
     private func flash(at p: CGPoint, color: SKColor, radius: CGFloat) {
         let node = SKShapeNode(circleOfRadius: radius)
