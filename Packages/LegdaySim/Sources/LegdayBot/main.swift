@@ -188,7 +188,7 @@ func play(seed: UInt64, tunables: Tunables, catalog: CardCatalog,
             lastStageID = stage.id
         }
         if let card = sim.state.card, !card.committing {
-            stageFaces[lastStageID, default: []].insert(card.def.title)
+            stageFaces[stage.id, default: []].insert(card.def.title)
             if !sawCard {
                 sawCard = true
                 needsGrab = true
@@ -389,7 +389,7 @@ print("""
   deck ran dry   \(dry.count)/\(options.runs) runs\(dry.isEmpty ? "" : ", median \(String(format: "%.0f", median(dry)))s")
   hit the cap    \(capped)/\(options.runs) runs survived to \(Int(options.cap))s — the harness stopped them
   endings        \(endings.map { "\($0.key) ×\($0.value)" }.sorted().joined(separator: "  "))
-  stages entered \(reports.flatMap { $0.stageEntryFathoms.keys }.count) distinct across runs
+  stages entered \(reports.flatMap { $0.stageEntryFathoms.keys }.count) total across runs
   ending stages  \(Dictionary(grouping: reports, by: { $0.endingStage }).map { "\($0.key) ×\($0.value.count)" }.sorted().joined(separator: "  "))
   faces/stage    \(reports.last!.distinctFacesPerStage.sorted(by: { $0.key < $1.key }).map { "\($0.key):\($0.value)" }.joined(separator: "  "))
 """)
