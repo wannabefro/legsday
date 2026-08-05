@@ -31,25 +31,18 @@ public struct Draft: Equatable, Sendable {
 
 /// When Death takes the deck (R21).
 public enum DeathDeck {
-    /// Fraction of the run after which an exhausted deck falls to Death. Before
-    /// it the deck reshuffles, so "Death deals" is a late beat, not the default.
-    public static let gateFraction = 0.6
-
-    public static func gateTime(finaleTime: Double) -> Double {
-        finaleTime * gateFraction
-    }
+    /// Death takes an exhausted deck past THE SPIRE (unit 4).
+    public static let gateFathoms = Ascent.spireFathoms
 }
 
 /// Deck management: the drafted deck is fuel; it reshuffles while the run is
 /// young, and darkens into Death's deck past the gate (R11/R21).
 extension RunSim {
-    /// Run time at which an exhausted deck stops reshuffling.
-    public var deathGateTime: Double {
-        DeathDeck.gateTime(finaleTime: tunables.finaleTime)
-    }
+    /// Fathoms at which an exhausted deck stops reshuffling.
+    public var deathGateFathoms: Double { DeathDeck.gateFathoms }
 
     /// True once the deck will no longer reshuffle — the HUD marks it.
-    public var pastDeathGate: Bool { state.time >= deathGateTime }
+    public var pastDeathGate: Bool { state.fathoms >= deathGateFathoms }
 
     /// U6 default deck: two copies of every player card, plus Death's deck.
     mutating func buildDeck() {
@@ -105,7 +98,7 @@ extension RunSim {
         // A deck spent before the gate reshuffles and cycles; only past it does
         // Death take over (R21).
         if state.deck.isEmpty,
-           state.time < DeathDeck.gateTime(finaleTime: tunables.finaleTime),
+           !pastDeathGate,
            !state.deckSource.isEmpty {
             state.deck = shuffled(state.deckSource)
         }

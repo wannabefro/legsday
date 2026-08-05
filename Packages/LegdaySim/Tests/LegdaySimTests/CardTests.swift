@@ -14,7 +14,7 @@ private func makeSim(seed: UInt64 = 21) -> RunSim {
 }
 private let step = RunSim.fixedStep
 private func knuckle() -> CardDef { CardLibrary.playerSeed.first { $0.id == "second_knuckle" }! }
-private let gate = DeathDeck.gateTime(finaleTime: cardDefaults.finaleTime)
+private let gateFathoms = DeathDeck.gateFathoms
 
 struct CardTests {
 
@@ -37,7 +37,7 @@ struct CardTests {
     /// Death's deck cycles.
     @Test func deckExhaustionDealsDeathAndCyclesPastTheGate() {
         var sim = makeSim()
-        sim.debugMutate { $0.time = gate + 1 }
+        sim.debugMutate { $0.worldY = gateFathoms * 10 }
         let deckSize = CardLibrary.playerSeed.count * 2
         for _ in 0..<deckSize {
             sim.drawCard()
@@ -69,15 +69,15 @@ struct CardTests {
         #expect(sim.state.deckSource.count == deckSize)
     }
 
-    /// R21 boundary: the gate is exclusive — at exactly gateTime Death deals.
+    /// R21 boundary: the gate is exclusive — at exactly gateFathoms Death deals.
     @Test func deathTakesTheDeckAtTheGateItself() {
         var sim = makeSim()
-        sim.debugMutate { $0.time = gate; $0.deck = [] }
+        sim.debugMutate { $0.worldY = gateFathoms * 10; $0.deck = [] }
         sim.drawCard()
         #expect(sim.state.card!.deathDealt == true)
 
         var young = makeSim()
-        young.debugMutate { $0.time = gate.nextDown; $0.deck = [] }
+        young.debugMutate { $0.worldY = (gateFathoms - 1) * 10; $0.deck = [] }
         young.drawCard()
         #expect(young.state.card!.deathDealt == false)
     }
@@ -102,16 +102,13 @@ struct CardTests {
         #expect(above.state.card!.committing == true)
     }
 
-    /// The HUD marks the gate, so the sim must answer where it is.
-    @Test func pastDeathGateFlipsAtTheGateTime() {
+    /// Past THE SPIRE (960 fathoms) a spent deck falls to Death.
+    @Test func deathGateIsSpireEntry() {
         var sim = makeSim()
-        let gateTime = sim.deathGateTime
-        #expect(gateTime == cardDefaults.finaleTime * DeathDeck.gateFraction)
-        #expect(sim.pastDeathGate == false)
-        sim.debugMutate { $0.time = gateTime.nextDown }
-        #expect(sim.pastDeathGate == false)
-        sim.debugMutate { $0.time = gateTime }
-        #expect(sim.pastDeathGate == true)
+        sim.debugMutate { $0.worldY = (Ascent.spireFathoms - 1) * 10 }
+        #expect(!sim.pastDeathGate)
+        sim.debugMutate { $0.worldY = Ascent.spireFathoms * 10 }
+        #expect(sim.pastDeathGate)
     }
 
     /// R21 guard: with no deck to reshuffle, Death deals however young the run.

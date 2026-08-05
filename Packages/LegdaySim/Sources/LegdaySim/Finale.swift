@@ -34,8 +34,8 @@ public struct RunResult: Equatable, Sendable {
     }
 }
 
-/// Death's arrival (R17): the ink-spined Finale deals on time; keep-running
-/// ramps the scroll until the fog ends the run.
+/// Death's arrival (R17): the ink-spined Finale deals on entry to THE RECKONING;
+/// keep-running ramps the scroll until the fog ends the run.
 public enum Finale {
     /// The Finale card's stable id (built in code, not from cards.json).
     public static let cardId = "the_finale"
@@ -53,11 +53,11 @@ public extension CardLibrary {
 }
 
 extension RunSim {
-    /// Deal the Finale at the arrival time regardless of essence, when the
-    /// stage is clear. One deal per run.
+    /// Deal the Finale on entry to THE RECKONING, regardless of essence.
+    /// One deal per run.
     mutating func maybeDealFinale() {
         guard state.card == nil, !state.finaleDealt else { return }
-        guard state.time >= tunables.finaleTime else { return }
+        guard state.fathoms >= Ascent.reckoningFathoms else { return }
         state.finaleDealt = true
         state.card = ActiveCard(def: CardLibrary.finaleCard, deathDealt: true)
     }

@@ -15,16 +15,18 @@ struct FinaleTests {
         RunSim(tunables: Self.tunables, viewport: Vec2(393, 852), seed: 1, catalog: .seed)
     }
 
-    /// Death deals the Finale at the arrival time even with no essence banked.
-    @Test func finaleDealsAtArrivalRegardlessOfEssence() {
-        var sim = makeSim()
-        // Cross the arrival time: no kills, no essence, no pending card.
-        sim.debugMutate { $0.time = 720.01; $0.nextForkTime = 1e9 }
+    /// Death deals the Finale on entry to THE RECKONING, essence or not.
+    @Test func finaleDealsOnReckoningEntryRegardlessOfEssence() {
+        var sim = makeSim() // finaleTime 720 stays for the keep-running ramp
+        sim.debugMutate { $0.nextForkFathoms = 1e9
+            $0.worldY = (Ascent.reckoningFathoms - 1) * 10 }
+        sim.tick(dt: RunSim.fixedStep, input: .idle)
+        #expect(!sim.state.finaleDealt) // 1 fathom short
+        sim.debugMutate { $0.worldY = Ascent.reckoningFathoms * 10 }
         sim.tick(dt: RunSim.fixedStep, input: .idle)
         #expect(sim.state.finaleDealt)
         #expect(sim.state.card?.def.id == Finale.cardId)
         #expect(sim.state.card?.deathDealt == true)
-        #expect(sim.state.essence == 0) // essence was never a gate
     }
 
     /// The Finale cannot spring back — any release commits a side. Keep-running
@@ -72,7 +74,7 @@ struct FinaleTests {
     @Test func forksStopAfterKeepRunning() {
         var sim = makeSim()
         sim.debugMutate { $0.finaleDealt = true; $0.keepRunning = true
-            $0.time = 900; $0.nextForkTime = 900 }
+            $0.time = 900; $0.nextForkFathoms = 1e9 }
         for _ in 0..<Int(2.0 / RunSim.fixedStep) {
             sim.tick(dt: RunSim.fixedStep, input: .idle)
         }
