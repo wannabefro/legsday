@@ -88,9 +88,8 @@ public struct RunState: Sendable {
     /// Rival threat cards still queued to interleave into the stream (R10),
     /// computed once from the draft's faction weighting at deck build.
     public internal(set) var scheduledThreats: [ThreatInsertion] = []
-    /// Run time at which the next mandatory fork deals (U13); starts one
-    /// cadence in (`Forks.cadence`).
-    public internal(set) var nextForkTime: Double = Forks.cadence
+    /// Fathoms at which the next mandatory fork deals (unit 3).
+    public internal(set) var nextForkFathoms: Double = Ascent.forkCadenceFathoms
     /// Forks dealt so far — cycles the fork pool deterministically.
     public internal(set) var forkCount: Int = 0
     /// Current biome, swapped by forks (render palette tag, U13/U24).
@@ -213,7 +212,7 @@ public struct RunState: Sendable {
         }
         for f in Faction.allCases { mix(UInt64(bitPattern: Int64(affinity[f] ?? 0))) }
         for t in scheduledThreats { mix(UInt64(bitPattern: Int64(t.atDraw))) }
-        mix(nextForkTime); mix(UInt64(bitPattern: Int64(forkCount)))
+        mix(nextForkFathoms); mix(UInt64(bitPattern: Int64(forkCount)))
         mix(UInt64(bitPattern: Int64(Biome.allCases.firstIndex(of: biome) ?? 0)))
         mix(UInt64(Ascent.stages.firstIndex(of: stage) ?? 0))
         mix(UInt64(shrinePending ? 1 : 0))

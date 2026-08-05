@@ -25,8 +25,6 @@ public struct ForkDef: Equatable, Sendable, Codable {
 
 /// Fork scheduling constants (R12).
 public enum Forks {
-    /// Cadence between mandatory forks, seconds.
-    public static let cadence: Double = 60
     /// Past this run time the safe road is replaced by a second risk flavor.
     public static let lateThreshold: Double = 480 // minute 8
 }
@@ -64,10 +62,10 @@ extension RunSim {
     /// the drawn/threat counters.
     mutating func maybeDealFork() {
         guard state.card == nil, !state.keepRunning,
-              state.time >= state.nextForkTime, !catalog.forks.isEmpty else { return }
+              state.fathoms >= state.nextForkFathoms, !catalog.forks.isEmpty else { return }
         let def = catalog.forks[state.forkCount % catalog.forks.count]
         state.forkCount += 1
-        state.nextForkTime += Forks.cadence
+        state.nextForkFathoms += Ascent.forkCadenceFathoms
         state.card = ActiveCard(def: def, deathDealt: false)
     }
 

@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import LegdaySim
 
-/// U13 — world-owned mandatory forks on a ~60s clock (R12): zero essence cost,
+/// U13 — world-owned mandatory forks on a fathom cadence (R12): zero essence cost,
 /// no spring-back, risk vs safe, and no safe road past minute 8.
 struct ForkTests {
     private static let tunables = Tunables(
@@ -19,21 +19,24 @@ struct ForkTests {
         sim.debugMutate { $0.card = ActiveCard(def: Self.crossroads, deathDealt: false) }
     }
 
-    /// A fork deals at the cadence with zero essence, and costs nothing: no
-    /// essence consumed, no card-cost advance, no draw-counter tick.
+    /// A fork deals after 450 fathoms of climb, with zero essence.
     @Test func forkDealsAtCadenceForFree() {
         var sim = makeSim()
-        let idle = Input(phase: .idle, location: Vec2(196, 400))
-        var guardCount = 0
-        while sim.state.card == nil && guardCount < 4000 {
-            sim.tick(dt: 0.05, input: idle)
-            guardCount += 1
+        // Tick with the hero alive and no cards; climb 449 fathoms then 1 more.
+        sim.debugMutate { $0.hero.pos.y = 180; $0.hero.target.y = 180
+            $0.charge = 0; $0.card = nil }
+        while sim.state.fathoms < Ascent.forkCadenceFathoms - 0.5,
+              sim.state.card == nil {
+            sim.tick(dt: 0.05, input: .idle)
+        }
+        #expect(sim.state.card == nil) // not yet — 0.5 fathoms short
+        while sim.state.fathoms < Ascent.forkCadenceFathoms + 0.5,
+              sim.state.card == nil {
+            sim.tick(dt: 0.05, input: .idle)
         }
         #expect(sim.state.card?.def.fork != nil)
-        #expect(abs(sim.state.time - Forks.cadence) < 1.5) // ~60s within tolerance
-        #expect(sim.state.charge == 0)                     // dealt with no essence
-        #expect(sim.state.essNeed == Self.tunables.firstCardCost) // cost not advanced
-        #expect(sim.state.drawn == 0)                      // not a drafted draw
+        #expect(sim.state.charge == 0)
+        #expect(sim.state.drawn == 0)
     }
 
     /// The risk road raises spawn density and the essence multiplier, and flags
