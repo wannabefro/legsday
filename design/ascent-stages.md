@@ -114,6 +114,19 @@ Each unit ends with a green test run. Build them in this order.
 6. Add the HUD stage name and the boundary event.
 7. Add the stage columns to `legdaybot`. Run 30 cold-start runs and record the numbers here.
 
+## Harness re-measurement (unit 7)
+
+30 cold-start runs, seeds 1–30, 900s cap.
+
+| Measure | Value |
+|---|---|
+| Distinct faces median | 13 of 21 reachable |
+| Ending stage | THE RECKONING ×30 |
+| Faces per stage (last run) | orchard:5  ossuary:5  reckoning:4  spire:3 |
+| Stages entered across runs | 150 |
+
+Target was ≥11 distinct faces. The measurement is 13 — target met.
+
 ## Out of scope
 
 This work does not add a route map between runs. It does not add a world map across runs. Both

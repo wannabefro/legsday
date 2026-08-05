@@ -146,6 +146,9 @@ struct RunReport {
     var ending: String
     var deckDryAt: Double?     // sim time the drafted deck first ran out
     var hitCap: Bool           // stopped by the harness, not by the game
+    var endingStage: String
+    var stageEntryFathoms: [String: Double]  // stage id → fathom at entry
+    var distinctFacesPerStage: [String: Int] // stage id → distinct card titles seen
 }
 
 func play(seed: UInt64, tunables: Tunables, catalog: CardCatalog,
@@ -173,10 +176,19 @@ func play(seed: UInt64, tunables: Tunables, catalog: CardCatalog,
     var framesInCard = 0
     var frame = 0
     var lastTrace = -999
+    var stageEntries: [String: Double] = [:]
+    var stageFaces: [String: Set<String>] = [:]
+    var lastStageID = ""
 
     while !sim.state.dead, sim.state.time < hardCap {
         frame += 1
+        let stage = Ascent.stage(atFathoms: sim.state.fathoms)
+        if stage.id != lastStageID {
+            if stageEntries[stage.id] == nil { stageEntries[stage.id] = sim.state.fathoms }
+            lastStageID = stage.id
+        }
         if let card = sim.state.card, !card.committing {
+            stageFaces[lastStageID, default: []].insert(card.def.title)
             if !sawCard {
                 sawCard = true
                 needsGrab = true
@@ -274,7 +286,10 @@ func play(seed: UInt64, tunables: Tunables, catalog: CardCatalog,
     return RunReport(seed: seed, fathoms: r.fathoms, cardsDrawn: drawn,
                      deathDealt: deathDealt, distinctTitles: titles.count,
                      kills: r.felled, shards: r.shards, seconds: sim.state.time,
-                     ending: "\(r.ending)", deckDryAt: deckDryAt, hitCap: !sim.state.dead)
+                     ending: "\(r.ending)", deckDryAt: deckDryAt, hitCap: !sim.state.dead,
+                     endingStage: Ascent.stage(atFathoms: r.fathoms).name,
+                     stageEntryFathoms: stageEntries,
+                     distinctFacesPerStage: stageFaces.mapValues(\.count))
 }
 
 /// Where the Pilgrim wants to be. The loop is kill → motes → essence → cards,
@@ -338,11 +353,13 @@ func median(_ xs: [Double]) -> Double {
 }
 
 if options.csv {
-    print("seed,fathoms,seconds,cards,deathDealt,distinct,felled,shards,ending,deckDryAt")
+    print("seed,fathoms,seconds,cards,deathDealt,distinct,felled,shards,ending,deckDryAt,endingStage,distinctFacesPerStage")
     for r in reports {
+        let faces = r.distinctFacesPerStage.sorted(by: { $0.key < $1.key }).map { "\($0.key)=\($0.value)" }.joined(separator: ";")
         print("\(r.seed),\(Int(r.fathoms)),\(String(format: "%.1f", r.seconds)),\(r.cardsDrawn),"
             + "\(r.deathDealt),\(r.distinctTitles),\(r.kills),\(r.shards),\(r.ending),"
-            + (r.deckDryAt.map { String(format: "%.1f", $0) } ?? ""))
+            + (r.deckDryAt.map { String(format: "%.1f", $0) } ?? "")
+            + ",\(r.endingStage),\(faces)")
     }
     exit(0)
 }
@@ -372,4 +389,7 @@ print("""
   deck ran dry   \(dry.count)/\(options.runs) runs\(dry.isEmpty ? "" : ", median \(String(format: "%.0f", median(dry)))s")
   hit the cap    \(capped)/\(options.runs) runs survived to \(Int(options.cap))s — the harness stopped them
   endings        \(endings.map { "\($0.key) ×\($0.value)" }.sorted().joined(separator: "  "))
+  stages entered \(reports.flatMap { $0.stageEntryFathoms.keys }.count) distinct across runs
+  ending stages  \(Dictionary(grouping: reports, by: { $0.endingStage }).map { "\($0.key) ×\($0.value.count)" }.sorted().joined(separator: "  "))
+  faces/stage    \(reports.last!.distinctFacesPerStage.sorted(by: { $0.key < $1.key }).map { "\($0.key):\($0.value)" }.joined(separator: "  "))
 """)
