@@ -14,6 +14,7 @@ struct Options {
     var verbose = false
     var csv = false
     var trace = false
+    var cap = 900.0
 }
 
 func parseOptions() -> Options {
@@ -27,6 +28,7 @@ func parseOptions() -> Options {
         case "--verbose": o.verbose = true
         case "--csv": o.csv = true
         case "--trace": o.trace = true
+        case "--cap": o.cap = Double(it.next() ?? "") ?? o.cap
         case "--help":
             print("""
             legdaybot — play the sim headlessly
@@ -143,33 +145,40 @@ struct RunReport {
     var seconds: Double
     var ending: String
     var deckDryAt: Double?     // sim time the drafted deck first ran out
+    var hitCap: Bool           // stopped by the harness, not by the game
 }
 
 func play(seed: UInt64, tunables: Tunables, catalog: CardCatalog,
-          collection: [String: Int], verbose: Bool, trace: Bool = false) -> RunReport {
+          collection: [String: Int], verbose: Bool, trace: Bool = false,
+          cap: Double = 900) -> RunReport {
     let viewport = Vec2(393, 852)
     var sim = RunSim(tunables: tunables, viewport: viewport, seed: seed,
                      catalog: catalog, collection: collection)
 
     let step = 1.0 / 60.0
-    let hardCap = 900.0
+    let hardCap = cap
     var pointer = Vec2(viewport.x / 2, viewport.y * 0.7)
     var touchDown = false
     var titles = Set<String>()
     var drawn = 0, deathDealt = 0
     var deckDryAt: Double?
-    // Per-card state, keyed on the sim's own draw ordinal. Keying on anything
-    // the bot increments itself makes every frame look like a new card.
-    var handledOrdinal = -1
+    // A card is new when the previous frame had none engaged. Keying on
+    // state.drawn instead misses every fork, Fusion and the Finale — those set
+    // state.card directly and never touch the ordinal, so the bot would never
+    // anchor the grab and would hang on the card until the fog took it.
+    var sawCard = false
     var needsGrab = true
     var yAtDeal: Double?
     var tAtDeal: Double = 0
     var framesInCard = 0
+    var frame = 0
+    var lastTrace = -999
 
     while !sim.state.dead, sim.state.time < hardCap {
+        frame += 1
         if let card = sim.state.card, !card.committing {
-            if handledOrdinal != sim.state.drawn {
-                handledOrdinal = sim.state.drawn
+            if !sawCard {
+                sawCard = true
                 needsGrab = true
                 yAtDeal = sim.state.hero.pos.y
                 tAtDeal = sim.state.time
@@ -206,6 +215,7 @@ func play(seed: UInt64, tunables: Tunables, catalog: CardCatalog,
             sim.tick(dt: step, input: input)
             continue
         }
+        sawCard = false
         if let y0 = yAtDeal, sim.state.card == nil {
             if trace {
                 print(String(format:
@@ -215,40 +225,35 @@ func play(seed: UInt64, tunables: Tunables, catalog: CardCatalog,
             }
             yAtDeal = nil
         }
+        // Re-peg the anchor at centre, never at the last pointer. Anchoring at
+        // the stale pointer makes the following drag measure error_new minus
+        // error_old — a differential controller, which commands nothing while
+        // the error is steady and so cannot answer the fog's constant pull.
         if !touchDown {
             touchDown = true
+            pointer = Vec2(viewport.x / 2, viewport.y / 2)
             sim.tick(dt: step, input: Input(phase: .began, location: pointer))
             continue
         }
 
-        if trace, sim.state.time > 58, Int(sim.state.time * 120) % 12 == 0 {
+        if trace, frame - lastTrace >= 60 {
+            lastTrace = frame
             let s = sim.state
             print(String(format:
-                "  t=%5.1f hero=(%3.0f,%3.0f) fog=%3.0f inFog=%@ fogT=%4.2f motes=%2d foes=%2d ess=%5.1f",
-                s.time, s.hero.pos.x, s.hero.pos.y, sim.fogLineY(),
-                s.heroInFog ? "Y" : "n", s.hero.fogTime,
-                s.motes.count, s.foes.count, s.essence))
+                "  t=%5.1f pos.y=%4.0f target.y=%6.0f goal.y=%4.0f fog=%3.0f inFog=%@ vel.y=%6.1f",
+                s.time, s.hero.pos.y, s.hero.target.y,
+                steer(sim: sim, viewport: viewport).y, sim.fogLineY(),
+                s.heroInFog ? "Y" : "n", s.hero.vel.y))
         }
 
         // No card: steer toward the best mote, and climb out of the fog first.
         let goal = steer(sim: sim, viewport: viewport)
         let target = sim.state.hero.target
-        // Proportional control with a per-frame clamp. The sim's drag gain is
-        // private and scales with mods, so correct by feedback rather than by
-        // copying the constant — but an unclamped step overshoots into the fog,
-        // and the grip then drags the target down faster than it can recover.
-        // Re-anchor every other frame. The drag is offset-follow (R1): a touch
-        // down re-pegs the anchor to wherever the target currently is, so a
-        // finger that starts from centre always has full travel in both
-        // directions. A pointer that only ever moves accumulates toward an edge
-        // and then cannot answer the fog's grip at all.
+        // Offset-follow (R1): the anchor pegs (pointer, target) on touch-down,
+        // and the drag sets target = anchorTarget + (pointer − anchorPointer) ×
+        // gain. Anchored at centre, a pointer at centre + error commands exactly
+        // that error, with full travel available in both directions.
         let centre = Vec2(viewport.x / 2, viewport.y / 2)
-        if !touchDown {
-            touchDown = true
-            pointer = centre
-            sim.tick(dt: step, input: Input(phase: .began, location: centre))
-            continue
-        }
         let reach = 120.0
         let error = goal - target
         pointer = Vec2(centre.x + min(max(error.x, -reach), reach),
@@ -269,7 +274,7 @@ func play(seed: UInt64, tunables: Tunables, catalog: CardCatalog,
     return RunReport(seed: seed, fathoms: r.fathoms, cardsDrawn: drawn,
                      deathDealt: deathDealt, distinctTitles: titles.count,
                      kills: r.felled, shards: r.shards, seconds: sim.state.time,
-                     ending: "\(r.ending)", deckDryAt: deckDryAt)
+                     ending: "\(r.ending)", deckDryAt: deckDryAt, hitCap: !sim.state.dead)
 }
 
 /// Where the Pilgrim wants to be. The loop is kill → motes → essence → cards,
@@ -322,7 +327,8 @@ for i in 0..<options.runs {
     let seed = options.firstSeed &+ UInt64(i)
     if options.verbose { print("seed \(seed)") }
     reports.append(play(seed: seed, tunables: tunables, catalog: catalog,
-                        collection: owned, verbose: options.verbose, trace: options.trace))
+                        collection: owned, verbose: options.verbose, trace: options.trace,
+                        cap: options.cap))
 }
 
 func median(_ xs: [Double]) -> Double {
@@ -348,6 +354,9 @@ let distinct = reports.map { Double($0.distinctTitles) }
 let totalDraws = reports.reduce(0) { $0 + $1.cardsDrawn }
 let totalDeath = reports.reduce(0) { $0 + $1.deathDealt }
 let dry = reports.compactMap(\.deckDryAt)
+let capped = reports.filter(\.hitCap).count
+let reachableFaces = catalog.player.count + catalog.death.count + catalog.threats.count
+    + catalog.forks.count + catalog.weapons.count + catalog.rivalOffers.count
 var endings: [String: Int] = [:]
 for r in reports { endings[r.ending, default: 0] += 1 }
 
@@ -358,8 +367,9 @@ print("""
   fathoms        median \(Int(median(fathoms)))   min \(Int(fathoms.min() ?? 0))   max \(Int(fathoms.max() ?? 0))
   run length     median \(String(format: "%.0f", median(seconds)))s
   cards drawn    median \(Int(median(cards)))
-  distinct faces median \(Int(median(distinct)))  of \(catalog.player.count + catalog.death.count) reachable
+  distinct faces median \(Int(median(distinct)))  of \(reachableFaces) reachable
   Death's share  \(totalDraws > 0 ? Int(Double(totalDeath) / Double(totalDraws) * 100) : 0)% of \(totalDraws) draws
   deck ran dry   \(dry.count)/\(options.runs) runs\(dry.isEmpty ? "" : ", median \(String(format: "%.0f", median(dry)))s")
+  hit the cap    \(capped)/\(options.runs) runs survived to \(Int(options.cap))s — the harness stopped them
   endings        \(endings.map { "\($0.key) ×\($0.value)" }.sorted().joined(separator: "  "))
 """)
