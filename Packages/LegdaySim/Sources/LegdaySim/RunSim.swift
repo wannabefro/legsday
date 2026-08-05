@@ -101,6 +101,7 @@ public struct RunSim {
         if stage.id != state.stage.id {
             state.stage = stage
             state.frameEvents.append(.stageEntered(stage))
+            seedStageThreat(stage)
         }
         processTimedEffects()
         maybeSpawnShrineHerald() // a risk-route shrine summons a guardian (U13→U14)

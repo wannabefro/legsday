@@ -116,6 +116,15 @@ extension RunSim {
         state.card = ActiveCard(def: def, deathDealt: fromDeath)
     }
 
+    /// Shuffle a stage's threat card into the remaining deck once (unit 5).
+    mutating func seedStageThreat(_ stage: AscentStage) {
+        guard let faction = stage.faction, let threat = catalog.threats.first(where: { $0.faction == faction }) else { return }
+        guard !state.seededStages.contains(stage.id) else { return }
+        state.seededStages.insert(stage.id)
+        state.deck.append(threat)
+        state.deck = shuffled(state.deck)
+    }
+
     /// Deterministic Fisher-Yates using the injected RNG (graybox `shuffled`),
     /// advancing the persistent RNG stream.
     mutating func shuffled(_ input: [CardDef]) -> [CardDef] {
