@@ -28,9 +28,9 @@ final class HudNode: SKNode {
         modsLabel.position = CGPoint(x: 18, y: y - 20)
         modsLabel.fontSize = 12
         modsLabel.fontColor = Self.dim
-        stageLabel.position = CGPoint(x: sceneSize.width / 2, y: y - 40)
+        stageLabel.position = CGPoint(x: sceneSize.width / 2, y: pipsY - 16)
         stageLabel.fontSize = 12
-        stageLabel.fontColor = Self.dim
+        stageLabel.fontColor = Self.muted
         pips.position = CGPoint(x: 18, y: pipsY)
         [essenceLabel, fathomsLabel, statusLabel, modsLabel, stageLabel, pips].forEach(addChild)
     }

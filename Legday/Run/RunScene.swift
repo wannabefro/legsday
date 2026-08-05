@@ -49,7 +49,7 @@ final class RunScene: SKScene {
     private let reaper = ReaperNode() // the duel's Reaper (U23)
 
     private let stageBanner = SKLabelNode(fontNamed: "Georgia-Bold")
-    private var owningTouch: UITouch?
+    private var owningTouch: UITouch? // first touch owns the run (R1/U8)
     private var touchInput = TouchInputAccumulator()
 
     override func didMove(to view: SKView) {
@@ -281,12 +281,14 @@ final class RunScene: SKScene {
             break
         case let .stageEntered(stage):
             stageBanner.text = stage.name
+            stageBanner.setScale(1)
             stageBanner.run(.sequence([
                 .group([.fadeIn(withDuration: 0.15), .scale(to: 1.1, duration: 0.15)]),
                 .wait(forDuration: 1.7),
                 .fadeOut(withDuration: 0.4),
             ]))
-        }    }
+        }
+    }
 
     private func flash(at p: CGPoint, color: SKColor, radius: CGFloat) {
         let node = SKShapeNode(circleOfRadius: radius)
