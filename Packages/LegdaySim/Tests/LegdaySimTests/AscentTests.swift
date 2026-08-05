@@ -35,6 +35,42 @@ struct AscentTests {
         #expect(stage("THE SPIRE").faction == .church)
     }
 
+    /// On entry to a stage, its faction's threat card is shuffled into the deck.
+    @Test func stageEntrySeedsItsThreatCard() {
+        let t = Tunables(scroll: 78, spawn: 0, shove: 120, iframes: 0.55,
+                         fogGrace: 0.8, fogGrip: 2.4, fogCreep: 1.1, killPush: 0.9,
+                         downBias: 0.35, cardSlow: 0.005, firstCardCost: 4,
+                         cardCostIncrement: 1)
+        var sim = RunSim(tunables: t, viewport: Vec2(393, 852), seed: 3,
+                         catalog: .seed)
+        let before = Set(sim.state.deck.map(\.id))
+        // Enter THE ORCHARD (plague).
+        sim.debugMutate { $0.worldY = 280 * 10 }
+        sim.tick(dt: RunSim.fixedStep, input: .idle)
+        let after = Set(sim.state.deck.map(\.id))
+        let plague = CardLibrary.threatSeed.first { $0.faction == .plague }!
+        #expect(after.contains(plague.id))
+        #expect(!before.contains(plague.id))
+        // Once only — re-entering the same stage does not double-seed.
+        let count = sim.state.deck.filter { $0.id == plague.id }.count
+        #expect(count == 1)
+    }
+
+    /// THE LOW ROAD does not seed, even though its table faction is wild.
+    @Test func lowRoadDoesNotSeedItsThreat() {
+        let t = Tunables(scroll: 78, spawn: 0, shove: 120, iframes: 0.55,
+                         fogGrace: 0.8, fogGrip: 2.4, fogCreep: 1.1, killPush: 0.9,
+                         downBias: 0.35, cardSlow: 0.005, firstCardCost: 4,
+                         cardCostIncrement: 1)
+        var sim = RunSim(tunables: t, viewport: Vec2(393, 852), seed: 3,
+                         catalog: .seed)
+        // The LOW ROAD is the starting stage; a step at its start must not seed.
+        sim.tick(dt: RunSim.fixedStep, input: .idle)
+        let wild = CardLibrary.threatSeed.first { $0.faction == .wild }!
+        #expect(!sim.state.deck.contains(where: { $0.id == wild.id }))
+        #expect(sim.state.seededStages.isEmpty)
+    }
+
     /// The stage multiplier scales the base spawn rate before Mods.
     @Test func spawnRateScalesWithStage() {
         let t = Tunables(scroll: 78, spawn: 1.7, shove: 120, iframes: 0.55,
