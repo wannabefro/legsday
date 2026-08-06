@@ -338,12 +338,24 @@ let catalog = CardCatalog.seed
 let owned = collection(options.collection, catalog: catalog)
 
 var reports: [RunReport] = []
-for i in 0..<options.runs {
-    let seed = options.firstSeed &+ UInt64(i)
-    if options.verbose { print("seed \(seed)") }
-    reports.append(play(seed: seed, tunables: tunables, catalog: catalog,
-                        collection: owned, verbose: options.verbose, trace: options.trace,
-                        cap: options.cap))
+if options.verbose || options.trace {
+    // Serial path: verbose/trace print per-run lines that would interleave.
+    for i in 0..<options.runs {
+        let seed = options.firstSeed &+ UInt64(i)
+        if options.verbose { print("seed \(seed)") }
+        reports.append(play(seed: seed, tunables: tunables, catalog: catalog,
+                            collection: owned, verbose: options.verbose, trace: options.trace,
+                            cap: options.cap))
+    }
+} else {
+    // Runs are independent; run them across cores to cut wall time.
+    var ordered = Array<RunReport?>(repeating: nil, count: options.runs)
+    DispatchQueue.concurrentPerform(iterations: options.runs) { i in
+        let seed = options.firstSeed &+ UInt64(i)
+        ordered[i] = play(seed: seed, tunables: tunables, catalog: catalog,
+                          collection: owned, verbose: false, trace: false, cap: options.cap)
+    }
+    reports = ordered.compactMap { $0 }
 }
 
 func median(_ xs: [Double]) -> Double {
