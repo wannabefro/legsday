@@ -151,9 +151,41 @@ Four opaque colours, exact hex, plus transparent. Anything else failed.
 
 1. Look for a face or a hood opening. There must be neither.
 2. Look for a lantern that hangs down. It must lie flat, seen from above.
-3. Reduce to 54 x 78 pixels. The silhouette must still read.
-4. Sample the robe folds. Grey and olive are failures.
-5. Put frame 1 beside frame 5. Hood and shoulders must be identical.
+3. Look at the crown. Nothing may protrude from it.
+4. Reduce to 54 pixels wide and put it on `#0F0C0A`. The silhouette must read.
+5. Confirm four exact colours with the histogram command above.
+6. **Rotate it to 8 headings and look at all 8.** This is the check that
+   matters, because the game rotates the sprite at runtime. Everything else can
+   pass while this fails.
+
+```
+for a in 0 45 90 135 180 225 270 315; do
+  magick sprite.png -background none -virtual-pixel none -distort SRT "$a" \
+    -resize 60x60 -gravity center -background '#0F0C0A' -extent 76x76 \
+    -alpha remove -alpha off "r-$a.png"
+done
+magick r-*.png +append rotation.png
+```
+
+Rotate the FULL-RESOLUTION sprite and reduce after, which is what SpriteKit
+does. Rotating an already-reduced sprite looks blurry and fails a good asset.
+
+## What three rounds of failure taught
+
+| Round | Failure | Cause |
+|---|---|---|
+| 1 | 9 front-facing figures, opaque, drop shadows | the lore. "Pilgrim", "devotional woodcut" and "the dark void where the face would be" beat "90 degrees" |
+| 2 | Camera correct, robe dark red | four colours listed with no part assignment, so the model chose |
+| 3 | Boot toes drawn on top of the hood, reading as ears | "the leading edge of the hem, pointing toward the TOP" was read as "at the top of the figure" |
+
+Round 3 also settled a design question. Removing the feet made the figure read
+far better at 54 pixels, and it costs nothing: the walk cycle then animates only
+the hem, which the verlet cloth already does procedurally and better, because
+cloth responds to real velocity instead of looping.
+
+The accepted figure is `sprites/pilgrim-canonical.png`, 1092 x 997, a broad
+rounded cloak shell with a scalloped hem, a clean crown dome, and the lantern
+flat on the floor plane to the left.
 
 ## If the camera still will not come out
 
