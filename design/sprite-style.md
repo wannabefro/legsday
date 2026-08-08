@@ -49,3 +49,26 @@ the render layer draws today.
 
 `PlaceholderAtlas` still uses `#E6D8B8` for the Pilgrim and the spark. The
 palette reconciled parchment to `#E9DCBC`. Sprites use `#E9DCBC`.
+
+## Movement through 360 degrees
+
+The Pilgrim moves in any direction. The camera in the style block cannot show
+that direction by rotation. A figure at 60 degrees that faces the viewer tips
+its head sideways if you rotate it. Only a true overhead view survives
+`zRotation`, and the style block excludes that view.
+
+Direction therefore costs art. Three options:
+
+| Option | Drawings per subject | What it shows |
+|---|---|---|
+| One sprite, no transform | 1 | no direction |
+| One sprite, horizontal flip | 1 | left and right |
+| Five drawings, eight headings | 5 | full ring |
+
+Eight headings need five drawings, not eight. The horizontal mirror is free, so
+N, NE, E, SE and S cover the ring.
+
+Four subjects move: Pilgrim, Pilgrim in fog, Reaper, Herald. Foes, motes and
+sparks are round, so they never need a facing.
+
+`RunScene.swift:190` applies no transform to the Pilgrim today.
