@@ -73,9 +73,10 @@
     <button id="bFoes"  type="button" aria-pressed="true">Foes</button>
     <button id="bFog"   type="button" aria-pressed="true">Fog</button>
     <button id="bBig"   type="button" aria-pressed="false">2&times;</button>
-    <button id="bTint"  type="button" aria-pressed="true">Tint: wild</button>
+    <button id="bTint"  type="button" aria-pressed="true">Tint: zone</button>
     <button id="bObs"   type="button" aria-pressed="false">World: off</button>
     <button id="bCards" type="button" aria-pressed="true">Upgrades</button>
+    <button id="bZone"  type="button" aria-pressed="false">Next zone</button>
     <button id="bReset" type="button" aria-pressed="false">Reset relic</button>
   </div>
 
@@ -159,38 +160,57 @@
   var fogImg = new Image(); fogImg.src = FOGT;
   var slabImg = new Image(); slabImg.src = SLAB;
   var briarImg = new Image(); briarImg.src = BRIAR;
-  var fogTint = null, rockTint = null;
-  /* The cliff is scenery. It must read as solid mass without ever being
-     brighter than the Pilgrim, so the same slab is baked down to stone. */
-  function tintedRock(){
-    if(rockTint || !slabImg.complete || !slabImg.naturalWidth) return rockTint;
+  var fogCache = {};
+  function bake(img, col, alpha){
     var c=document.createElement('canvas');
-    c.width=slabImg.naturalWidth; c.height=slabImg.naturalHeight;
+    c.width=img.naturalWidth; c.height=img.naturalHeight;
     var x=c.getContext('2d');
-    x.drawImage(slabImg,0,0);
+    x.drawImage(img,0,0);
     x.globalCompositeOperation='source-atop';
-    x.globalAlpha=0.78; x.fillStyle='#2A211A';
+    x.globalAlpha=alpha; x.fillStyle=col;
     x.fillRect(0,0,c.width,c.height);
-    rockTint=c; return c;
+    return c;
   }
-  function tintedFog(){
-    if(fogTint || !fogImg.complete || !fogImg.naturalWidth) return fogTint;
+  /* The cliff is scenery. It must read as solid mass without ever being
+     brighter than the Pilgrim, so the slab is baked down to each zone's
+     stone. One bake per zone, held for the run. */
+  function tintedRock(){
+    if(!slabImg.complete || !slabImg.naturalWidth) return null;
+    var col=stageNow().rock;
+    if(!rockCache[col]) rockCache[col]=bake(slabImg, col, 0.80);
+    return rockCache[col];
+  }
+  /* THE OSSUARY is built out of its own relic. The emblem is ink on
+     parchment, which vanishes on a dark field, so it is baked pale. */
+  var boneCache=null;
+  function boneImg(){
+    if(boneCache) return boneCache;
+    var im=embImg[6];
+    if(!im || !im.complete || !im.naturalWidth) return null;
     var c=document.createElement('canvas');
-    c.width=fogImg.naturalWidth; c.height=fogImg.naturalHeight;
+    c.width=im.naturalWidth; c.height=im.naturalHeight;
     var x=c.getContext('2d');
-    x.drawImage(fogImg,0,0);
+    x.drawImage(im,0,0);
     x.globalCompositeOperation='source-atop';
-    x.globalAlpha=0.72; x.fillStyle='#8A6FB3';
+    x.globalAlpha=0.62; x.fillStyle='#CFC2A4';
     x.fillRect(0,0,c.width,c.height);
-    fogTint=c; return c;
+    boneCache=c; return c;
+  }
+
+  function tintedFog(){
+    if(!fogImg.complete || !fogImg.naturalWidth) return null;
+    var col=stageNow().fog;
+    if(!fogCache[col]) fogCache[col]=bake(fogImg, col, 0.72);
+    return fogCache[col];
   }
 
   /* The foes are drawn once in parchment and ink. The faction is a tint, so
      four factions cost no extra art. Baked at load, never per frame. */
-  var TINTS=[null,'#C99A2E','#8FA03A','#8A6FB3','#C06430'];
-  var TINTN=['none','church','plague','grave','wild'];
+  var TINTS=[null,'#C99A2E','#8FA03A','#8A6FB3','#C06430','#7A2E1E'];
+  var TINTN=['none','church','plague','grave','wild','death'];
   // Untinted, a foe is the same parchment as the Pilgrim. Band 1 is wild.
-  var tintN=4, foeTint=[], eliteTint=[];
+  // -1 means the zone chooses; the Tint button pins it for comparison
+  var tintN=6, tintLock=-1, foeTint=[], eliteTint=[];
   function bakeTints(){
     [[foeImg,foeTint],[eliteImg,eliteTint]].forEach(function(pair){
       TINTS.forEach(function(col,i){
@@ -235,6 +255,41 @@
      sampled every BANDH pixels and interpolated, so collision is a clamp. */
   var BANDH=34, bands=[], bandTop=0, gorgeSeedL=0.10, gorgeSeedR=0.90,
       gorgeGoalL=0.10, gorgeGoalR=0.90, gorgeHold=0;
+
+  /* The Ascent. Table and multipliers from design/ascent-stages.md, which is
+     the source of truth. Fathoms accrue at 7.8 per second at base scroll.
+     `rock`, `fog`, `wide` and `feat` are this prototype's reading of what
+     each stage should LOOK like; the rest is the doc's data. */
+  var STAGES=[
+    {id:'low_road', name:'THE LOW ROAD', from:0,    spine:'#C06430', tint:4,
+     spawn:1.00, creep:1.00, scroll:1.00,
+     rock:'#3A2A1C', fog:'#8A6FB3', wide:[0.52,0.86], feat:'briar', featN:1.0,
+     wall:'rubble', jit:0.022, deep:2, hold:[4,9]},
+    {id:'orchard',  name:'THE ORCHARD', from:280,  spine:'#8FA03A', tint:2,
+     spawn:1.15, creep:1.05, scroll:1.00,
+     rock:'#2C3018', fog:'#8FA03A', wide:[0.38,0.66], feat:'briar', featN:2.2,
+     wall:'briar', jit:0.040, deep:2, hold:[2,4]},
+    {id:'ossuary',  name:'THE OSSUARY', from:620,  spine:'#8A6FB3', tint:3,
+     spawn:1.30, creep:1.10, scroll:1.05,
+     rock:'#2E2838', fog:'#8A6FB3', wide:[0.42,0.74], feat:'cairn', featN:1.8,
+     wall:'bone', jit:0.010, deep:2, hold:[3,6]},
+    {id:'spire',    name:'THE SPIRE',   from:960,  spine:'#C99A2E', tint:1,
+     spawn:1.50, creep:1.20, scroll:1.10,
+     rock:'#3E301A', fog:'#C99A2E', wide:[0.30,0.52], feat:'cairn', featN:1.0,
+     wall:'masonry', jit:0.002, deep:3, hold:[6,12]},
+    {id:'reckoning',name:'THE RECKONING',from:1200, spine:'#241C12', tint:5,
+     spawn:1.70, creep:1.30, scroll:1.15,
+     rock:'#1A1614', fog:'#5A4A6E', wide:[0.26,0.44], feat:'none', featN:0,
+     wall:'fog', jit:0.030, deep:2, hold:[2,5]}
+  ];
+  var fathoms=0, stageI=0, stageBanner=0, rockCache={};
+
+  function stageNow(){ return STAGES[stageI]; }
+  function stageFor(f){
+    var k=0;
+    for(var i=0;i<STAGES.length;i++) if(f>=STAGES[i].from) k=i;
+    return k;
+  }
   var orbs=[], links=[], shards=[], nextFoeId=1;
   var WEAPONS=[{n:'BOLT',c:'#E9DCBC'},{n:'THURIBLE',c:'#C99A2E'},
                {n:'PASSING BELL',c:'#8A6FB3'},{n:'WILD CHAIN',c:'#C06430'},
@@ -309,7 +364,7 @@
       wedge.push({phi:(q+0.5)*(6.2831853/WEDGES)-Math.PI, th:0, tv:0, str:1});
     for(var fq=0; fq<4; fq++)
       foes.push(makeFoe(20+Math.random()*(W-40), H*(0.10+0.28*Math.random()), false));
-    fog=H*0.10; kills=0;
+    fog=H*0.10; kills=0; fathoms=0; stageI=0; stageBanner=0; obs.length=0;
   }
 
   /* the lantern's mount point, carried round by the body's rotation */
@@ -462,6 +517,16 @@
       if(mk.y>H+40){ mk.y=-40; mk.x=Math.random()*W; mk.rot=Math.random()*6.283; }
     });
 
+    // 7.8 fathoms a second at base scroll (design/ascent-stages.md)
+    fathoms += 7.8*stageNow().scroll*dt;
+    var si=stageFor(fathoms);
+    if(si!==stageI){
+      stageI=si;
+      stageBanner=2.0;          // the name crosses the screen; the world runs on
+      obs.length=0;             // the last zone's furniture does not follow you
+    }
+    if(stageBanner>0) stageBanner-=dt;
+
     if(obsN===1){
       // the world comes down past you; the cliffs are one continuous thing
       bandTop += obsSpeed()*dt;
@@ -469,10 +534,14 @@
       while(bands.length < Math.ceil(H/BANDH)+4) pushBand();
     } else if(bands.length){ bands.length=0; bandTop=0; }
 
-    if(obsN>1){
+    var zf=stageNow();
+    if(obsN===1 && zf.feat!=='none'){
+      obsAcc += dt*zf.featN;
+      if(obsAcc > 2.6){ obsAcc=0; spawnZoneFeature(zf.feat); }
+    } else if(obsN>1){
       obsAcc += dt;
       if(obsAcc > 2.6){ obsAcc=0; spawnObstacles(); }
-    } else if(obs.length) obs.length=0;
+    } else if(obsN===0 && obs.length) obs.length=0;
     for(var oi=obs.length-1; oi>=0; oi--){
       var ob=obs[oi];
       ob.y += obsSpeed()*dt;
@@ -481,7 +550,7 @@
     }
 
     if(showFoes){
-      spawnAcc += dt*(1.15+t*0.03);
+      spawnAcc += dt*(1.15+t*0.03)*stageNow().spawn;
       while(spawnAcc>1){
         spawnAcc-=1;
         var isEl = t>20 && Math.random()<0.15;      // Combat.swift: >30s, 15%
@@ -650,15 +719,18 @@
   }
   /* --- obstacles ------------------------------------------------------ */
 
-  function obsSpeed(){ return H*0.10; }
+  function obsSpeed(){ return H*0.10*stageNow().scroll; }
 
   /* One more band at the top of the world. The cliffs walk toward a goal and
      hold it for a while, so the gorge has stretches and not just noise. */
   function pushBand(){
     if(gorgeHold<=0){
-      gorgeHold = 3 + Math.floor(Math.random()*7);
+      var hd=stageNow().hold;
+      gorgeHold = hd[0] + Math.floor(Math.random()*(hd[1]-hd[0]));
+      var wd = stageNow().wide;
       var narrow = Math.random()<0.42;
-      var width = narrow ? 0.30+Math.random()*0.14 : 0.56+Math.random()*0.28;
+      var width = narrow ? wd[0]*(0.86+Math.random()*0.20)
+                         : wd[1]*(0.86+Math.random()*0.20);
       var centre = 0.5 + (Math.random()-0.5)*(0.92-width);
       gorgeGoalL = centre - width/2;
       gorgeGoalR = centre + width/2;
@@ -667,7 +739,7 @@
     gorgeSeedL += (gorgeGoalL-gorgeSeedL)*0.34;
     gorgeSeedR += (gorgeGoalR-gorgeSeedR)*0.34;
     bands.unshift({l:gorgeSeedL, r:gorgeSeedR,
-                   j:(Math.random()-0.5)*0.018,   // the rock is not ruled
+                   j:(Math.random()-0.5)*stageNow().jit,
                    rot:Math.random()*6.283});
     if(bands.length>Math.ceil(H/BANDH)+4) bands.pop();
   }
@@ -681,6 +753,20 @@
     if(i<0) return null;
     var a=bands[i], b=bands[i+1];
     return { l:(a.l+(b.l-a.l)*k + a.j)*W, r:(a.r+(b.r-a.r)*k + a.j)*W };
+  }
+
+  /* A zone's furniture is placed INSIDE the channel, because a briar bed
+     buried in the cliff is scenery the player never meets. */
+  function spawnZoneFeature(kind){
+    var gp=gorgeAt(-40);
+    if(!gp || gp.r-gp.l < 70) return;
+    var x = gp.l+30 + Math.random()*(gp.r-gp.l-60);
+    if(kind==='briar')
+      obs.push({k:'briar', x:x, y:-60, r:H*0.045+Math.random()*H*0.025,
+                rot:Math.random()*6.283});
+    else if(kind==='cairn')
+      obs.push({k:'cairn', x:x, y:-60, w:W*0.13, h:W*0.13, hp:3,
+                rot:(Math.random()-0.5)*0.5, hit:0});
   }
 
   function spawnObstacles(){
@@ -1216,7 +1302,7 @@
      course-lines follow the gorge instead of running straight across it. */
   function drawGorge(){
     if(!bands.length || !slabImg.complete || !slabImg.naturalWidth) return;
-    var rock = tintedRock();
+    var rock = tintedRock(), zw = stageNow();
     var sr = slabImg.naturalHeight/slabImg.naturalWidth;
     var tile = BANDH*1.55;
     for(var i=0;i<bands.length-1;i++){
@@ -1233,19 +1319,48 @@
       ctx.beginPath();
       ctx.moveTo(W,y0); ctx.lineTo(rx0,y0); ctx.lineTo(rx1,y1); ctx.lineTo(W,y1);
       ctx.closePath(); ctx.fill();
+      if(zw.wall==='fog'){
+        // fog has no silhouette, so the line the Pilgrim cannot cross is drawn
+        ctx.strokeStyle='rgba(207,194,164,0.30)'; ctx.lineWidth=1.5;
+        ctx.beginPath(); ctx.moveTo(lx0,y0); ctx.lineTo(lx1,y1); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(rx0,y0); ctx.lineTo(rx1,y1); ctx.stroke();
+      }
       for(var s=0;s<2;s++){
         var edge = s ? (rx0+rx1)/2 : (lx0+lx1)/2;
         var dir  = s ? 1 : -1;
-        for(var d=0; d<4; d++){
+        for(var d=0; d<zw.deep+1; d++){
           var px3 = edge + dir*(d*tile*0.62 + tile*0.30);
           if(px3 < -tile || px3 > W+tile) break;
           ctx.save();
-          // only the lip catches the light; the mass behind it goes to stone
-          ctx.globalAlpha = d===0 ? 0.62 : 0.82;
+          // only the lip catches the light; the mass behind it is material
+          ctx.globalAlpha = d===0 ? 0.68 : 0.84;
           ctx.translate(px3, y0+BANDH/2);
-          ctx.rotate(a.rot + d*1.1 + (s?0.4:-0.4));
-          ctx.drawImage(d===0 ? slabImg : (rock||slabImg),
-                        -tile/2, -tile*sr/2, tile, tile*sr);
+          if(zw.wall==='masonry'){
+            // cut stone, laid in courses. No rotation: it was built.
+            var mw=tile*0.92, mh=BANDH*0.94;
+            ctx.drawImage(d===0 ? slabImg : (rock||slabImg), -mw/2, -mh/2, mw, mh);
+          } else if(zw.wall==='bone'){
+            var bi=boneImg();
+            ctx.rotate((i%2?0.10:-0.10) + d*0.5);
+            var bw=tile*0.86;
+            ctx.drawImage(bi||slabImg, -bw/2, -bw/2, bw, bw);
+          } else if(zw.wall==='briar'){
+            ctx.rotate(a.rot + d*1.7);
+            var vw=tile*0.80;
+            // the thicket thins inward, or it eats the channel it is meant to edge
+            ctx.globalAlpha = d===0 ? 0.90 : 0.38;
+            ctx.drawImage(briarImg.complete?briarImg:slabImg, -vw/2, -vw/2, vw, vw);
+          } else if(zw.wall==='fog'){
+            var fi=tintedFog();
+            ctx.globalAlpha = 0.30 + 0.16*Math.sin(t*1.4 + i*0.7 + d);
+            ctx.rotate(s?0.12:-0.12);
+            var gw2=tile*1.5, gh2=gw2*(fi?fi.height/fi.width:1);
+            ctx.drawImage(fi||slabImg, -gw2/2, -gh2*0.55, gw2, gh2);
+          } else {
+            ctx.rotate(a.rot + d*1.1 + (s?0.4:-0.4));
+            ctx.drawImage(d===0 ? slabImg : (rock||slabImg),
+                          -tile/2, -tile*sr/2, tile, tile*sr);
+          }
           ctx.restore();
         }
       }
@@ -1321,7 +1436,8 @@
 
     ctx.fillStyle='#5E4B3D';
     function drawFoeSprite(f, alpha, grow){
-      var im = f.el ? eliteTint[tintN] : foeTint[tintN];
+      var zt = tintLock<0 ? stageNow().tint : tintLock;
+      var im = f.el ? eliteTint[zt] : foeTint[zt];
       if(!im){ ctx.beginPath(); ctx.arc(f.x,f.y,f.r,0,6.2832); ctx.fill(); return; }
       // the torn points reach past the hit radius, so the sprite is drawn wider
       var sz = f.r*2.9*(grow||1);
@@ -1425,8 +1541,16 @@
       ctx.fillStyle='#C99A2E';
       ctx.fillRect(bx,by,bw*Math.min(1,ess/essNeed),bh);
     }
-    ctx.fillStyle='#6B5A3D'; ctx.font='9px ui-monospace,monospace';
+    // the fathom count, and the stage name under it (ascent-stages.md)
+    var zs=stageNow();
     ctx.textAlign='center';
+    ctx.fillStyle='#8C7A57'; ctx.font='600 15px Georgia,serif';
+    ctx.fillText(Math.floor(fathoms)+' fathoms', W/2, 24);
+    ctx.fillStyle=zs.spine==='#241C12' ? '#6B5A3D' : zs.spine;
+    ctx.font='12px ui-monospace,monospace';
+    ctx.fillText(zs.name, W/2, 40);
+
+    ctx.fillStyle='#6B5A3D'; ctx.font='9px ui-monospace,monospace';
     var stx=wst[weapon];
     ctx.fillText(WEAPONS[weapon].n+'  LV '+stx.lvl +
                  (cardsOn?'':'  \u2014 UPGRADES OFF'), W/2, by-6);
@@ -1478,11 +1602,33 @@
       ctx.textAlign='left';
     }
 
+    /* The stage name crosses the screen for 2 seconds and fades. The world
+       does not pause: the card interrupt owns the pause, and two pauses in
+       one beat read as a stall. */
+    if(stageBanner>0){
+      var bk=1-Math.min(1,stageBanner/2.0);
+      var bfade=Math.min(1, stageBanner/0.5);
+      ctx.save();
+      ctx.globalAlpha=bfade;
+      ctx.textAlign='center';
+      ctx.fillStyle=stageNow().spine==='#241C12' ? '#8C7A57' : stageNow().spine;
+      ctx.font='600 26px Georgia,serif';
+      ctx.fillText(stageNow().name, W/2, H*0.40 - bk*18);
+      ctx.globalAlpha=bfade*0.6;
+      ctx.fillStyle='#8C7A57'; ctx.font='10px ui-monospace,monospace';
+      ctx.fillText(Math.floor(stageNow().from)+' fathoms', W/2, H*0.40 - bk*18 + 20);
+      ctx.restore();
+      ctx.textAlign='left';
+    }
+
     if(showFog){
+      var fc=stageNow().fog;
+      var fr=parseInt(fc.substr(1,2),16), fgr=parseInt(fc.substr(3,2),16),
+          fb=parseInt(fc.substr(5,2),16), rgb=fr+','+fgr+','+fb;
       var fg=ctx.createLinearGradient(0,H-fog,0,H);
-      fg.addColorStop(0,'rgba(138,111,179,0)');
-      fg.addColorStop(0.55,'rgba(138,111,179,0.42)');
-      fg.addColorStop(1,'rgba(138,111,179,0.80)');
+      fg.addColorStop(0,'rgba('+rgb+',0)');
+      fg.addColorStop(0.55,'rgba('+rgb+',0.42)');
+      fg.addColorStop(1,'rgba('+rgb+',0.80)');
       ctx.fillStyle=fg; ctx.fillRect(0,H-fog,W,fog);
       // the edge is a row of reaching tendrils, each on its own phase
       var ft=tintedFog();
@@ -1534,13 +1680,22 @@
   (function(){
     var b=document.getElementById('bTint');
     b.addEventListener('click', function(){
-      tintN=(tintN+1)%TINTS.length;
-      b.textContent='Tint: '+TINTN[tintN];
-      b.setAttribute('aria-pressed', tintN?'true':'false');
-      b.style.color = TINTS[tintN] || '';
-      b.style.borderColor = TINTS[tintN] || '';
+      tintN=(tintN+1)%(TINTS.length+1);
+      tintLock = tintN>=TINTS.length ? -1 : tintN;   // past the end: give it back
+      var lab = tintLock<0 ? 'zone' : TINTN[tintN];
+      b.textContent='Tint: '+lab;
+      b.setAttribute('aria-pressed', tintLock<0 ? 'false' : 'true');
+      b.style.color = tintLock<0 ? '' : (TINTS[tintN]||'');
+      b.style.borderColor = tintLock<0 ? '' : (TINTS[tintN]||'');
     });
   })();
+
+  // a zone arrives 36 to 154 seconds in, which is too long to wait to look
+  document.getElementById('bZone').addEventListener('click', function(){
+    var n=(stageFor(fathoms)+1)%STAGES.length;
+    fathoms = STAGES[n].from + 1;
+    stageI = n; stageBanner = 2.0; obs.length = 0;
+  });
 
   bind('bCards', function(){return cardsOn;}, function(v){
     cardsOn=v;
