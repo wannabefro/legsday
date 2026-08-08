@@ -1024,7 +1024,8 @@
         var fj=foes[j], jd=Math.hypot(fj.x-hero.x, fj.y-hero.y);
         var ja=Math.atan2(fj.y-hero.y, fj.x-hero.x);
         var da=Math.abs(((ja-ang+Math.PI*3)%(Math.PI*2))-Math.PI);
-        if(jd < arcR && da < 0.62+st.span) hurt(j,1+st.dmg);  // the drawn wedge
+        if(jd < arcR && da < 0.62+st.span &&
+           !blockedBy(hero.x,hero.y,fj.x,fj.y)) hurt(j,1+st.dmg);
       }
     } else if(weapon===3){                            // the chain, thrown
       atkT = 0.62*st.cad;
@@ -1076,6 +1077,10 @@
         o.a += dt*4.2/Math.max(0.4,wst[5].cad);
         o.x = hero.x + Math.cos(o.a)*orbR;
         o.y = hero.y + Math.sin(o.a)*orbR;
+        if(obsN===1){
+          var og=gorgeAt(o.y);
+          if(og){ o.x=Math.min(Math.max(o.x, og.l+4), og.r-4); }
+        }
         for(var j=foes.length-1;j>=0;j--){
           var cf=foes[j];
           if(cf.hitT>0) continue;
@@ -1096,7 +1101,8 @@
         for(var kk=0;kk<foes.length;kk++){
           var nb=foes[kk];
           if(nb.id===inf.id || nb.inf>0) continue;
-          if(Math.hypot(nb.x-inf.x, nb.y-inf.y) < g.h*(1.4+wst[7].span))
+          if(Math.hypot(nb.x-inf.x, nb.y-inf.y) < g.h*(1.4+wst[7].span) &&
+             !blockedBy(inf.x,inf.y,nb.x,nb.y))
             nb.inf=2.6+wst[7].dur;
         }
         hurt(ii,1+wst[7].dmg);
@@ -1110,6 +1116,13 @@
       var S=shards[si]; S.t+=dt;
       S.x+=S.vx*dt; S.y+=S.vy*dt;
       var gone = S.t>=S.life || S.x<-20||S.x>W+20||S.y<-20||S.y>H+20;
+      if(!gone && obsN===1){
+        var sg=gorgeAt(S.y);
+        if(sg && (S.x<sg.l || S.x>sg.r)){
+          gone=true;
+          fx.push({x:S.x,y:S.y,t:0,life:0.16,img:0,rot:Math.random()*6.283});
+        }
+      }
       for(var sj=foes.length-1; sj>=0 && !gone; sj--){
         if(Math.hypot(foes[sj].x-S.x, foes[sj].y-S.y) < foes[sj].r+g.h*0.14){
           hurt(sj,1+wst[8].dmg); gone=true;
@@ -1126,7 +1139,8 @@
       for(var j=foes.length-1;j>=0;j--){
         if(R.hit[foes[j].id!==undefined?foes[j].id:j]) continue;
         var d=Math.hypot(foes[j].x-hero.x, foes[j].y-hero.y);
-        if(Math.abs(d-rad) < g.h*0.30){ R.hit[j]=1; hurt(j,R.dmg); }
+        if(Math.abs(d-rad) < g.h*0.30 &&
+           !blockedBy(hero.x,hero.y,foes[j].x,foes[j].y)){ R.hit[j]=1; hurt(j,R.dmg); }
       }
       if(R.t>=R.life) rings.splice(r,1);
     }
