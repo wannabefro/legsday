@@ -24,7 +24,8 @@ final class HudNode: SKNode {
         let y = sceneSize.height - safeTop - 24
         essenceLabel.position = CGPoint(x: 18, y: y)
         fathomsLabel.position = CGPoint(x: sceneSize.width / 2, y: y)
-        statusLabel.position = CGPoint(x: sceneSize.width - 18, y: y)
+        // The top row holds the pause button and a widening fathom count.
+        statusLabel.position = CGPoint(x: sceneSize.width - 18, y: pipsY)
         modsLabel.position = CGPoint(x: 18, y: y - 20)
         modsLabel.fontSize = 12
         modsLabel.fontColor = Self.dim
@@ -78,7 +79,7 @@ final class HudNode: SKNode {
         }
         if d.deathSize > 0 {
             let gate = SKShapeNode(rectOf: CGSize(width: 1, height: 18))
-            gate.fillColor = d.pastGate ? PlaceholderAtlas.rgb(0x7A2E1E) : Self.dim
+            gate.fillColor = d.pastGate ? SpriteAtlas.rgb(0x7A2E1E) : Self.dim
             gate.strokeColor = .clear
             gate.position = CGPoint(x: x + 4, y: 0)
             pips.addChild(gate)
@@ -94,7 +95,7 @@ final class HudNode: SKNode {
         let n = SKShapeNode(rectOf: CGSize(width: 9, height: 14), cornerRadius: 2)
         n.position = CGPoint(x: x, y: 0)
         if death {
-            n.fillColor = PlaceholderAtlas.rgb(0x050303)
+            n.fillColor = SpriteAtlas.rgb(0x050303)
             n.strokeColor = muted.withAlphaComponent(0.45)
         } else if spent {
             n.fillColor = .clear

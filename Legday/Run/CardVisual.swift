@@ -23,15 +23,15 @@ final class CardVisual: SKNode {
     private let holdTrack = SKShapeNode(rectOf: CGSize(width: 120, height: 2), cornerRadius: 1)
     private let holdFill = SKShapeNode(rectOf: CGSize(width: 120, height: 2), cornerRadius: 1)
 
-    private static let ink = PlaceholderAtlas.rgb(0x241C12)
-    private static let dormant = PlaceholderAtlas.rgb(0x6B5A3D)
-    private static let priceIdle = PlaceholderAtlas.rgb(0x8C7A57)
-    private static let priceLit = PlaceholderAtlas.rgb(0x7A2E1E)
-    private static let gold = PlaceholderAtlas.rgb(0xC99A2E)
+    private static let ink = SpriteAtlas.rgb(0x241C12)
+    private static let dormant = SpriteAtlas.rgb(0x6B5A3D)
+    private static let priceIdle = SpriteAtlas.rgb(0x8C7A57)
+    private static let priceLit = SpriteAtlas.rgb(0x7A2E1E)
+    private static let gold = SpriteAtlas.rgb(0xC99A2E)
 
     override init() {
         super.init()
-        body.fillColor = PlaceholderAtlas.rgb(0xE9DCBC)
+        body.fillColor = SpriteAtlas.rgb(0xE9DCBC)
         body.strokeColor = SKColor(white: 0.14, alpha: 0.45)
         body.lineWidth = 1
 
@@ -57,6 +57,13 @@ final class CardVisual: SKNode {
         leftPrice.horizontalAlignmentMode = .left
         rightPrice.position = CGPoint(x: 127, y: -56)
         rightPrice.horizontalAlignmentMode = .right
+        // a long subtitle used to run past the centre and collide with its pair
+        for l in [leftPrice, rightPrice] {
+            l.numberOfLines = 2
+            l.lineBreakMode = .byWordWrapping
+            l.preferredMaxLayoutWidth = 118
+            l.verticalAlignmentMode = .top
+        }
         takeMark.position = CGPoint(x: 0, y: 74)
         takeMark.fontColor = CardVisual.priceLit
         holdHint.position = CGPoint(x: 0, y: -74)
@@ -152,11 +159,11 @@ final class CardVisual: SKNode {
 
     private static func spineColor(_ spine: CardSpine) -> SKColor {
         switch spine {
-        case .rust: return PlaceholderAtlas.rgb(0xC06430)
-        case .gold: return PlaceholderAtlas.rgb(0xC99A2E)
-        case .grave: return PlaceholderAtlas.rgb(0x8A6FB3)
-        case .plague: return PlaceholderAtlas.rgb(0x8FA03A)
-        case .inkspine: return PlaceholderAtlas.rgb(0x050303)
+        case .rust: return SpriteAtlas.rgb(0xC06430)
+        case .gold: return SpriteAtlas.rgb(0xC99A2E)
+        case .grave: return SpriteAtlas.rgb(0x8A6FB3)
+        case .plague: return SpriteAtlas.rgb(0x8FA03A)
+        case .inkspine: return SpriteAtlas.rgb(0x050303)
         }
     }
 

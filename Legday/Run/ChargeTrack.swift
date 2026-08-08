@@ -23,7 +23,7 @@ final class ChargeTrack: SKNode {
         track.fillColor = SKColor(red: 0.69, green: 0.63, blue: 0.49, alpha: 0.13)
         track.strokeColor = SKColor(red: 0.69, green: 0.63, blue: 0.49, alpha: 0.30)
         track.lineWidth = 1
-        fill.fillColor = PlaceholderAtlas.rgb(0xC99A2E)
+        fill.fillColor = SpriteAtlas.rgb(0xC99A2E)
         fill.strokeColor = .clear
         corner.setScale(0.36)
         corner.zRotation = 0.12

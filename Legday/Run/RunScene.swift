@@ -6,7 +6,7 @@ import LegdaySim
 /// No gameplay lives here.
 final class RunScene: SKScene {
     private var sim: RunSim!
-    private var atlas = PlaceholderAtlas()
+    private var atlas = SpriteAtlas()
     private var lastUpdate: TimeInterval = 0
     private let draft: Draft?
     private let collection: [String: Int]
@@ -46,7 +46,7 @@ final class RunScene: SKScene {
     private let weaponNode = SKNode() // the chain weapon's rope (U16)
     private let ropeLine = SKShapeNode()
     private var ropeHead = SKSpriteNode()
-    private let reaper = ReaperNode() // the duel's Reaper (U23)
+    private lazy var reaper = ReaperNode(texture: atlas.reaper) // the duel's Reaper (U23)
 
     private let stageBanner = SKLabelNode(fontNamed: "Georgia-Bold")
     private var owningTouch: UITouch? // first touch owns the run (R1/U8)
@@ -80,7 +80,7 @@ final class RunScene: SKScene {
         lanternLine.strokeColor = SKColor(white: 0.5, alpha: 0.6)
         lanternLine.lineWidth = 1.5
         lanternBob = SKSpriteNode(texture: atlas.spark)
-        lanternBob.color = PlaceholderAtlas.rgb(0xC99A2E)
+        lanternBob.color = SpriteAtlas.rgb(0xC99A2E)
         lanternBob.colorBlendFactor = 1
         feelNode.addChild(cloakNode)
         feelNode.addChild(lanternLine)
@@ -90,7 +90,7 @@ final class RunScene: SKScene {
         ropeLine.strokeColor = SKColor(red: 0.55, green: 0.38, blue: 0.26, alpha: 0.95)
         ropeLine.lineWidth = 3
         ropeHead = SKSpriteNode(texture: atlas.foe)
-        ropeHead.color = PlaceholderAtlas.rgb(0xB23A2E)
+        ropeHead.color = SpriteAtlas.rgb(0xB23A2E)
         ropeHead.colorBlendFactor = 1
         weaponNode.addChild(ropeLine)
         weaponNode.addChild(ropeHead)
@@ -132,7 +132,7 @@ final class RunScene: SKScene {
         addChild(hud)
 
         stageBanner.fontSize = 22
-        stageBanner.fontColor = PlaceholderAtlas.rgb(0xC99A2E)
+        stageBanner.fontColor = SpriteAtlas.rgb(0xC99A2E)
         stageBanner.position = CGPoint(x: size.width / 2, y: size.height * 0.6)
         stageBanner.alpha = 0
         stageBanner.zPosition = 55
@@ -271,12 +271,12 @@ final class RunScene: SKScene {
             flash(at: pt(at), color: SKColor(white: 0.9, alpha: 0.9), radius: 20)
         case let .foeDown(at, elite):
             let p = pt(at)
-            flash(at: p, color: PlaceholderAtlas.rgb(0xC99A2E), radius: elite ? 12 : 7)
+            flash(at: p, color: SpriteAtlas.rgb(0xC99A2E), radius: elite ? 12 : 7)
             // Pop up and outward; gravity tumbles it down toward the fog splash.
             let dx = (p.x - size.width / 2) / size.width // −0.5…0.5
             corpses.spawn(at: p, elite: elite, impulse: CGVector(dx: dx * 6, dy: 4))
         case let .moteCollected(at):
-            flash(at: pt(at), color: PlaceholderAtlas.rgb(0x8A6FB3), radius: 6)
+            flash(at: pt(at), color: SpriteAtlas.rgb(0x8A6FB3), radius: 6)
         case .moteLost:
             break
         case let .stageEntered(stage):
