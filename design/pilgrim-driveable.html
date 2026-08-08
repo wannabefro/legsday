@@ -104,7 +104,8 @@
   window.addEventListener('resize', resize);
 
   /* ---------- state ---------- */
-  var hero = {x:0, y:0, tx:0, ty:0, vx:0, vy:0, hdg:Math.PI, invuln:0};
+  var hero = {x:0, y:0, tx:0, ty:0, vx:0, vy:0, hdg:Math.PI, invuln:0,
+            phase:0, lean:0};
   var anchor = null, foes = [], bolts = [], motes = [], marks = [], trail = [];
   var cloak = [], STRANDS = 7, L1 = 0, L2 = 0;
   var fog = 0, kills = 0, spawnAcc = 0, atkT = 0, t = 0;
@@ -161,10 +162,10 @@
     var g = geom();
 
     // hero seeks its target, knockback decays and drags the target with it
-    var seek = Math.min(1, dt*14);
+    var px = hero.x, py = hero.y;   // before the seek, or heading sees only knockback
+    var seek = Math.min(1, dt*16);
     hero.x += (hero.tx - hero.x)*seek;
     hero.y += (hero.ty - hero.y)*seek;
-    var px = hero.x, py = hero.y;
     hero.x += hero.vx*dt; hero.y += hero.vy*dt;
     var dec = Math.exp(-dt*5.5);
     hero.vx *= dec; hero.vy *= dec;
@@ -178,11 +179,18 @@
 
     var vx = (hero.x-px)/Math.max(dt,1e-4), vy = (hero.y-py)/Math.max(dt,1e-4);
     var spd = Math.hypot(vx,vy);
-    if(spd > 8){
+    if(spd > 3){
       var want = Math.atan2(vx, -vy);
       var d = ((want - hero.hdg + Math.PI*3) % (Math.PI*2)) - Math.PI;
-      hero.hdg += d * Math.min(1, dt*9);      // the turn eases, it does not snap
+      var turn = d * Math.min(1, dt*14);
+      hero.hdg += turn;                        // the turn eases, it does not snap
+      // Bank into the corner. This is what a walk cycle would otherwise sell.
+      var wantLean = Math.max(-0.34, Math.min(0.34, turn/Math.max(dt,1e-3)*0.055));
+      hero.lean += (wantLean - hero.lean) * Math.min(1, dt*7);
+    } else {
+      hero.lean += (0 - hero.lean) * Math.min(1, dt*5);
     }
+    hero.phase += spd * dt * 0.013;            // the stride rides distance, not time
     window.__spd = spd;
 
     trail.push([hero.x,hero.y]); if(trail.length>120) trail.shift();
@@ -192,7 +200,7 @@
       var a = ringPoint(k, g);
       var st = cloak[k];
       for(var i=0;i<2;i++){
-        var p = st[i], ax=(p.x-p.px)*0.90, ay=(p.y-p.py)*0.90;
+        var p = st[i], ax=(p.x-p.px)*0.965, ay=(p.y-p.py)*0.965;
         p.px=p.x; p.py=p.y;
         p.x += ax; p.y += ay + 12*dt*dt*60;
       }
@@ -318,7 +326,13 @@
       ctx.translate(hero.x, hero.y);
       if(doRotate) ctx.rotate(hero.hdg);
       if(hero.invuln > 0 && Math.floor(t*18)%2===0) ctx.globalAlpha = 0.35;
-      ctx.drawImage(img, -g.w/2, -g.h/2, g.w, g.h);
+      if(doRotate) ctx.rotate(hero.lean);
+      var gait = Math.min(1, (window.__spd||0)/140);
+      var bob  = 1 + Math.sin(hero.phase*6.2832*2) * 0.055 * gait;
+      var sway = Math.sin(hero.phase*6.2832) * 0.05 * gait;
+      ctx.rotate(sway);
+      ctx.scale(1, bob);
+      ctx.drawImage(img, -g.w/2, -g.h*0.42, g.w, g.h);
       ctx.globalAlpha = 1;
       ctx.restore();
     }
