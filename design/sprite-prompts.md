@@ -187,6 +187,46 @@ The accepted figure is `sprites/pilgrim-canonical.png`, 1092 x 997, a broad
 rounded cloak shell with a scalloped hem, a clean crown dome, and the lantern
 flat on the floor plane to the left.
 
+## Effect sprites
+
+Four effects are drawn: `fx-impact`, `fx-flare`, `fx-toll`, `fx-rot`. Each one
+lies flat on the ground plane, so the overhead camera rule still applies. Each
+one is radially arranged, so the game rotates and scales it freely and no
+facing is needed.
+
+All four came back correct on the first attempt. The base prompt is the same as
+prompt A with three changes:
+
+1. Say the shape is radially arranged around its own centre.
+2. State the brightness rule. An effect drawn in ink on a near-black playfield
+   is invisible. The body is parchment; ink is a thin contour only.
+3. Give one accent colour per effect, so the palette is three colours plus cyan.
+
+| Sprite | Accent | Used for |
+|---|---|---|
+| `fx-impact` | dried blood `#7A2E1E` | every bolt that lands |
+| `fx-flare` | gold `#C99A2E` | the Thurible signature |
+| `fx-toll` | grave violet `#8A6FB3` | the Passing Bell signature |
+| `fx-rot` | plague green `#8FA03A` | the Censer-Rot signature |
+
+Draw a signature burst UNDER the Pilgrim and an impact OVER its target. During a
+signature the player is still dodging, so the figure has to stay readable.
+
+## The attack animation is the rig, not frames
+
+The Pilgrim never swings. `autoAttack` emits `.attack(from:to:)` and
+`RunScene.swift:260` draws a line that fades over 0.12 s. So the attack reads
+through the rig instead, and every part of it is procedural:
+
+| Cue | How |
+|---|---|
+| Recoil | an offset on a spring, kicked away from the target, springing home |
+| Aim snap | 20% of the angle to the target, added to the body, decaying |
+| Lantern jolt | an impulse on the free lantern particle |
+| Cloak ripple | angular velocity added to the wedges facing the shot |
+
+No attack frames exist and none are needed.
+
 ## If the camera still will not come out
 
 Stop adding camera adjectives. Build a crude but unambiguous overhead guide --
