@@ -74,7 +74,7 @@
     <button id="bFog"   type="button" aria-pressed="true">Fog</button>
     <button id="bBig"   type="button" aria-pressed="false">2&times;</button>
     <button id="bTint"  type="button" aria-pressed="true">Tint: wild</button>
-    <button id="bObs"   type="button" aria-pressed="false">Obstacles: off</button>
+    <button id="bObs"   type="button" aria-pressed="false">World: off</button>
     <button id="bCards" type="button" aria-pressed="true">Upgrades</button>
     <button id="bReset" type="button" aria-pressed="false">Reset relic</button>
   </div>
@@ -159,7 +159,20 @@
   var fogImg = new Image(); fogImg.src = FOGT;
   var slabImg = new Image(); slabImg.src = SLAB;
   var briarImg = new Image(); briarImg.src = BRIAR;
-  var fogTint = null;
+  var fogTint = null, rockTint = null;
+  /* The cliff is scenery. It must read as solid mass without ever being
+     brighter than the Pilgrim, so the same slab is baked down to stone. */
+  function tintedRock(){
+    if(rockTint || !slabImg.complete || !slabImg.naturalWidth) return rockTint;
+    var c=document.createElement('canvas');
+    c.width=slabImg.naturalWidth; c.height=slabImg.naturalHeight;
+    var x=c.getContext('2d');
+    x.drawImage(slabImg,0,0);
+    x.globalCompositeOperation='source-atop';
+    x.globalAlpha=0.78; x.fillStyle='#2A211A';
+    x.fillRect(0,0,c.width,c.height);
+    rockTint=c; return c;
+  }
   function tintedFog(){
     if(fogTint || !fogImg.complete || !fogImg.naturalWidth) return fogTint;
     var c=document.createElement('canvas');
@@ -216,7 +229,12 @@
   var fx=[], arcs=[], rings=[], pools=[], lobs=[], rope=null, ropeT=0;
   /* Three families of obstacle, so the choice is made by feel. Only one runs
      at a time. PINCH blocks, BRIAR slows, CAIRN blocks until it is broken. */
-  var OBS=['off','pinch','briar','cairn'], obsN=0, obs=[], obsAcc=0;
+  var OBS=['off','gorge','briar','cairn'], obsN=0, obs=[], obsAcc=0, echoT=-1;
+  /* The gorge. The world is not a row of walls dropped across the screen; it
+     is two encroaching cliffs, and the pinch is where they lean in. Bands are
+     sampled every BANDH pixels and interpolated, so collision is a clamp. */
+  var BANDH=34, bands=[], bandTop=0, gorgeSeedL=0.10, gorgeSeedR=0.90,
+      gorgeGoalL=0.10, gorgeGoalR=0.90, gorgeHold=0;
   var orbs=[], links=[], shards=[], nextFoeId=1;
   var WEAPONS=[{n:'BOLT',c:'#E9DCBC'},{n:'THURIBLE',c:'#C99A2E'},
                {n:'PASSING BELL',c:'#8A6FB3'},{n:'WILD CHAIN',c:'#C06430'},
@@ -237,11 +255,33 @@
     [['virulent','it spreads wider','span',0.7],  ['lingering','it holds longer','dur',2.0]],
     [['more thorns','four more shards','count',4],['sharper','each one bites','dmg',1]]
   ];
-  var AXES=[['reach','it reaches further','reach',1.18],
-            ['ferocity','it comes faster','cad',0.87]];
+  /* Growth is a tree, not two slots. Each entry is
+     [label, subtitle, code, value, branch]. The branch a relic has already
+     been fed comes up more often, so a weapon grows a shape of its own
+     instead of stepping through the same two choices forever. */
+  var GROWTH=[
+    ['long reach','the shot carries','reach',1.18,'reach'],
+    ['far cast','it finds them sooner','reach',1.14,'reach'],
+    ['quick hand','a shorter breath between','cad',0.87,'ferocity'],
+    ['hard bite','the wound opens','dmg',1,'ferocity'],
+    ['wide work','it takes in more ground','span',0.26,'spread'],
+    ['many','one more of it','count',1,'spread'],
+    ['slow rot','it stays behind','dur',1.4,'lingering'],
+    ['deep hold','it does not let go','dur',1.0,'lingering']
+  ];
+  /* A mutation changes what the relic DOES. It is not a number, it appears
+     only once the relic is grown, and it is never offered twice. */
+  var MUTS=[
+    ['echo','it strikes twice, a beat apart','echo'],
+    ['greed','the dead give more','greed'],
+    ['bloom','the dead take their neighbours','bloom']
+  ];
+  var BRANCHC={reach:'#C99A2E', ferocity:'#7A2E1E',
+               spread:'#8FA03A', lingering:'#8A6FB3', mut:'#C06430'};
   var wst=[];
   for(var wi=0; wi<9; wi++)
-    wst.push({form:-1, reach:1, cad:1, count:0, dmg:0, span:0, dur:0, lvl:0});
+    wst.push({form:-1, reach:1, cad:1, count:0, dmg:0, span:0, dur:0, lvl:0,
+              aff:{}, muts:{}, offer:null});
   var ess=0, essNeed=4, card=null, slow=1;
   var STRANDS=7, fog=0, kills=0, spawnAcc=0, atkT=0, t=0, scale=1, flick=0;
   var SPRITE_H = 46;
@@ -422,9 +462,16 @@
       if(mk.y>H+40){ mk.y=-40; mk.x=Math.random()*W; mk.rot=Math.random()*6.283; }
     });
 
-    if(obsN>0){
+    if(obsN===1){
+      // the world comes down past you; the cliffs are one continuous thing
+      bandTop += obsSpeed()*dt;
+      while(bandTop > 0){ bandTop -= BANDH; pushBand(); }
+      while(bands.length < Math.ceil(H/BANDH)+4) pushBand();
+    } else if(bands.length){ bands.length=0; bandTop=0; }
+
+    if(obsN>1){
       obsAcc += dt;
-      if(obsAcc > (OBS[obsN]==='pinch' ? 3.4 : 2.6)){ obsAcc=0; spawnObstacles(); }
+      if(obsAcc > 2.6){ obsAcc=0; spawnObstacles(); }
     } else if(obs.length) obs.length=0;
     for(var oi=obs.length-1; oi>=0; oi--){
       var ob=obs[oi];
@@ -438,7 +485,10 @@
       while(spawnAcc>1){
         spawnAcc-=1;
         var isEl = t>20 && Math.random()<0.15;      // Combat.swift: >30s, 15%
-        foes.push(makeFoe(12+Math.random()*(W-24), -14, isEl));
+        var sp0=gorgeAt(-14);
+        var lo=sp0?sp0.l+16:12, hi=sp0?sp0.r-16:W-12;
+        if(hi-lo < 30){ lo=(lo+hi)/2-15; hi=lo+30; }
+        foes.push(makeFoe(lo+Math.random()*(hi-lo), -14, isEl));
       }
       for(var fi=foes.length-1; fi>=0; fi--){
         var f=foes[fi];
@@ -493,7 +543,14 @@
         if(hk.t>=hk.life) husks.splice(hi,1);
       }
       atkT-=dt;
-      if(atkT<=0) fireWeapon(g);
+      if(atkT<=0){
+        fireWeapon(g);
+        if(wst[weapon].muts.echo && echoT<0) echoT=0.20;   // it strikes twice
+      }
+      if(echoT>0){
+        echoT-=dt;
+        if(echoT<=0){ echoT=-1; var keep=atkT; fireWeapon(g); atkT=keep; }
+      }
     }
 
     for(var bi=bolts.length-1;bi>=0;bi--){
@@ -549,7 +606,25 @@
   function killFoe(i, why){
     var f=foes[i];
     kills++;
-    for(var m=0;m<4;m++)
+    var mu=wst[weapon].muts;
+    if(mu.bloom){                       // the dead take their neighbours
+      fx.push({x:f.x,y:f.y,t:0,life:0.34,img:1,rot:Math.random()*6.283});
+      for(var bj=foes.length-1; bj>=0; bj--){
+        if(bj===i) continue;
+        if(Math.hypot(foes[bj].x-f.x, foes[bj].y-f.y) < geom().h*1.5){
+          var bf=foes[bj];
+          bf.hp-=1; bf.kvx+=(bf.x-f.x)*1.6; bf.kvy+=(bf.y-f.y)*1.6;
+          if(bf.hp<=0 && bj!==i){
+            for(var bm=0;bm<2;bm++)
+              motes.push({x:bf.x,y:bf.y,vx:(Math.random()-0.5)*90,
+                          vy:(Math.random()-0.5)*90,life:2.2});
+            foes.splice(bj,1); if(bj<i) i--; kills++;
+          }
+        }
+      }
+      f=foes[i] || f;
+    }
+    for(var m=0, mN=mu.greed?7:4; m<mN; m++)
       motes.push({x:f.x,y:f.y,vx:(Math.random()-0.5)*90,
                   vy:(Math.random()-0.5)*90,life:2.2});
     fx.push({x:f.x,y:f.y,t:0,life:0.30,img:0,rot:Math.random()*6.283});
@@ -577,12 +652,40 @@
 
   function obsSpeed(){ return H*0.10; }
 
+  /* One more band at the top of the world. The cliffs walk toward a goal and
+     hold it for a while, so the gorge has stretches and not just noise. */
+  function pushBand(){
+    if(gorgeHold<=0){
+      gorgeHold = 3 + Math.floor(Math.random()*7);
+      var narrow = Math.random()<0.42;
+      var width = narrow ? 0.30+Math.random()*0.14 : 0.56+Math.random()*0.28;
+      var centre = 0.5 + (Math.random()-0.5)*(0.92-width);
+      gorgeGoalL = centre - width/2;
+      gorgeGoalR = centre + width/2;
+    }
+    gorgeHold--;
+    gorgeSeedL += (gorgeGoalL-gorgeSeedL)*0.34;
+    gorgeSeedR += (gorgeGoalR-gorgeSeedR)*0.34;
+    bands.unshift({l:gorgeSeedL, r:gorgeSeedR,
+                   j:(Math.random()-0.5)*0.018,   // the rock is not ruled
+                   rot:Math.random()*6.283});
+    if(bands.length>Math.ceil(H/BANDH)+4) bands.pop();
+  }
+
+  function gorgeAt(y){
+    if(!bands.length) return null;
+    var f=(y-bandTop)/BANDH;
+    var i=Math.floor(f), k=f-i;
+    if(i<0){ i=0; k=0; }
+    if(i>=bands.length-1){ i=bands.length-2; k=1; }
+    if(i<0) return null;
+    var a=bands[i], b=bands[i+1];
+    return { l:(a.l+(b.l-a.l)*k + a.j)*W, r:(a.r+(b.r-a.r)*k + a.j)*W };
+  }
+
   function spawnObstacles(){
     var kind=OBS[obsN];
-    if(kind==='pinch'){
-      var gw=W*0.30, gx=W*0.06 + Math.random()*(W*0.88-gw);
-      obs.push({k:'pinch', y:-46, h:38, gx:gx, gw:gw});
-    } else if(kind==='briar'){
+    if(kind==='briar'){
       for(var i=0;i<3;i++)
         obs.push({k:'briar', x:W*0.10+Math.random()*W*0.80, y:-60,
                   r:H*0.045+Math.random()*H*0.025, rot:Math.random()*6.283});
@@ -598,10 +701,7 @@
     var out=[];
     for(var i=0;i<obs.length;i++){
       var o=obs[i];
-      if(o.k==='pinch'){
-        out.push([0, o.y, o.gx, o.y+o.h, o]);
-        out.push([o.gx+o.gw, o.y, W, o.y+o.h, o]);
-      } else if(o.k==='cairn'){
+      if(o.k==='cairn'){
         out.push([o.x-o.w/2, o.y-o.h/2, o.x+o.w/2, o.y+o.h/2, o]);
       }
     }
@@ -618,6 +718,15 @@
 
   // circle against every solid box: push to the nearest face, kill that axis
   function pushOut(b, r, isHero){
+    // the cliffs first: the gorge is a clamp, not a set of boxes
+    if(obsN===1){
+      var gp=gorgeAt(b.y);
+      if(gp){
+        if(b.x < gp.l+r){ b.x=gp.l+r; if(b.vx<0) b.vx=0; }
+        if(b.x > gp.r-r){ b.x=gp.r-r; if(b.vx>0) b.vx=0; }
+        if(isHero){ b.tx=Math.min(Math.max(b.tx, gp.l+r), gp.r-r); }
+      }
+    }
     var bx=solidBoxes();
     for(var i=0;i<bx.length;i++){
       var B=bx[i];
@@ -641,6 +750,13 @@
   /* Does a shot cross a solid box? Returns the box's owner, so a cairn takes
      the hit that the foe behind it does not. */
   function blockedBy(x1,y1,x2,y2){
+    if(obsN===1){                       // rock stops a shot as surely as a cairn
+      for(var t2=0;t2<=12;t2++){
+        var gx2=x1+(x2-x1)*t2/12, gy2=y1+(y2-y1)*t2/12;
+        var gp2=gorgeAt(gy2);
+        if(gp2 && (gx2<gp2.l || gx2>gp2.r)) return {k:'rock'};
+      }
+    }
     var bx=solidBoxes();
     for(var i=0;i<bx.length;i++){
       var B=bx[i];
@@ -1016,11 +1132,45 @@
     });
   }
 
+  function drawGrowth(st, exclude){
+    var pool=[], wt=[], total=0;
+    for(var i=0;i<GROWTH.length;i++){
+      var gr=GROWTH[i];
+      if(exclude && gr[0]===exclude[0]) continue;
+      // the branch you have fed grows faster than the ones you have not
+      var w = 1 + (st.aff[gr[4]]||0)*0.9;
+      pool.push(gr); wt.push(w); total+=w;
+    }
+    var r=Math.random()*total;
+    for(var j=0;j<pool.length;j++){ r-=wt[j]; if(r<=0) return pool[j]; }
+    return pool[pool.length-1];
+  }
+
+  function freeMut(st){
+    var left=MUTS.filter(function(m){ return !st.muts[m[2]]; });
+    return left.length ? left[Math.floor(Math.random()*left.length)] : null;
+  }
+
+  /* The offer is rolled once and held, so the card does not reshuffle under
+     the thumb while it is being read. */
   function offerFor(){
     var st=wst[weapon];
-    return st.form<0
-      ? {kind:'form', l:FORMS[weapon][0], r:FORMS[weapon][1]}
-      : {kind:'axis', l:AXES[0], r:AXES[1]};
+    if(st.offer) return st.offer;
+    if(st.form<0){
+      st.offer={kind:'form', l:FORMS[weapon][0], r:FORMS[weapon][1],
+                lb:'mut', rb:'mut'};
+      return st.offer;
+    }
+    var mut = st.lvl>=2 && Math.random()<0.34 ? freeMut(st) : null;
+    var a=drawGrowth(st,null), b=drawGrowth(st,a);
+    if(mut){
+      var left=Math.random()<0.5;
+      st.offer={kind:'grow', l:left?mut:a, r:left?a:mut,
+                lb:left?'mut':a[4], rb:left?a[4]:'mut'};
+    } else {
+      st.offer={kind:'grow', l:a, r:b, lb:a[4], rb:b[4]};
+    }
+    return st.offer;
   }
   function dealCard(){
     ess-=essNeed; essNeed=Math.round(essNeed*1.45)+2;
@@ -1029,6 +1179,7 @@
   function applyChoice(side){
     var st=wst[weapon], o=offerFor();
     var c = side<0 ? o.l : o.r;
+    var branch = side<0 ? o.lb : o.rb;
     if(o.kind==='form') st.form = side<0 ? 0 : 1;
     switch(c[2]){
       case 'count': st.count += c[3]; break;
@@ -1037,8 +1188,11 @@
       case 'cad':   st.cad   *= c[3]; break;
       case 'span':  st.span  += c[3]; break;
       case 'dur':   st.dur   += c[3]; break;
+      case 'echo': case 'greed': case 'bloom': st.muts[c[2]]=1; break;
     }
+    if(branch && branch!=='mut') st.aff[branch]=(st.aff[branch]||0)+1;
     st.lvl++;
+    st.offer=null;                       // the next card rolls its own
     card=null;
   }
   function fireSignature(){
@@ -1058,25 +1212,53 @@
     return [hero.x+Math.sin(a)*g.r*0.55, hero.y-Math.cos(a)*g.r*0.55];
   }
 
+  /* The cliffs. Each band lays a few slabs along its own edge, so the rock
+     course-lines follow the gorge instead of running straight across it. */
+  function drawGorge(){
+    if(!bands.length || !slabImg.complete || !slabImg.naturalWidth) return;
+    var rock = tintedRock();
+    var sr = slabImg.naturalHeight/slabImg.naturalWidth;
+    var tile = BANDH*1.55;
+    for(var i=0;i<bands.length-1;i++){
+      var a=bands[i], b=bands[i+1];
+      var y0=bandTop+i*BANDH, y1=y0+BANDH;
+      if(y1 < -BANDH*2 || y0 > H+BANDH*2) continue;
+      var lx0=(a.l+a.j)*W, lx1=(b.l+b.j)*W;
+      var rx0=(a.r+a.j)*W, rx1=(b.r+b.j)*W;
+      // the dead rock behind the face, so the gorge has depth, not an outline
+      ctx.fillStyle='#1E1813';
+      ctx.beginPath();
+      ctx.moveTo(0,y0); ctx.lineTo(lx0,y0); ctx.lineTo(lx1,y1); ctx.lineTo(0,y1);
+      ctx.closePath(); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(W,y0); ctx.lineTo(rx0,y0); ctx.lineTo(rx1,y1); ctx.lineTo(W,y1);
+      ctx.closePath(); ctx.fill();
+      for(var s=0;s<2;s++){
+        var edge = s ? (rx0+rx1)/2 : (lx0+lx1)/2;
+        var dir  = s ? 1 : -1;
+        for(var d=0; d<4; d++){
+          var px3 = edge + dir*(d*tile*0.62 + tile*0.30);
+          if(px3 < -tile || px3 > W+tile) break;
+          ctx.save();
+          // only the lip catches the light; the mass behind it goes to stone
+          ctx.globalAlpha = d===0 ? 0.62 : 0.82;
+          ctx.translate(px3, y0+BANDH/2);
+          ctx.rotate(a.rot + d*1.1 + (s?0.4:-0.4));
+          ctx.drawImage(d===0 ? slabImg : (rock||slabImg),
+                        -tile/2, -tile*sr/2, tile, tile*sr);
+          ctx.restore();
+        }
+      }
+    }
+    ctx.globalAlpha=1;
+  }
+
   function drawObstacles(){
     if(!obs.length) return;
     var sr = slabImg.naturalHeight/Math.max(1,slabImg.naturalWidth);
     obs.forEach(function(o){
       ctx.save();
-      if(o.k==='pinch'){
-        // a wall of rubble, laid course by course out of the same slab
-        var n=Math.ceil(W/(o.h*1.25));
-        for(var i=0;i<n;i++){
-          var sx=i*(o.h*1.25);
-          if(sx+o.h*1.25 > o.gx && sx < o.gx+o.gw) continue;
-          ctx.save();
-          ctx.globalAlpha=0.92;
-          ctx.translate(sx+o.h*0.62, o.y+o.h/2);
-          ctx.rotate(((i*13)%7-3)*0.05);
-          ctx.drawImage(slabImg, -o.h*0.60, -o.h*0.60*sr, o.h*1.20, o.h*1.20*sr);
-          ctx.restore();
-        }
-      } else if(o.k==='cairn'){
+      if(o.k==='cairn'){
         // a cairn is STACKED. A flat single slab is decoration, and the
         // player must never have to judge that by brightness alone.
         ctx.globalAlpha = o.hit>0 ? 0.55 : 1;
@@ -1120,6 +1302,7 @@
       marks.forEach(function(mk){ ctx.fillRect(mk.x,mk.y,mk.w,8); });
     }
 
+    drawGorge();
     drawObstacles();
 
     // the lantern pool, on the ground, under everything
@@ -1260,8 +1443,13 @@
       if(ctx.roundRect) ctx.roundRect(-cw/2,-chh/2,cw,chh,6);
       else ctx.rect(-cw/2,-chh/2,cw,chh);
       ctx.fill(); ctx.stroke();
+      var top=null, tv=0, af=wst[weapon].aff;
+      for(var bk in af) if(af[bk]>tv){ tv=af[bk]; top=bk; }
       ctx.fillStyle=WEAPONS[weapon].c;
       ctx.fillRect(-cw/2, -chh/2, 5, chh);
+      if(top){ ctx.fillStyle=BRANCHC[top];
+               ctx.fillRect(-cw/2, chh/2-chh*Math.min(0.8,tv*0.2), 5,
+                            chh*Math.min(0.8,tv*0.2)); }
       var em=embImg[weapon];
       if(em && em.complete && em.naturalWidth){
         var eh=chh*0.34, ew=eh*(em.naturalWidth/em.naturalHeight);
@@ -1271,11 +1459,11 @@
       ctx.font='600 13px Georgia,serif';
       ctx.fillText(o.kind==='form'?'CHOOSE ITS FORM':'GROW IT', 0, -chh*0.02);
       ctx.font='11px Georgia,serif';
-      ctx.fillStyle = card.off<-8 ? '#7A2E1E' : '#6B5A3D';
+      ctx.fillStyle = card.off<-8 ? (BRANCHC[o.lb]||'#7A2E1E') : '#6B5A3D';
       ctx.fillText('\u2190 '+o.l[0], -cw*0.24, chh*0.18);
       ctx.fillStyle='#8C7A57'; ctx.font='9px Georgia,serif';
       ctx.fillText(o.l[1], -cw*0.24, chh*0.30);
-      ctx.fillStyle = card.off>8 ? '#7A2E1E' : '#6B5A3D';
+      ctx.fillStyle = card.off>8 ? (BRANCHC[o.rb]||'#7A2E1E') : '#6B5A3D';
       ctx.font='11px Georgia,serif';
       ctx.fillText(o.r[0]+' \u2192', cw*0.24, chh*0.18);
       ctx.fillStyle='#8C7A57'; ctx.font='9px Georgia,serif';
@@ -1369,7 +1557,8 @@
     var b=document.getElementById('bObs');
     b.addEventListener('click', function(){
       obsN=(obsN+1)%OBS.length; obs.length=0; obsAcc=0;
-      b.textContent='Obstacles: '+OBS[obsN];
+      b.textContent='World: '+OBS[obsN];
+      bands.length=0; bandTop=0;
       b.setAttribute('aria-pressed', obsN?'true':'false');
       b.style.color = obsN ? '#C06430' : '';
       b.style.borderColor = obsN ? '#C06430' : '';
