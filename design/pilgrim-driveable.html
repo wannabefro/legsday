@@ -1060,7 +1060,7 @@
     } else if(weapon===7){                            // the miasma spreads
       atkT = 0.85*st.cad;
       if(showRecoil) fireReaction(f.x,f.y,g);
-      f.inf = Math.max(f.inf, 3.2+st.dur);
+      f.inf = Math.max(f.inf, 3.2+st.dur); f.gen = 1; f.seeds = undefined;
       lobs.push({x:hero.x, y:hero.y, tx:f.x, ty:f.y, t:0, life:0.28});
     }
   }
@@ -1098,12 +1098,21 @@
       inf.tick=(inf.tick||0)-dt;
       if(inf.tick<=0){
         inf.tick=0.55;
-        for(var kk=0;kk<foes.length;kk++){
-          var nb=foes[kk];
-          if(nb.id===inf.id || nb.inf>0) continue;
-          if(Math.hypot(nb.x-inf.x, nb.y-inf.y) < g.h*(1.4+wst[7].span) &&
-             !blockedBy(inf.x,inf.y,nb.x,nb.y))
-            nb.inf=2.6+wst[7].dur;
+        /* The seed budget is per HOST, not per tick. Per tick the infection
+           still branched about five deep over its 3.2s life, so bounding the
+           generation alone left it taking the whole field. */
+        if(inf.seeds===undefined) inf.seeds = 2 + Math.floor(wst[7].span*2);
+        var gen = (inf.gen||1);
+        if(gen < 4 && inf.seeds > 0){
+          for(var kk=0; kk<foes.length && inf.seeds>0; kk++){
+            var nb=foes[kk];
+            if(nb.id===inf.id || nb.inf>0) continue;
+            if(Math.hypot(nb.x-inf.x, nb.y-inf.y) < g.h*(1.4+wst[7].span) &&
+               !blockedBy(inf.x,inf.y,nb.x,nb.y)){
+              nb.inf=2.6+wst[7].dur; nb.gen=gen+1; nb.seeds=undefined;
+              inf.seeds--;
+            }
+          }
         }
         hurt(ii,1+wst[7].dmg);
       }
