@@ -280,6 +280,33 @@ Two rules carried the whole set, and neither needed a second round:
    Reaper prompt says the skull IS visible, and says why: this figure is the
    only one the player meets up close.
 
+## The world assets
+
+Six more, one wave of three and then another, all correct on the first attempt.
+Each one replaces a reused sprite that was standing in for it.
+
+| Sprite | Used as | Replaced |
+|---|---|---|
+| `boulder` | THE LOW ROAD wall | the grave slab |
+| `tree-canopy` | THE ORCHARD wall and floor | the briar bed |
+| `bone-pile` | THE OSSUARY wall and floor | the ossuary card emblem |
+| `ashlar` | THE SPIRE wall and floor | the grave slab |
+| `rift` | THE RECKONING floor | the grave slab |
+| `gate-arch` | the landmark at every zone boundary | nothing |
+
+Two rules carried them, both about direction:
+
+1. **A wall element must be radial.** The game turns it to follow the cliff, so
+   a shape with a front looks wrong on one side of the gorge. Say "NO SINGLE
+   DIRECTION" and "do not give it a front".
+2. **A landmark must have one.** `gate-arch` is the only asset that says the
+   opposite: it runs left to right, touches neither the top nor the bottom edge,
+   and is drawn at a 2:1 aspect.
+
+`ashlar` is the asset that changed the most. THE SPIRE is the only zone built
+rather than broken, and one cut block laid in courses without rotation says that
+faster than any colour does.
+
 ## The attack animation is the rig, not frames
 
 The Pilgrim never swings. `autoAttack` emits `.attack(from:to:)` and
