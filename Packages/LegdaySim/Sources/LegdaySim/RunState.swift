@@ -28,6 +28,10 @@ public struct RunState: Sendable {
     public var hero: Hero
     public internal(set) var gorge: Gorge
 
+    /// Fog ground a kill may still buy back. It refills below the creep rate, so
+    /// a dense field slows the fog and never reverses it.
+    public internal(set) var pushBudget: Double = RunSim.pushBudgetCap
+
     /// A splash scheduled to hit the fog surface after a felled foe's corpse
     /// falls (KTD-3 — sim-born, never read back from the render layer).
     struct PendingSplash: Equatable, Sendable {
@@ -254,6 +258,7 @@ public struct RunState: Sendable {
         }
         mix(rng.state)
         mix(gorge.fingerprint)
+        mix(pushBudget.bitPattern)
         return h
     }
 }

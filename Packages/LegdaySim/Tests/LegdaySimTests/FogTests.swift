@@ -122,3 +122,36 @@ struct FogTests {
         #expect(splash!.magnitude.isFinite && splash!.magnitude > 0)
     }
 }
+
+/// R5 with a ceiling: a kill still buys ground, but sustained slaughter cannot
+/// outrun the creep, so a dense field never makes the player safe.
+struct FogPushBudgetTests {
+    private static let t = Tunables(
+        scroll: 78, spawn: 0, shove: 120, iframes: 0.55, fogGrace: 0.8, fogGrip: 2.4,
+        fogCreep: 1.1, killPush: 0.9, downBias: 0.35, cardSlow: 0.005,
+        firstCardCost: 4, cardCostIncrement: 1)
+
+    @Test func anIsolatedKillStillBuysItsFullPushback() {
+        var sim = RunSim(tunables: Self.t, viewport: Vec2(393, 852), seed: 3)
+        sim.debugMutate { $0.fogPressure = 50 }
+        sim.applyFogKill(Foe(id: 0, pos: Vec2(196, 200), radius: 10, hp: 0, speed: 0, elite: false))
+        #expect(abs(sim.state.fogPressure - (50 - Self.t.killPush)) < 1e-9)
+        #expect(sim.state.pushBudget < RunSim.pushBudgetCap)
+    }
+
+    @Test func theBankIsBoundedSoAFieldOfKillsCannotHoldTheFogOff() {
+        var sim = RunSim(tunables: Self.t, viewport: Vec2(393, 852), seed: 4)
+        sim.debugMutate { $0.fogPressure = 120 }
+        let before = sim.state.fogPressure
+        for i in 0..<200 {
+            sim.applyFogKill(Foe(id: i, pos: Vec2(196, 200), radius: 10, hp: 0, speed: 0, elite: false))
+        }
+        #expect(before - sim.state.fogPressure <= RunSim.pushBudgetCap + 1e-9)
+        #expect(sim.state.pushBudget == 0)
+    }
+
+    @Test func theBankRefillsBelowTheCreepSoTheFogAlwaysGainsGround() {
+        #expect(RunSim.pushBudgetShare < 1)
+        #expect(RunSim.pushBudgetCap > 0)
+    }
+}

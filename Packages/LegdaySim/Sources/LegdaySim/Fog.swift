@@ -14,6 +14,8 @@ extension RunSim {
     private static let fogTimeDecay: Double = 0.9      // fogTime bleed when clear
     private static let corpseFallSpeed: Double = 420   // px/s; splash-delay basis
     private static let splashMagnitude: Double = 90    // ripple velocity per kill
+    static let pushBudgetShare: Double = 0.75          // below 1, so the fog always gains
+    static let pushBudgetCap: Double = 12
 
     /// The flat fog rest line in reference-space y. Larger `fogPressure` raises
     /// it (smaller y) toward the hero. The wobble is a slow breathing.
@@ -28,9 +30,11 @@ extension RunSim {
         // Ramping creep (graybox: fogCreep · (0.7 + t·0.015)); a living Herald
         // anchors the fog, accelerating the creep (R16).
         let heraldCreep = state.herald != nil ? Heralds.creepMult : 1
-        let creep = dt * tunables.fogCreep * state.stage.fogCreep
+        let creepRate = tunables.fogCreep * state.stage.fogCreep
             * (0.7 + state.time * 0.015) * heraldCreep
-        state.fogPressure = min(Self.fogPressureCap, state.fogPressure + creep)
+        state.fogPressure = min(Self.fogPressureCap, state.fogPressure + creepRate * dt)
+        state.pushBudget = min(Self.pushBudgetCap,
+                               state.pushBudget + creepRate * Self.pushBudgetShare * dt)
 
         firePendingSplashes()
         state.fogSurface.update(dt: dt)
@@ -72,7 +76,9 @@ extension RunSim {
         // A living Herald halves every kill-push — the fog holds while it lives (R16).
         let heraldFactor = state.herald != nil ? Heralds.killPushFactor : 1
         let push = tunables.killPush * (foe.elite ? Self.eliteFogPushFactor : 1) * heraldFactor
-        state.fogPressure = max(0, state.fogPressure - push)
+        let spent = min(push, state.pushBudget)
+        state.pushBudget -= spent
+        state.fogPressure = max(0, state.fogPressure - spent)
 
         let fallDistance = max(0, fogLineY() - foe.pos.y)
         let delay = fallDistance / Self.corpseFallSpeed

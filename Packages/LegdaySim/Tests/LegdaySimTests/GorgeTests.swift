@@ -104,7 +104,7 @@ struct GorgeTests {
         #expect(sim.state.hero.vel.x == 0)
     }
 
-    /// Foes are not clamped yet: it defeats the sideways cull and the hero survives.
+    /// Foes are not clamped yet: it defeats the sideways cull and deadlocks the field.
     @Test func foesAreNotYetHeldInsideTheGorge() {
         var sim = RunSim(tunables: Self.tunables, viewport: Vec2(Self.W, 852), seed: 18)
         sim.tick(dt: RunSim.fixedStep, input: .idle)
