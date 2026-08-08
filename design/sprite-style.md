@@ -39,8 +39,8 @@ the render layer draws today.
 |---|---|---|---|
 | Pilgrim | `PlaceholderAtlas.hero` | 18 × 26 | parchment |
 | Pilgrim in fog | `PlaceholderAtlas.heroSubmerged` | 18 × 26 | grave violet |
-| Foe | `PlaceholderAtlas.foe` | Ø 18 | `#5E4B3D` |
-| Elite foe | `PlaceholderAtlas.elite` | Ø 30 | `#4A3A30` |
+| Foe | `PlaceholderAtlas.foe` | Ø 18 | drawn: `sprites/foe-base.png` |
+| Elite foe | `PlaceholderAtlas.elite` | Ø 30 | drawn: `sprites/foe-elite.png` |
 | Mote | `PlaceholderAtlas.mote` | Ø 10 | grave violet |
 | Spark | `PlaceholderAtlas.spark` | Ø 6 | parchment |
 | Card corner | `PlaceholderAtlas.cardCharge` | 46 × 66 | `#CDBB92` |

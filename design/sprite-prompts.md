@@ -212,6 +212,40 @@ prompt A with three changes:
 Draw a signature burst UNDER the Pilgrim and an impact OVER its target. During a
 signature the player is still dodging, so the figure has to stay readable.
 
+## Foes: two drawings, four factions
+
+`Combat.swift:41` gives foes one distinction, `elite: Bool`. So the whole foe
+set is two drawings, not eight. Both are drawn in parchment and ink only, and
+the four factions come from a runtime tint.
+
+| Sprite | Size (pt) | Tint |
+|---|---|---|
+| `foe-base` | 18 | `colorBlendFactor` 0.55, faction colour |
+| `foe-elite` | 30 | the same |
+
+Three prompt changes carry the tint. State that the drawing carries **more**
+cross-hatching than a clean sprite, because the hatching is what gives the tint
+its texture. Allow two colours only. Say the shape is radial and has no front,
+so runtime rotation stays correct.
+
+`sprites/foe-tint-check.png` shows both sprites at game size, in gold, plague
+green, grave violet and rust. The hatching survives all four.
+
+Two rounds were needed, and the same failure appeared in both. The model drew
+evenly spaced points around a large disc, which reads as a sunflower. Naming the
+failure fixed it:
+
+```
+- Draw only SIX to NINE torn points, not twenty. Fewer, longer, thinner.
+- Make the points WILDLY uneven. Some reach twice as far as others.
+- Keep the central hump SMALL, about one third of the total width.
+- Cut deep notches between the points, so the empty background reaches close
+  to the hump. The shape must look bitten and rotted, never decorative.
+```
+
+One elite run stalled and wrote no file. The retry at
+`model_reasoning_effort=low` finished in about 4 minutes.
+
 ## The attack animation is the rig, not frames
 
 The Pilgrim never swings. `autoAttack` emits `.attack(from:to:)` and
