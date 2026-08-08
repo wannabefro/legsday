@@ -54,6 +54,8 @@ them today. Both are in the prototype.
 |---|---|---|
 | Fog edge | `sprites/fog-tendril.png` | a row of tongues, mirrored and scaled, on the fog line |
 | Ground slab | `sprites/ground-slab.png` | 9 scrolling slabs, each with its own turn and alpha |
+| Orchard floor | `sprites/floor-roots.png` | scrolling marks, rotated, at 0.55 alpha |
+| Reckoning floor | `sprites/floor-ash.png` | scrolling marks, rotated, at 0.85 alpha |
 
 Every subject now has art. `PlaceholderAtlas` is unchanged: the sprites live in
 `design/sprites/` and the render layer still draws shapes.

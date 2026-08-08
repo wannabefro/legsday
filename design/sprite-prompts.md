@@ -328,3 +328,36 @@ Stop adding camera adjectives. Build a crude but unambiguous overhead guide --
 a blocked-out silhouette or a simple 3D mannequin render -- and run
 image-to-image at low strength over it. Geometry beats prose here. Apply the
 woodcut treatment after the geometry is locked.
+
+## The two floors, and why a substitute is not a floor
+
+THE ORCHARD and THE RECKONING drew their floors with a borrowed asset. The
+canopy stood in for roots and read as a snowflake. The rift stood in for ash
+and read as scattered brackets. Both are now drawn on purpose:
+`floor-roots.png` and `floor-ash.png`.
+
+Two rules from earlier runs did the work again.
+
+**Name the failure, not the goal.** The roots brief says "A previous attempt
+failed as a snowflake, so this is not optional", then lists the snowflake, the
+star, the burst and the even radial arm. The result has uneven arms and no
+tidy centre.
+
+**Say what the asset lies on.** Both briefs say "Show only what lies FLAT ON THE
+GROUND". A floor and a wall take the same overhead camera, so the camera
+sentence alone does not separate them.
+
+One new rule. **A rotated asset must have no centre of symmetry.** The game
+rotates each floor mark to a random angle, so the brief asks for a ragged and
+off-centre density, and for two or three arms much longer than the rest.
+
+### Codex could not save either file
+
+`codex-run.sh` runs Codex with `sandbox: read-only`, so both images generated
+and neither could be written. Codex reported `NO_IMAGE_CAPABILITY` for one run
+and a save failure for the other, and both exited 0.
+
+The images survive at `~/.codex/generated_images/<session-id>/`, and the
+session id is printed in the run header. Recover from there rather than
+re-running. Passing `--sandbox workspace-write` is the fix, and
+`codex-run.sh` does not expose it.
