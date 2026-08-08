@@ -20,6 +20,9 @@ targets:
     dependencies:
       - package: LegdaySim
         product: LegdaySim
+    scheme:
+      testTargets:
+        - LegdayTests
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.legday.app
