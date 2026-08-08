@@ -175,7 +175,7 @@
   var hero = {x:0,y:0,tx:0,ty:0,vx:0,vy:0,hdg:Math.PI,invuln:0,phase:0,lean:0,
               rx:0, ry:0, rvx:0, rvy:0, aim:0};   // recoil offset and aim snap
   var lamp = {x:0,y:0,px:0,py:0};
-  var anchor=null, foes=[], bolts=[], motes=[], marks=[], cloak=[];
+  var anchor=null, foes=[], husks=[], bolts=[], motes=[], marks=[], cloak=[];
   var WEDGES=12, wedge=[], prevHdg=Math.PI, accX=0, accY=0, lvxP=0, lvyP=0;
   var fx=[], arcs=[], rings=[], pools=[], lobs=[], rope=null, ropeT=0;
   var orbs=[], links=[], shards=[], nextFoeId=1;
@@ -217,7 +217,7 @@
     resize();
     hero.x=hero.tx=W/2; hero.y=hero.ty=H*0.55;
     lamp.x=lamp.px=hero.x; lamp.y=lamp.py=hero.y;
-    foes.length=0; bolts.length=0; motes.length=0; marks.length=0;
+    foes.length=0; husks.length=0; bolts.length=0; motes.length=0; marks.length=0;
     for(var i=0;i<9;i++) marks.push({x:Math.random()*W,y:Math.random()*H,
                                      w:8+Math.random()*16,h:4+Math.random()*5});
     cloak.length=0;
@@ -228,9 +228,7 @@
     for(var q=0;q<WEDGES;q++)
       wedge.push({phi:(q+0.5)*(6.2831853/WEDGES)-Math.PI, th:0, tv:0, str:1});
     for(var fq=0; fq<4; fq++)
-      foes.push({id:nextFoeId++, x:20+Math.random()*(W-40),
-                 y:H*(0.10+0.28*Math.random()), r:6+Math.random()*3, hp:1,
-                 sp:H*0.13+Math.random()*H*0.09, inf:0, hitT:0});
+      foes.push(makeFoe(20+Math.random()*(W-40), H*(0.10+0.28*Math.random()), false));
     fog=H*0.10; kills=0;
   }
 
@@ -387,18 +385,26 @@
       while(spawnAcc>1){
         spawnAcc-=1;
         var isEl = t>20 && Math.random()<0.15;      // Combat.swift: >30s, 15%
-        foes.push({id:nextFoeId++, x:12+Math.random()*(W-24), y:-14,
-                   r:isEl?13:6+Math.random()*3, el:isEl,
-                   hp:isEl?3:1+(Math.random()<0.25?1:0),
-                   rot:Math.random()*6.283, rv:(Math.random()-0.5)*1.1,
-                   sp:(isEl?0.72:1)*(H*0.13 + Math.random()*H*0.09),
-                   inf:0, hitT:0});
+        foes.push(makeFoe(12+Math.random()*(W-24), -14, isEl));
       }
       for(var fi=foes.length-1; fi>=0; fi--){
         var f=foes[fi];
         var fdx=hero.x-f.x, fy=hero.y-f.y, fd=Math.max(1,Math.hypot(fdx,fy));
-        f.x+=fdx/fd*f.sp*dt; f.y+=fy/fd*f.sp*dt+H*0.03*dt;
-        f.rot += f.rv*dt;                          // it writhes as it comes
+        // it accelerates and carries momentum, so it overshoots and swings back
+        f.vx += fdx/fd*f.sp*4*dt;
+        f.vy += (fy/fd*f.sp*4 + H*0.12)*dt;
+        var fdrag = Math.pow(0.02, dt);            // terminal speed near f.sp
+        f.vx *= fdrag; f.vy *= fdrag;
+        f.x += f.vx*dt; f.y += f.vy*dt;
+        // the body lags the direction of travel on a spring, so a turn swings it
+        var fwant = Math.atan2(f.vy, f.vx);
+        var fturn = ((fwant - f.rot + Math.PI*3) % (Math.PI*2)) - Math.PI;
+        f.rv += (f.K*fturn - 4.2*f.rv)*dt;
+        f.rot += f.rv*dt;
+        f.wob += dt*3.1;
+        f.kvx += (-150*f.kx - 13*f.kvx)*dt;        // the knockback springs home
+        f.kvy += (-150*f.ky - 13*f.kvy)*dt;
+        f.kx += f.kvx*dt; f.ky += f.kvy*dt;
         if(fd<f.r+g.r && hero.invuln<=0){
           var sx=fdx/fd, sy=fy/fd+0.35;
           var sm=Math.max(0.001,Math.hypot(sx,sy));
@@ -406,6 +412,28 @@
           hero.invuln=0.55;
         }
         if(f.y>H+30) foes.splice(fi,1);
+      }
+      // they are a crowd, not a queue: overlapping bodies shove each other
+      for(var sa=0; sa<foes.length; sa++){
+        var A=foes[sa];
+        for(var sb=sa+1; sb<foes.length; sb++){
+          var B=foes[sb];
+          var sdx=B.x-A.x, sdy=B.y-A.y, sd=Math.hypot(sdx,sdy);
+          var smin=(A.r+B.r)*1.15;
+          if(sd<0.01 || sd>=smin) continue;
+          var ux=sdx/sd, uy=sdy/sd, over=smin-sd;
+          A.x-=ux*over*0.5; A.y-=uy*over*0.5;
+          B.x+=ux*over*0.5; B.y+=uy*over*0.5;
+          A.vx-=ux*over*3.0; A.vy-=uy*over*3.0;
+          B.vx+=ux*over*3.0; B.vy+=uy*over*3.0;
+        }
+      }
+      for(var hi=husks.length-1; hi>=0; hi--){
+        var hk=husks[hi]; hk.t+=dt;
+        hk.x+=hk.vx*dt; hk.y+=hk.vy*dt;
+        var hdrag=Math.pow(0.05,dt); hk.vx*=hdrag; hk.vy*=hdrag;
+        hk.rot+=hk.rv*dt;
+        if(hk.t>=hk.life) husks.splice(hi,1);
       }
       atkT-=dt;
       if(atkT<=0) fireWeapon(g);
@@ -467,15 +495,40 @@
       motes.push({x:f.x,y:f.y,vx:(Math.random()-0.5)*90,
                   vy:(Math.random()-0.5)*90,life:2.2});
     fx.push({x:f.x,y:f.y,t:0,life:0.30,img:0,rot:Math.random()*6.283});
+    // it does not blink out. It is flung, it spins, and it comes apart.
+    var kx2=f.x-hero.x, ky2=f.y-hero.y, kd2=Math.max(1,Math.hypot(kx2,ky2));
+    husks.push({x:f.x, y:f.y, r:f.r, el:f.el, rot:f.rot, t:0, life:0.42,
+                vx:f.vx*0.35 + kx2/kd2*H*0.42,
+                vy:f.vy*0.35 + ky2/kd2*H*0.42,
+                rv:(Math.random()-0.5)*15});
     foes.splice(i,1);
     fog=Math.max(H*0.05, fog-H*0.02);
   }
   function hurt(i, n){
-    foes[i].hp -= (n||1);
-    if(foes[i].hp<=0) killFoe(i);
-    else fx.push({x:foes[i].x,y:foes[i].y,t:0,life:0.22,img:0,
-                  rot:Math.random()*6.283});
+    var f=foes[i];
+    f.hp -= (n||1);
+    var hx=f.x-hero.x, hy=f.y-hero.y, hd=Math.max(1,Math.hypot(hx,hy));
+    var kick=(f.el?70:150)*(n||1);
+    f.kvx += hx/hd*kick; f.kvy += hy/hd*kick;   // shoved away from the Pilgrim
+    f.vx  += hx/hd*kick*0.25; f.vy += hy/hd*kick*0.25;
+    f.rv  += (Math.random()-0.5)*7;
+    if(f.hp<=0) killFoe(i);
+    else fx.push({x:f.x,y:f.y,t:0,life:0.22,img:0,rot:Math.random()*6.283});
   }
+  /* One constructor. A foe built anywhere else drifts, and a missing physics
+     field turns its position into NaN on the first frame. */
+  function makeFoe(x, y, isEl){
+    return {id:nextFoeId++, x:x, y:y, el:!!isEl,
+            r:isEl?13:6+Math.random()*3,
+            hp:isEl?3:1+(Math.random()<0.25?1:0),
+            rot:Math.random()*6.283, rv:0, vx:0, vy:0,
+            kx:0, ky:0, kvx:0, kvy:0,        // the knockback offset
+            K:(isEl?7:13)+Math.random()*6,   // detuned, so no two turn alike
+            wob:Math.random()*6.283,
+            sp:(isEl?0.72:1)*(H*0.13 + Math.random()*H*0.09),
+            inf:0, hitT:0};
+  }
+
   function nearest(range){
     var best=-1, bd=1e9;
     for(var i=0;i<foes.length;i++){
@@ -872,17 +925,26 @@
     }
 
     ctx.fillStyle='#5E4B3D';
-    foes.forEach(function(f){
+    function drawFoeSprite(f, alpha, grow){
       var im = f.el ? eliteTint[tintN] : foeTint[tintN];
       if(!im){ ctx.beginPath(); ctx.arc(f.x,f.y,f.r,0,6.2832); ctx.fill(); return; }
       // the torn points reach past the hit radius, so the sprite is drawn wider
-      var sz = f.r*2.9;
+      var sz = f.r*2.9*(grow||1);
+      var sp = Math.hypot(f.vx||0, f.vy||0);
+      var str = Math.min(0.22, sp/(H*1.6));    // it stretches along its travel
       ctx.save();
-      ctx.translate(f.x,f.y); ctx.rotate(f.rot);
-      if(f.hitT>0){ ctx.globalAlpha=0.55; }
+      ctx.globalAlpha = alpha;
+      ctx.translate(f.x+(f.kx||0), f.y+(f.ky||0));
+      ctx.rotate(f.rot + Math.sin(f.wob||0)*0.07);
+      ctx.scale(1+str, 1-str*0.7);
       ctx.drawImage(im, -sz/2, -sz*0.5, sz, sz*(im.height/im.width));
       ctx.restore();
+    }
+    husks.forEach(function(hk){
+      var k=hk.t/hk.life;
+      drawFoeSprite(hk, Math.max(0,1-k)*0.9, 1+k*0.5);
     });
+    foes.forEach(function(f){ drawFoeSprite(f, f.hitT>0 ? 0.55 : 1, 1); });
     ctx.globalAlpha=1;
 
 
