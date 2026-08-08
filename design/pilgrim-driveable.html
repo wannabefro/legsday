@@ -83,6 +83,12 @@
     <span>felled <b id="rKill">0</b></span>
   </div>
 
+  <p class="note"><b>Collect the violet motes.</b> They charge a Fate Card. When
+  it rises the world drops to 0.06 speed and the card takes your thumb: drag it
+  left or right and release past a third to commit. The first card sets the
+  relic's form, every card after grows it. At level 3 hold the card still to
+  arm its signature.</p>
+
   <p class="note"><b>Pick a relic.</b> Only an unarmed Pilgrim throws a straight
   line. The Thurible sweeps an arc across everything in front, the Passing Bell
   tolls a ring outward and needs no target at all, the Wild Chain throws a
@@ -153,6 +159,25 @@
                {n:'OSSUARY',c:'#8A6FB3'},{n:'MIASMA',c:'#8FA03A'},
                {n:'BRIAR NOVA',c:'#C06430'}];
   var weapon=0;
+  /* R13: a relic is taken in a form, then grown along axes, and at level 3 it
+     carries a signature. Each entry is [label, subtitle, code, value]. */
+  var FORMS=[
+    [['twin bolt','a second shaft','count',1],   ['keen bolt','it bites deeper','dmg',1]],
+    [['sweeping arc','a wider swing','span',0.34],['focused ember','swung faster','cad',0.78]],
+    [['wide toll','it carries further','reach',1.30],['deep toll','it strikes harder','dmg',1]],
+    [['long lash','more rope','reach',1.32],      ['heavy head','a blunter head','dmg',1]],
+    [['spreading rot','a broader pool','span',0.5],['clinging rot','it lingers','dur',1.8]],
+    [['a third censer','one more orbit','count',1],['swift censers','they turn faster','cad',0.75]],
+    [['further hops','one more leap','count',1],  ['hotter arc','it burns deeper','dmg',1]],
+    [['virulent','it spreads wider','span',0.7],  ['lingering','it holds longer','dur',2.0]],
+    [['more thorns','four more shards','count',4],['sharper','each one bites','dmg',1]]
+  ];
+  var AXES=[['reach','it reaches further','reach',1.18],
+            ['ferocity','it comes faster','cad',0.87]];
+  var wst=[];
+  for(var wi=0; wi<9; wi++)
+    wst.push({form:-1, reach:1, cad:1, count:0, dmg:0, span:0, dur:0, lvl:0});
+  var ess=0, essNeed=4, card=null, slow=1;
   var STRANDS=7, fog=0, kills=0, spawnAcc=0, atkT=0, t=0, scale=1, flick=0;
   var SPRITE_H = 46;
 
@@ -198,17 +223,28 @@
   }
   stage.addEventListener('pointerdown', function(e){
     e.preventDefault();
-    anchor = {p:pt(e), t:{x:hero.tx,y:hero.ty}};
     hint.classList.add('gone');
+    if(card){ card.grab = pt(e).x - card.off; return; }   // the card takes it
+    anchor = {p:pt(e), t:{x:hero.tx,y:hero.ty}};
   });
   window.addEventListener('pointermove', function(e){
+    if(card){ if(card.grab!==null) card.off = pt(e).x - card.grab; return; }
     if(!anchor) return;
     e.preventDefault();
     var p = pt(e);
     hero.tx = anchor.t.x + (p.x-anchor.p.x)*1.18;
     hero.ty = anchor.t.y + (p.y-anchor.p.y)*1.18;
   }, {passive:false});
-  function up(){ anchor=null; }
+  function up(){
+    if(card && card.grab!==null){
+      if(card.armed){ fireSignature(); card=null; }
+      else if(Math.abs(card.off) > W*0.16) applyChoice(card.off);
+      else { card.grab=null; card.off=0; card.hold=0; }
+      if(card) card.grab=null;
+      anchor=null; return;
+    }
+    anchor=null;
+  }
   window.addEventListener('pointerup', up);
   window.addEventListener('pointercancel', up);
 
@@ -350,11 +386,13 @@
     for(var mi=motes.length-1;mi>=0;mi--){
       var mo=motes[mi]; mo.life-=dt;
       var mx=hero.x-mo.x, my=hero.y-mo.y, md=Math.max(1,Math.hypot(mx,my));
-      mo.vx+=mx/md*140*dt; mo.vy+=my/md*140*dt;
+      mo.vx+=mx/md*H*0.85*dt; mo.vy+=my/md*H*0.85*dt;
       mo.x+=mo.vx*dt; mo.y+=mo.vy*dt;
-      if(mo.life<=0||md<8) motes.splice(mi,1);
+      if(md < g.r*1.3){ ess++; motes.splice(mi,1); }
+      else if(mo.life<=0) motes.splice(mi,1);
     }
     stepWeapons(dt, g);
+    if(!card && ess>=essNeed) dealCard();
     if(showFog) fog=Math.min(H*0.75, fog+5*dt);
   }
 
@@ -396,7 +434,7 @@
     kills++;
     for(var m=0;m<4;m++)
       motes.push({x:f.x,y:f.y,vx:(Math.random()-0.5)*90,
-                  vy:(Math.random()-0.5)*90,life:1.1});
+                  vy:(Math.random()-0.5)*90,life:2.2});
     fx.push({x:f.x,y:f.y,t:0,life:0.30,img:0,rot:Math.random()*6.283});
     foes.splice(i,1);
     fog=Math.max(H*0.05, fog-H*0.02);
@@ -419,20 +457,21 @@
   /* Each weapon strikes in its own shape. The straight line is only what an
      unarmed Pilgrim does; every relic in the deck names something else. */
   function fireWeapon(g){
+    var st = wst[weapon];
     var reach = [W*0.85, W*0.52, 0, W*0.62, W*0.72,
-                 0, W*0.75, W*0.55, 0][weapon];
+                 0, W*0.75, W*0.55, 0][weapon] * st.reach;
     if(weapon===2){                                   // the bell tolls at nothing
-      atkT = 1.05;
+      atkT = 1.05*st.cad;
       rings.push({r:g.h*0.4, t:0, life:0.85, hit:{}});
       if(showRecoil){ for(var q=0;q<WEDGES;q++) wedge[q].tv += (q%2?1:-1)*2.2; }
       return;
     }
     if(weapon===5){ atkT = 0.5; return; }             // the censers never fire
     if(weapon===8){                                   // the briar bursts outward
-      atkT = 0.95;
+      atkT = 0.95*st.cad;
       var base = Math.random()*6.283;
-      for(var sN=0; sN<7; sN++){
-        var sa = base + sN*(6.2831853/7);
+      for(var sN=0, sMax=7+st.count; sN<sMax; sN++){
+        var sa = base + sN*(6.2831853/sMax);
         shards.push({x:hero.x, y:hero.y, vx:Math.cos(sa)*W*0.62,
                      vy:Math.sin(sa)*W*0.62, life:0.85, t:0});
       }
@@ -445,36 +484,36 @@
     var ang = Math.atan2(dy,dx);
 
     if(weapon===0){                                   // a single bolt
-      atkT = 0.42;
+      atkT = 0.42*st.cad;
       bolts.push({x1:hero.x,y1:hero.y,x2:f.x,y2:f.y,life:0.14});
       if(showRecoil) fireReaction(f.x,f.y,g);
-      hurt(i,1);
+      hurt(i,1+st.dmg);
     } else if(weapon===1){                            // the sweeping arc
-      atkT = 0.55;
+      atkT = 0.55*st.cad;
       var arcR = reach;
-      arcs.push({a:ang, r:arcR, t:0, life:0.26, span:0.62});
+      arcs.push({a:ang, r:arcR, t:0, life:0.26, span:0.62+st.span});
       if(showRecoil) fireReaction(f.x,f.y,g);
       for(var j=foes.length-1;j>=0;j--){
         var fj=foes[j], jd=Math.hypot(fj.x-hero.x, fj.y-hero.y);
         var ja=Math.atan2(fj.y-hero.y, fj.x-hero.x);
         var da=Math.abs(((ja-ang+Math.PI*3)%(Math.PI*2))-Math.PI);
-        if(jd < arcR && da < 0.62) hurt(j,1);      // exactly the drawn wedge
+        if(jd < arcR && da < 0.62+st.span) hurt(j,1+st.dmg);  // the drawn wedge
       }
     } else if(weapon===3){                            // the chain, thrown
-      atkT = 0.62;
+      atkT = 0.62*st.cad;
       rope = {nodes:[], target:{x:f.x,y:f.y}, t:0, life:0.42};
       for(var n=0;n<7;n++)
         rope.nodes.push({x:hero.x, y:hero.y, px:hero.x, py:hero.y});
       if(showRecoil) fireReaction(f.x,f.y,g);
     } else if(weapon===4){                            // the rot, lobbed
-      atkT = 0.70;
+      atkT = 0.70*st.cad;
       lobs.push({x:hero.x, y:hero.y, tx:f.x, ty:f.y, t:0, life:0.34});
       if(showRecoil) fireReaction(f.x,f.y,g);
     } else if(weapon===6){                            // the ossuary hops
-      atkT = 1.00;
+      atkT = 1.00*st.cad;
       if(showRecoil) fireReaction(f.x,f.y,g);
       var chainPts=[{x:hero.x,y:hero.y}], used={}, cur=f, hop=W*0.30;
-      for(var lk=0; lk<3 && cur; lk++){
+      for(var lk=0, lkMax=3+st.count; lk<lkMax && cur; lk++){
         chainPts.push({x:cur.x, y:cur.y});
         used[cur.id]=1;
         var ci=-1;
@@ -486,14 +525,14 @@
           var cd=Math.hypot(cf.x-cur.x, cf.y-cur.y);
           if(cd<nd && cd<hop){ nd=cd; nxt=cf; }
         }
-        if(ci>=0) hurt(ci,1);
+        if(ci>=0) hurt(ci,1+st.dmg);
         cur=nxt;
       }
       links.push({pts:chainPts, t:0, life:0.24});
     } else if(weapon===7){                            // the miasma spreads
-      atkT = 0.85;
+      atkT = 0.85*st.cad;
       if(showRecoil) fireReaction(f.x,f.y,g);
-      f.inf = Math.max(f.inf, 3.2);
+      f.inf = Math.max(f.inf, 3.2+st.dur);
       lobs.push({x:hero.x, y:hero.y, tx:f.x, ty:f.y, t:0, life:0.28});
     }
   }
@@ -501,16 +540,19 @@
   function stepWeapons(dt, g){
     // the censers orbit for as long as they are carried
     if(weapon===5){
-      if(!orbs.length) orbs=[{a:0},{a:2.094},{a:4.189}];
+      var need=3+wst[5].count;
+      if(orbs.length!==need){
+        orbs=[]; for(var oi=0; oi<need; oi++) orbs.push({a:oi*6.2831853/need});
+      }
       var orbR=g.h*1.15;
       orbs.forEach(function(o){
-        o.a += dt*4.2;
+        o.a += dt*4.2/Math.max(0.4,wst[5].cad);
         o.x = hero.x + Math.cos(o.a)*orbR;
         o.y = hero.y + Math.sin(o.a)*orbR;
         for(var j=foes.length-1;j>=0;j--){
           var cf=foes[j];
           if(cf.hitT>0) continue;
-          if(Math.hypot(cf.x-o.x, cf.y-o.y) < g.h*0.52){ cf.hitT=0.30; hurt(j,1); }
+          if(Math.hypot(cf.x-o.x, cf.y-o.y) < g.h*0.52){ cf.hitT=0.30; hurt(j,1+wst[5].dmg); }
         }
       });
     } else if(orbs.length) orbs=[];
@@ -527,9 +569,10 @@
         for(var kk=0;kk<foes.length;kk++){
           var nb=foes[kk];
           if(nb.id===inf.id || nb.inf>0) continue;
-          if(Math.hypot(nb.x-inf.x, nb.y-inf.y) < g.h*1.4) nb.inf=2.6;
+          if(Math.hypot(nb.x-inf.x, nb.y-inf.y) < g.h*(1.4+wst[7].span))
+            nb.inf=2.6+wst[7].dur;
         }
-        hurt(ii,1);
+        hurt(ii,1+wst[7].dmg);
       }
     }
 
@@ -542,7 +585,7 @@
       var gone = S.t>=S.life || S.x<-20||S.x>W+20||S.y<-20||S.y>H+20;
       for(var sj=foes.length-1; sj>=0 && !gone; sj--){
         if(Math.hypot(foes[sj].x-S.x, foes[sj].y-S.y) < foes[sj].r+g.h*0.14){
-          hurt(sj,1); gone=true;
+          hurt(sj,1+wst[8].dmg); gone=true;
         }
       }
       if(gone) shards.splice(si,1);
@@ -592,7 +635,7 @@
     for(var l=lobs.length-1;l>=0;l--){
       var L=lobs[l]; L.t+=dt;
       if(L.t>=L.life){
-        pools.push({x:L.tx, y:L.ty, t:0, life:2.6, tick:0});
+        pools.push({x:L.tx, y:L.ty, t:0, life:2.6+wst[4].dur, tick:0});
         lobs.splice(l,1);
       }
     }
@@ -601,7 +644,8 @@
       if(P.tick<=0){
         P.tick=0.45;
         for(var j3=foes.length-1;j3>=0;j3--)
-          if(Math.hypot(foes[j3].x-P.x, foes[j3].y-P.y) < g.h*0.85) hurt(j3,1);
+          if(Math.hypot(foes[j3].x-P.x, foes[j3].y-P.y) < g.h*(0.85+wst[4].span))
+            hurt(j3,1+wst[4].dmg);
       }
       if(P.t>=P.life) pools.splice(pI,1);
     }
@@ -713,6 +757,42 @@
     });
   }
 
+  function offerFor(){
+    var st=wst[weapon];
+    return st.form<0
+      ? {kind:'form', l:FORMS[weapon][0], r:FORMS[weapon][1]}
+      : {kind:'axis', l:AXES[0], r:AXES[1]};
+  }
+  function dealCard(){
+    ess-=essNeed; essNeed=Math.round(essNeed*1.45)+2;
+    card={off:0, grab:null, hold:0, armed:false, rise:0};
+  }
+  function applyChoice(side){
+    var st=wst[weapon], o=offerFor();
+    var c = side<0 ? o.l : o.r;
+    if(o.kind==='form') st.form = side<0 ? 0 : 1;
+    switch(c[2]){
+      case 'count': st.count += c[3]; break;
+      case 'dmg':   st.dmg   += c[3]; break;
+      case 'reach': st.reach *= c[3]; break;
+      case 'cad':   st.cad   *= c[3]; break;
+      case 'span':  st.span  += c[3]; break;
+      case 'dur':   st.dur   += c[3]; break;
+    }
+    st.lvl++;
+    card=null;
+  }
+  function fireSignature(){
+    var g=geom(), st=wst[weapon];
+    fx.push({x:hero.x, y:hero.y, t:0, life:0.55, img:1, rot:0});
+    for(var q=0;q<WEDGES;q++) wedge[q].tv += (q%2?1:-1)*5.5;
+    hero.rvx += (Math.random()-0.5)*g.h; hero.rvy += (Math.random()-0.5)*g.h;
+    for(var j=foes.length-1;j>=0;j--){
+      fx.push({x:foes[j].x,y:foes[j].y,t:0,life:0.30,img:0,rot:Math.random()*6.283});
+      hurt(j, 1+st.dmg);
+    }
+  }
+
   function ringPoint(k,g){
     var spread=Math.PI*0.80;
     var a=hero.hdg+Math.PI+(k/(STRANDS-1)-0.5)*spread;
@@ -819,6 +899,54 @@
     });
     ctx.globalAlpha=1;
 
+    // the essence charge, and the fate card it buys
+    var cw=W*0.78, chh=H*0.30, cx0=(W-cw)/2;
+    var bw=W*0.44, bh=5, bx=(W-bw)/2, by=H-16;
+    ctx.fillStyle='rgba(36,28,18,0.9)'; ctx.fillRect(bx,by,bw,bh);
+    ctx.fillStyle='#C99A2E';
+    ctx.fillRect(bx,by,bw*Math.min(1,ess/essNeed),bh);
+    ctx.fillStyle='#6B5A3D'; ctx.font='9px ui-monospace,monospace';
+    ctx.textAlign='center';
+    var stx=wst[weapon];
+    ctx.fillText(WEAPONS[weapon].n+'  LV '+stx.lvl, W/2, by-6);
+    ctx.textAlign='left';
+
+    if(card){
+      var o=offerFor();
+      var cy0=H*0.60 - chh/2 - (1-card.rise)*H*0.5;
+      ctx.save();
+      ctx.translate(W/2+card.off, cy0+chh/2);
+      ctx.rotate(card.off*0.0009);
+      ctx.fillStyle='#E9DCBC'; ctx.strokeStyle='#241C12'; ctx.lineWidth=2;
+      ctx.beginPath();
+      if(ctx.roundRect) ctx.roundRect(-cw/2,-chh/2,cw,chh,6);
+      else ctx.rect(-cw/2,-chh/2,cw,chh);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle=WEAPONS[weapon].c;
+      ctx.fillRect(-cw/2, -chh/2, 5, chh);
+      ctx.fillStyle='#241C12'; ctx.textAlign='center';
+      ctx.font='600 13px Georgia,serif';
+      ctx.fillText(o.kind==='form'?'CHOOSE ITS FORM':'GROW IT', 0, -chh*0.26);
+      ctx.font='11px Georgia,serif';
+      ctx.fillStyle = card.off<-8 ? '#7A2E1E' : '#6B5A3D';
+      ctx.fillText('\u2190 '+o.l[0], -cw*0.24, chh*0.02);
+      ctx.fillStyle='#8C7A57'; ctx.font='9px Georgia,serif';
+      ctx.fillText(o.l[1], -cw*0.24, chh*0.16);
+      ctx.fillStyle = card.off>8 ? '#7A2E1E' : '#6B5A3D';
+      ctx.font='11px Georgia,serif';
+      ctx.fillText(o.r[0]+' \u2192', cw*0.24, chh*0.02);
+      ctx.fillStyle='#8C7A57'; ctx.font='9px Georgia,serif';
+      ctx.fillText(o.r[1], cw*0.24, chh*0.16);
+      if(wst[weapon].lvl>=3){
+        ctx.fillStyle = card.armed ? '#C99A2E' : '#8C7A57';
+        ctx.font='9px ui-monospace,monospace';
+        ctx.fillText(card.armed?'\u25C6 RELEASE':'\u25C7 hold \u2014 signature',
+                     0, chh*0.38);
+      }
+      ctx.restore();
+      ctx.textAlign='left';
+    }
+
     if(showFog){
       var fg=ctx.createLinearGradient(0,H-fog,0,H);
       fg.addColorStop(0,'rgba(138,111,179,0)');
@@ -877,8 +1005,22 @@
       rSw=document.getElementById('rSw'), rKill=document.getElementById('rKill'),
       last=0, acc=0;
 
+  function stepCard(rdt){
+    if(!card) return;
+    card.rise = Math.min(1, card.rise + rdt*4.5);
+    if(card.grab!==null && Math.abs(card.off) < 24){
+      card.hold += rdt;
+      if(card.hold >= 0.4 && wst[weapon].lvl >= 3) card.armed = true;
+    } else if(Math.abs(card.off) >= 24){ card.hold = 0; card.armed = false; }
+    if(card.grab===null) card.off *= Math.exp(-rdt*9);
+  }
+
   function frame(ts){
-    var dt=last?Math.min(0.05,(ts-last)/1000):0; last=ts;
+    var rdt=last?Math.min(0.05,(ts-last)/1000):0; last=ts;
+    var want = card ? 0.06 : 1;                 // the world holds its breath
+    slow += (want-slow)*Math.min(1, rdt*8);
+    stepCard(rdt);
+    var dt = rdt*slow;
     step(dt); draw();
     acc+=dt;
     if(acc>0.1){
