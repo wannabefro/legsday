@@ -43,9 +43,20 @@ the render layer draws today.
 | Elite foe | `PlaceholderAtlas.elite` | Ø 30 | drawn: `sprites/foe-elite.png` |
 | Mote | `PlaceholderAtlas.mote` | Ø 10 | grave violet |
 | Spark | `PlaceholderAtlas.spark` | Ø 6 | parchment |
-| Card corner | `PlaceholderAtlas.cardCharge` | 46 × 66 | `#CDBB92` |
-| Reaper | `ReaperNode.body` | 34 × 84 | `#241C12` |
-| Herald | no node yet | to set | per faction |
+| Card corner | `PlaceholderAtlas.cardCharge` | 46 × 66 | drawn: `sprites/card-back.png` |
+| Reaper | `ReaperNode.body` | 34 × 84 | drawn: `sprites/reaper.png` |
+| Herald | no node yet | 40 × 80 | drawn: `sprites/herald.png` |
+
+Two more subjects are drawn that the table never listed, because no node draws
+them today. Both are in the prototype.
+
+| Subject | Sprite | Drawn how |
+|---|---|---|
+| Fog edge | `sprites/fog-tendril.png` | a row of tongues, mirrored and scaled, on the fog line |
+| Ground slab | `sprites/ground-slab.png` | 9 scrolling slabs, each with its own turn and alpha |
+
+Every subject now has art. `PlaceholderAtlas` is unchanged: the sprites live in
+`design/sprites/` and the render layer still draws shapes.
 
 `PlaceholderAtlas` still uses `#E6D8B8` for the Pilgrim and the spark. The
 palette reconciled parchment to `#E9DCBC`. Sprites use `#E9DCBC`.

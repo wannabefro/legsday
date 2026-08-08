@@ -246,6 +246,40 @@ failure fixed it:
 One elite run stalled and wrote no file. The retry at
 `model_reasoning_effort=low` finished in about 4 minutes.
 
+## The card emblems invert three rules
+
+Nine emblems, one per relic: `sprites/emblems/`. All nine came back correct on
+the first attempt. The prompt inverts three things from the sprite prompt, and
+each one is load bearing.
+
+| Sprite prompt | Emblem prompt | Why |
+|---|---|---|
+| top-down camera | flat, straight-on | the card is held, not walked on |
+| parchment body, ink contour | ink dominates | a pale object vanishes on a parchment card |
+| readable at 54 px | readable at 64 px | the emblem is larger than a playfield sprite |
+
+The frame stays procedural. A generated frame bitmap stretches badly at
+different card sizes, so the drawn asset is the emblem alone.
+
+## The last five
+
+| Sprite | Camera | Body | Note |
+|---|---|---|---|
+| `fog-tendril` | flat, straight-on | pale | touches the bottom edge, so copies tile |
+| `ground-slab` | top-down | pale | radial enough to turn at any angle |
+| `reaper` | straight-on, standing | pale | the only subject with a face |
+| `herald` | straight-on, standing | pale | a hood with nothing in it, holding out a card |
+| `card-back` | flat, square on | parchment panel, ink rules | a knot, not a picture |
+
+Two rules carried the whole set, and neither needed a second round:
+
+1. **Name what must touch an edge.** The fog tendril says it touches the bottom
+   edge across its full width and no other edge. That is what makes many copies
+   read as one bank.
+2. **Say which subject has a face.** Every other prompt rejects a face. The
+   Reaper prompt says the skull IS visible, and says why: this figure is the
+   only one the player meets up close.
+
 ## The attack animation is the rig, not frames
 
 The Pilgrim never swings. `autoAttack` emits `.attack(from:to:)` and
