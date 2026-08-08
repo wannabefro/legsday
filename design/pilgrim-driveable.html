@@ -63,7 +63,7 @@
     <button id="bRot"   type="button" aria-pressed="true">Rotate</button>
     <button id="bSwing" type="button" aria-pressed="true">Swing</button>
     <button id="bLight" type="button" aria-pressed="true">Light</button>
-    <button id="bCloth" type="button" aria-pressed="true">Cloth</button>
+    <button id="bCloth" type="button" aria-pressed="true">Cloak</button>
     <button id="bFoes"  type="button" aria-pressed="true">Foes</button>
     <button id="bFog"   type="button" aria-pressed="true">Fog</button>
     <button id="bBig"   type="button" aria-pressed="false">2&times;</button>
@@ -73,12 +73,14 @@
     <span>heading <b id="rHdg">0</b></span>
     <span>speed <b id="rSpd">0</b></span>
     <span>swing <b id="rSw">0</b></span>
+    <span>flex <b id="rFlex">0</b></span>
     <span>felled <b id="rKill">0</b></span>
   </div>
 
-  <p class="note"><b>Turn Swing off first.</b> That single toggle is the
-  difference between a rotating picture and something that seems to carry
-  weight &mdash; and it costs one colour-key, not one drawing.</p>
+  <p class="note"><b>Turn Cloak off, then on.</b> Off, the drawing is rigid.
+  On, it is sliced into twelve wedges around the shoulders, each on its own
+  damped spring, lagging the turn and streaming behind the direction of travel.
+  The hood and shoulders stay solid. Same one drawing.</p>
 </div>
 
 <script>
@@ -116,13 +118,14 @@
   var hero = {x:0,y:0,tx:0,ty:0,vx:0,vy:0,hdg:Math.PI,invuln:0,phase:0,lean:0};
   var lamp = {x:0,y:0,px:0,py:0};
   var anchor=null, foes=[], bolts=[], motes=[], marks=[], cloak=[];
+  var WEDGES=12, wedge=[], prevHdg=Math.PI, accX=0, accY=0, lvxP=0, lvyP=0;
   var STRANDS=7, fog=0, kills=0, spawnAcc=0, atkT=0, t=0, scale=1, flick=0;
   var SPRITE_H = 46;
 
   function geom(){
     var h = SPRITE_H*scale;
     var w = h * (bodyImg.width/bodyImg.height || 1.1);
-    return { h:h, w:w, r:h*0.34, L1:h*0.13, L2:h*0.15, rod:h*0.17 };
+    return { h:h, w:w, r:h*0.34, L1:h*0.13, L2:h*0.15, rod:h*0.10 };
   }
 
   function reset(){
@@ -136,6 +139,9 @@
     for(var s=0;s<STRANDS;s++)
       cloak.push([{x:hero.x,y:hero.y,px:hero.x,py:hero.y},
                   {x:hero.x,y:hero.y,px:hero.x,py:hero.y}]);
+    wedge.length=0;
+    for(var q=0;q<WEDGES;q++)
+      wedge.push({phi:(q+0.5)*(6.2831853/WEDGES)-Math.PI, th:0, tv:0, str:1});
     fog=H*0.10; kills=0;
   }
 
@@ -201,6 +207,32 @@
       hero.lean += (0-hero.lean)*Math.min(1,dt*5);
     }
     hero.phase += spd*dt*0.013;        // the stride rides distance, not time
+
+    // the cloak: one damped spring per wedge, driven by turn rate and by the
+    // component of acceleration along that wedge
+    accX = (vx-lvxP)/Math.max(dt,1e-4); accY = (vy-lvyP)/Math.max(dt,1e-4);
+    lvxP = vx; lvyP = vy;
+    var omega = (((hero.hdg-prevHdg+Math.PI*3)%(Math.PI*2))-Math.PI)/Math.max(dt,1e-4);
+    prevHdg = hero.hdg;
+    var gaitW = Math.min(1, spd/150);
+    var ch=Math.cos(hero.hdg), sh=Math.sin(hero.hdg);
+    for(var q=0;q<WEDGES;q++){
+      var wq=wedge[q], cp=Math.cos(wq.phi), sp2=Math.sin(wq.phi);
+      var wx=cp*ch - sp2*sh, wy=cp*sh + sp2*ch;      // wedge direction, world
+      var tang = -wy*accX + wx*accY;                  // acceleration across it
+      // trailing fabric lags more than leading fabric, or the cloak would just
+      // rotate as one rigid piece
+      var lagW = 0.30 + 0.70*(1 + Math.sin(wq.phi))*0.5;
+      var Ki = 26*(0.82 + 0.36*q/WEDGES);            // detune, so it ripples
+      var drive = (-omega*0.035 + tang*0.0005) * lagW;
+      wq.tv += (-Ki*wq.th - 3.6*wq.tv + drive*60)*dt;
+      wq.th += wq.tv*dt;
+      if(wq.th> 0.42) { wq.th= 0.42; wq.tv*=-0.25; }
+      if(wq.th<-0.42) { wq.th=-0.42; wq.tv*=-0.25; }
+      var dot = spd>1 ? (wx*vx + wy*vy)/spd : 0;      // behind the travel = -1
+      wq.str += ((1 + 0.20*gaitW*Math.max(0,-dot) - 0.07*gaitW*Math.max(0,dot))
+                 - wq.str) * Math.min(1, dt*10);
+    }
 
     // the lantern: a free point held at rod length from its mount
     var m = mountPoint(g);
@@ -327,16 +359,6 @@
       ctx.beginPath(); ctx.arc(f.x,f.y,f.r,0,6.2832); ctx.fill();
     });
 
-    if(showCloth){
-      var pts=[];
-      for(var k=0;k<STRANDS;k++) pts.push(ringPoint(k,g));
-      for(var k2=STRANDS-1;k2>=0;k2--) pts.push([cloak[k2][1].x,cloak[k2][1].y]);
-      ctx.beginPath();
-      pts.forEach(function(p,i){ i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]); });
-      ctx.closePath();
-      ctx.fillStyle='rgba(176,161,124,0.95)'; ctx.fill();
-      ctx.strokeStyle='#241C12'; ctx.lineWidth=1.1; ctx.stroke();
-    }
 
     if(loaded>=2){
       var dim = hero.invuln>0 && Math.floor(t*18)%2===0;
@@ -349,11 +371,41 @@
       var bob = 1 + Math.sin(hero.phase*6.2832*2)*0.055*gait;
       ctx.rotate(Math.sin(hero.phase*6.2832)*0.05*gait);
       ctx.scale(breath, bob*breath);
-      ctx.drawImage(bodyImg, -g.w/2, -g.h*PIV.y, g.w, g.h);
+      var Rc = g.h*0.26, Ro = g.h*1.6, half = Math.PI/WEDGES, pad = 0.055;
+      if(showCloth){
+        // the cloak first, wedge by wedge, each swinging on its own spring
+        for(var q=0;q<WEDGES;q++){
+          var wq=wedge[q];
+          ctx.save();
+          ctx.rotate(wq.th);
+          ctx.beginPath();
+          ctx.arc(0,0, Rc*0.92, wq.phi-half-pad, wq.phi+half+pad);
+          ctx.arc(0,0, Ro,      wq.phi+half+pad, wq.phi-half-pad, true);
+          ctx.closePath(); ctx.clip();
+          ctx.scale(wq.str, wq.str);
+          ctx.drawImage(bodyImg, -g.w/2, -g.h*PIV.y, g.w, g.h);
+          ctx.restore();
+        }
+        // then the hood and shoulders, which do not flex
+        ctx.save();
+        ctx.beginPath(); ctx.arc(0,0,Rc,0,6.2832); ctx.clip();
+        ctx.drawImage(bodyImg, -g.w/2, -g.h*PIV.y, g.w, g.h);
+        ctx.restore();
+      } else {
+        ctx.drawImage(bodyImg, -g.w/2, -g.h*PIV.y, g.w, g.h);
+      }
       ctx.restore();
 
       // the lantern lives in world space, so it lags every turn
       var lw = g.h*0.30, lh = lw*(lantImg.height/lantImg.width || 1);
+      var mp = mountPoint(g);
+      ctx.save();
+      ctx.strokeStyle='#241C12'; ctx.lineWidth=Math.max(1, g.h*0.028);
+      ctx.lineCap='round';
+      ctx.globalAlpha = dim ? 0.35 : 1;
+      ctx.beginPath(); ctx.moveTo(mp[0],mp[1]); ctx.lineTo(lamp.x,lamp.y); ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.restore();
       ctx.save();
       ctx.translate(lamp.x,lamp.y);
       if(showSwing){
@@ -417,6 +469,8 @@
       rHdg.textContent=Math.round(((hero.hdg*180/Math.PI)%360+360)%360)+'\u00B0';
       rSpd.textContent=Math.round(window.__spd||0);
       rSw.textContent=(window.__sw||0)+'\u00B0';
+      var mx=0; for(var q2=0;q2<WEDGES;q2++) mx=Math.max(mx,Math.abs(wedge[q2].th));
+      document.getElementById('rFlex').textContent=Math.round(mx*57.3)+'\u00B0';
       rKill.textContent=kills;
     }
     requestAnimationFrame(frame);
