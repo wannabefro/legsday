@@ -160,16 +160,26 @@ public struct RunSim {
         h.target.x += h.vel.x * dt
         h.target.y += h.vel.y * dt
 
-        h.pos = clampToViewport(h.pos)
+        state.gorge.generate(throughWorldY: terrainY(of: 0), stageID: state.stage.id)
+        h.pos = clampToViewport(h.pos, velocity: &h.vel)
         h.target = clampToViewport(h.target)
         if h.invuln > 0 { h.invuln -= dt }
         state.hero = h
     }
 
     private func clampToViewport(_ p: Vec2) -> Vec2 {
-        Vec2(
-            min(max(p.x, 14), state.width - 14),
-            min(max(p.y, 64), state.height - 12)
-        )
+        let clamped = Vec2(p.x, min(max(p.y, 64), state.height - 12))
+        return state.gorge.clamp(clamped, radius: 14, at: terrainY(of: clamped.y))
+    }
+
+    private func clampToViewport(_ p: Vec2, velocity: inout Vec2) -> Vec2 {
+        let clamped = Vec2(p.x, min(max(p.y, 64), state.height - 12))
+        return state.gorge.clamp(clamped, velocity: &velocity, radius: 14,
+                                 at: terrainY(of: clamped.y))
+    }
+
+    /// Screen y runs down from the top of the viewport; terrain y runs up the climb.
+    func terrainY(of screenY: Double) -> Double {
+        state.worldY + state.height - screenY
     }
 }

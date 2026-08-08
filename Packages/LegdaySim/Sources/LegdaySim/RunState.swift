@@ -26,6 +26,7 @@ public struct RunState: Sendable {
     /// player-facing distance; a fathom is 10 reference points (graybox `/10`).
     public var worldY: Double = 0
     public var hero: Hero
+    public internal(set) var gorge: Gorge
 
     /// A splash scheduled to hit the fog surface after a felled foe's corpse
     /// falls (KTD-3 — sim-born, never read back from the render layer).
@@ -158,6 +159,7 @@ public struct RunState: Sendable {
         self.height = height
         let start = Vec2(width / 2, height * 0.42) // graybox hero spawn
         self.hero = Hero(pos: start, target: start, vel: .zero, invuln: 0, fogTime: 0)
+        self.gorge = Gorge(width: width, seed: seed)
         self.fogSurface = SpringLine(nodeCount: 48)
         self.cloak = VerletChain(pin: start)
         self.prevHeroPos = start
@@ -251,6 +253,7 @@ public struct RunState: Sendable {
             mix(UInt64(f.elite ? 1 : 0))
         }
         mix(rng.state)
+        mix(gorge.fingerprint)
         return h
     }
 }
