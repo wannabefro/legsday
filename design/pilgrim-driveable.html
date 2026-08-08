@@ -236,7 +236,9 @@
 
     // the lantern: a free point held at rod length from its mount
     var m = mountPoint(g);
-    var lvx=(lamp.x-lamp.px)*0.982, lvy=(lamp.y-lamp.py)*0.982;
+    var lvx=(lamp.x-lamp.px)*0.945, lvy=(lamp.y-lamp.py)*0.945;
+    var lsp=Math.hypot(lvx,lvy), lcap=g.rod*1.4;
+    if(lsp>lcap){ lvx*=lcap/lsp; lvy*=lcap/lsp; }
     lamp.px=lamp.x; lamp.py=lamp.y;
     lamp.x+=lvx; lamp.y+=lvy;
     for(var it=0; it<3; it++){
@@ -408,10 +410,7 @@
       ctx.restore();
       ctx.save();
       ctx.translate(lamp.x,lamp.y);
-      if(showSwing){
-        var m2=mountPoint(g);
-        ctx.rotate(Math.atan2(lamp.y-m2[1], lamp.x-m2[0]) - Math.PI/2);
-      } else if(doRotate){ ctx.rotate(hero.hdg); }
+      if(doRotate) ctx.rotate(hero.hdg + hero.lean);
       if(dim) ctx.globalAlpha=0.35;
       ctx.drawImage(lantImg, -lw/2, -lh/2, lw, lh);
       ctx.restore();
