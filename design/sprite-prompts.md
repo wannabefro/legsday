@@ -55,13 +55,16 @@ action-game sprite. Heavy near-black outer contour, sparse angular
 interior cuts, limited cross-hatching. Dry, weathered ink. No smooth
 painting, rendering, gradients, grey shading or 3D lighting.
 
-Artwork colors: exactly four flat colors only:
-near-black ink #241C12,
-parchment beige #E9DCBC,
-dried-blood red #7A2E1E,
-one single lantern gold #C99A2E.
-Do not introduce additional robe colors, greys, olive, orange, or a
-second gold.
+COLOR ASSIGNMENT, this is not optional:
+The hood and the whole cloak are PALE PARCHMENT BEIGE #E9DCBC. The
+figure is a pale, bone-coloured shape. THE ROBE IS NOT RED. THE ROBE IS
+NOT DARK.
+All outlines and all interior cut lines are near-black ink #241C12.
+The lantern is gold #C99A2E.
+Dried-blood red #7A2E1E appears ONLY as a thin accent band at the hem,
+no more than five percent of the figure.
+Use no other colors. No greys, no olive, no orange, no brown, no second
+gold.
 
 BACKGROUND MATTE:
 The entire background is one perfectly uniform, fully saturated chroma
@@ -103,15 +106,46 @@ Requested phase: [PHASE]
 | 7 | Second passing: boots nearly overlap beneath the hem; left boot is lifting past the right; cloak hem narrows and centers. |
 | 8 | Second high: left boot advances toward the top; trailing right heel lifted; cloak hem lifts and flares distinctly to the right. |
 
-## C. Key out the cyan
+## C. How to run the generation
+
+Codex has a built-in `image_gen` tool on GPT Image 2. Its default sandbox is
+read-only, so it cannot save the file without `--sandbox workspace-write`.
 
 ```
-magick frame.png -fuzz 12% -transparent '#00FFFF' \
-  -channel A -morphology EdgeOut Diamond +channel frame-rgba.png
+codex exec --skip-git-repo-check --cd "$DIR" \
+  --sandbox workspace-write \
+  -c 'sandbox_workspace_write.network_access=true' \
+  -c 'mcp_servers={}' -c 'model_reasoning_effort=medium' \
+  "$(cat brief.md)"
 ```
 
-Raise `-fuzz` if a cyan fringe survives. Lower it if the ink starts to erode.
-Check the hem, which is where the fringe shows first.
+The brief must tell Codex to use `image_gen`, to save to a named path, and to
+draw nothing itself. Without that last instruction it writes a script or hand
+-draws an SVG substitute, which looks like generated art and is not.
+
+## D. Remap, then key
+
+**Remap before the key, never after.** `-remap` discards the alpha channel, so
+a keyed image loses its transparency and composites on parchment. Put cyan in
+the palette as a fifth entry, remap, then key the exact colour.
+
+```
+magick xc:'#E9DCBC' xc:'#241C12' xc:'#7A2E1E' xc:'#C99A2E' xc:'#00FFFF' \
+  +append palette5.png
+magick raw.png -remap palette5.png -transparent '#00FFFF' sprite.png
+```
+
+This also removes the whole class of colour failure. The model returned
+`#911F1C` for `#7A2E1E`, `#E0C591` for `#E9DCBC` and `#110C0A` for `#241C12` --
+not one exact value. Do not argue with the prompt about colour. Remap.
+
+Confirm the result:
+
+```
+magick sprite.png -format %c histogram:info: | sort -rn | head -6
+```
+
+Four opaque colours, exact hex, plus transparent. Anything else failed.
 
 ## Checks before you accept a frame
 
