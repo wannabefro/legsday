@@ -74,7 +74,7 @@
     <button id="bFog"   type="button" aria-pressed="true">Fog</button>
     <button id="bBig"   type="button" aria-pressed="false">2&times;</button>
     <button id="bTint"  type="button" aria-pressed="true">Tint: zone</button>
-    <button id="bObs"   type="button" aria-pressed="false">World: off</button>
+    <button id="bObs"   type="button" aria-pressed="true">World: gorge</button>
     <button id="bCards" type="button" aria-pressed="true">Upgrades</button>
     <button id="bZone"  type="button" aria-pressed="false">Next zone</button>
     <button id="bReset" type="button" aria-pressed="false">Reset relic</button>
@@ -261,7 +261,7 @@
   var fx=[], arcs=[], rings=[], pools=[], lobs=[], rope=null, ropeT=0;
   /* Three families of obstacle, so the choice is made by feel. Only one runs
      at a time. PINCH blocks, BRIAR slows, CAIRN blocks until it is broken. */
-  var OBS=['off','gorge','briar','cairn'], obsN=0, obs=[], obsAcc=0, echoT=-1;
+  var OBS=['off','gorge','briar','cairn'], obsN=1, obs=[], obsAcc=0, echoT=-1;
   /* The gorge. The world is not a row of walls dropped across the screen; it
      is two encroaching cliffs, and the pinch is where they lean in. Bands are
      sampled every BANDH pixels and interpolated, so collision is a clamp. */
@@ -1667,16 +1667,19 @@
     // the fathom count, and the stage name under it (ascent-stages.md)
     var zs=stageNow();
     ctx.textAlign='center';
+    ctx.lineJoin='round'; ctx.strokeStyle='#050303';
     ctx.fillStyle='#8C7A57'; ctx.font='600 15px Georgia,serif';
+    ctx.lineWidth=4; ctx.strokeText(Math.floor(fathoms)+' fathoms', W/2, 24);
     ctx.fillText(Math.floor(fathoms)+' fathoms', W/2, 24);
     ctx.fillStyle=zs.spine==='#241C12' ? '#6B5A3D' : zs.spine;
     ctx.font='12px ui-monospace,monospace';
+    ctx.lineWidth=3.5; ctx.strokeText(zs.name, W/2, 40);
     ctx.fillText(zs.name, W/2, 40);
 
     ctx.fillStyle='#6B5A3D'; ctx.font='9px ui-monospace,monospace';
     var stx=wst[weapon];
     ctx.fillText(WEAPONS[weapon].n+'  LV '+stx.lvl +
-                 (cardsOn?'':'  \u2014 UPGRADES OFF'), W/2, by-6);
+                 (cardsOn?'':'  \u2014 UPGRADES OFF'), W/2, by-16);
     ctx.textAlign='left';
 
     if(card){
@@ -1737,12 +1740,18 @@
       ctx.save();
       ctx.globalAlpha=bfade;
       ctx.textAlign='center';
-      ctx.fillStyle=stageNow().spine==='#241C12' ? '#8C7A57' : stageNow().spine;
+      var zc=stageNow().spine==='#241C12' ? '#8C7A57' : stageNow().spine;
       ctx.font='600 26px Georgia,serif';
-      ctx.fillText(stageNow().name, W/2, H*0.40 - bk*18);
+      var by0=H*0.34 - bk*18;
+      ctx.lineJoin='round'; ctx.strokeStyle='#050303'; ctx.lineWidth=7;
+      ctx.strokeText(stageNow().name, W/2, by0);
+      ctx.fillStyle=zc;
+      ctx.fillText(stageNow().name, W/2, by0);
       ctx.globalAlpha=bfade*0.6;
       ctx.fillStyle='#8C7A57'; ctx.font='10px ui-monospace,monospace';
-      ctx.fillText(Math.floor(stageNow().from)+' fathoms', W/2, H*0.40 - bk*18 + 20);
+      ctx.lineWidth=4;
+      ctx.strokeText(Math.floor(stageNow().from)+' fathoms', W/2, by0 + 20);
+      ctx.fillText(Math.floor(stageNow().from)+' fathoms', W/2, by0 + 20);
       ctx.restore();
       ctx.textAlign='left';
     }
