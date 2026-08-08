@@ -50,6 +50,28 @@ the render layer draws today.
 `PlaceholderAtlas` still uses `#E6D8B8` for the Pilgrim and the spark. The
 palette reconciled parchment to `#E9DCBC`. Sprites use `#E9DCBC`.
 
+## The camera moved to overhead
+
+The playfield camera is now a straight overhead plan view at 90 degrees. The
+style block above keeps its art direction, its palette and its format rules,
+but its camera paragraph is superseded. Prompts: [sprite-prompts.md](sprite-prompts.md).
+
+Overhead is the only camera where the game can rotate one flat sprite to any
+heading and be correct. Measured over 24 headings, the share of the silhouette
+that a rotation puts in the wrong place is:
+
+| Camera | Rotation error |
+|---|---|
+| 60 degrees | 67% |
+| 75 degrees | 51% |
+| 90 degrees | 4% |
+
+The Reaper duel keeps a low camera. It is a separate scene, it stops the scroll,
+and the Reaper needs a face at 34 x 84 pt.
+
+Overhead costs the face. Silhouette, cloth and the lantern must carry the
+register instead.
+
 ## Movement through 360 degrees
 
 The Pilgrim moves in any direction. The camera in the style block cannot show
