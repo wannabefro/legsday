@@ -264,25 +264,73 @@
     {id:'low_road', name:'THE LOW ROAD', from:0,    spine:'#C06430', tint:4,
      spawn:1.00, creep:1.00, scroll:1.00,
      rock:'#3A2A1C', fog:'#8A6FB3', wide:[0.52,0.86], feat:'briar', featN:1.0,
-     wall:'rubble', jit:0.022, deep:2, hold:[4,9]},
+     wall:'rubble', jit:0.022, deep:2, hold:[4,9],
+     ground:'rubble', wash:'rgba(140,90,50,0.05)',
+     air:{n:14, col:'#6B5A3D', vy:34, drift:10, sz:1.6, spin:0},
+     foeSpd:1.00, elite:0.15, clump:0.0},
     {id:'orchard',  name:'THE ORCHARD', from:280,  spine:'#8FA03A', tint:2,
      spawn:1.15, creep:1.05, scroll:1.00,
-     rock:'#2C3018', fog:'#8FA03A', wide:[0.38,0.66], feat:'briar', featN:2.2,
-     wall:'briar', jit:0.040, deep:2, hold:[2,4]},
+     rock:'#2C3018', fog:'#8FA03A', wide:[0.38,0.66], feat:'briar', featN:1.5,
+     wall:'briar', jit:0.040, deep:2, hold:[2,4],
+     ground:'root', wash:'rgba(120,150,40,0.035)',
+     air:{n:26, col:'#8FA03A', vy:-22, drift:26, sz:1.9, spin:0},
+     foeSpd:0.82, elite:0.10, clump:0.7},
     {id:'ossuary',  name:'THE OSSUARY', from:620,  spine:'#8A6FB3', tint:3,
      spawn:1.30, creep:1.10, scroll:1.05,
      rock:'#2E2838', fog:'#8A6FB3', wide:[0.42,0.74], feat:'cairn', featN:1.8,
-     wall:'bone', jit:0.010, deep:2, hold:[3,6]},
+     wall:'bone', jit:0.010, deep:2, hold:[3,6],
+     ground:'bone', wash:'rgba(120,95,170,0.06)',
+     air:{n:10, col:'#8A6FB3', vy:-8, drift:6, sz:2.4, spin:0},
+     foeSpd:0.94, elite:0.26, clump:0.4},
     {id:'spire',    name:'THE SPIRE',   from:960,  spine:'#C99A2E', tint:1,
      spawn:1.50, creep:1.20, scroll:1.10,
      rock:'#3E301A', fog:'#C99A2E', wide:[0.30,0.52], feat:'cairn', featN:1.0,
-     wall:'masonry', jit:0.002, deep:3, hold:[6,12]},
+     wall:'masonry', jit:0.002, deep:3, hold:[6,12],
+     ground:'tile', wash:'rgba(201,154,46,0.05)',
+     air:{n:20, col:'#C99A2E', vy:-40, drift:8, sz:1.3, spin:0},
+     foeSpd:1.25, elite:0.12, clump:0.0},
     {id:'reckoning',name:'THE RECKONING',from:1200, spine:'#241C12', tint:5,
      spawn:1.70, creep:1.30, scroll:1.15,
      rock:'#1A1614', fog:'#5A4A6E', wide:[0.26,0.44], feat:'none', featN:0,
-     wall:'fog', jit:0.030, deep:2, hold:[2,5]}
+     wall:'fog', jit:0.030, deep:2, hold:[2,5],
+     ground:'ash', wash:'rgba(90,74,110,0.08)',
+     air:{n:40, col:'#9A8FA8', vy:52, drift:18, sz:1.5, spin:0},
+     foeSpd:1.15, elite:0.34, clump:0.5}
   ];
   var fathoms=0, stageI=0, stageBanner=0, rockCache={};
+
+  /* The air of a place. Spores rise in THE ORCHARD, dust falls in THE SPIRE,
+     ash pours down in THE RECKONING. Rebuilt on every zone change. */
+  var air=[];
+  function seedAir(){
+    var z=stageNow().air;
+    air.length=0;
+    for(var i=0;i<z.n;i++)
+      air.push({x:Math.random()*W, y:Math.random()*H,
+                p:Math.random()*6.283, s:0.6+Math.random()*0.8});
+  }
+  function stepAir(dt){
+    var z=stageNow().air;
+    if(air.length!==z.n) seedAir();
+    for(var i=0;i<air.length;i++){
+      var a=air[i];
+      a.p += dt*1.4;
+      a.y += z.vy*a.s*dt;
+      a.x += Math.sin(a.p)*z.drift*dt;
+      if(a.y < -20){ a.y=H+16; a.x=Math.random()*W; }
+      if(a.y > H+20){ a.y=-16; a.x=Math.random()*W; }
+    }
+  }
+  function drawAir(){
+    var z=stageNow().air;
+    ctx.fillStyle=z.col;
+    for(var i=0;i<air.length;i++){
+      var a=air[i];
+      ctx.globalAlpha = 0.20 + 0.28*(0.5+0.5*Math.sin(a.p));
+      ctx.beginPath(); ctx.arc(a.x, a.y, z.sz*a.s, 0, 6.2832); ctx.fill();
+    }
+    ctx.globalAlpha=1;
+  }
 
   function stageNow(){ return STAGES[stageI]; }
   function stageFor(f){
@@ -526,6 +574,7 @@
       obs.length=0;             // the last zone's furniture does not follow you
     }
     if(stageBanner>0) stageBanner-=dt;
+    stepAir(dt);
 
     if(obsN===1){
       // the world comes down past you; the cliffs are one continuous thing
@@ -553,7 +602,7 @@
       spawnAcc += dt*(1.15+t*0.03)*stageNow().spawn;
       while(spawnAcc>1){
         spawnAcc-=1;
-        var isEl = t>20 && Math.random()<0.15;      // Combat.swift: >30s, 15%
+        var isEl = t>20 && Math.random()<stageNow().elite;
         var sp0=gorgeAt(-14);
         var lo=sp0?sp0.l+16:12, hi=sp0?sp0.r-16:W-12;
         if(hi-lo < 30){ lo=(lo+hi)/2-15; hi=lo+30; }
@@ -874,7 +923,7 @@
             kx:0, ky:0, kvx:0, kvy:0,        // the knockback offset
             K:(isEl?7:13)+Math.random()*6,   // detuned, so no two turn alike
             wob:Math.random()*6.283,
-            sp:(isEl?0.72:1)*(H*0.13 + Math.random()*H*0.09),
+            sp:(isEl?0.72:1)*stageNow().foeSpd*(H*0.13 + Math.random()*H*0.09),
             inf:0, hitT:0};
   }
 
@@ -1401,14 +1450,34 @@
     var g=geom();
     ctx.clearRect(0,0,W,H);
     ctx.fillStyle='#0F0C0A'; ctx.fillRect(0,0,W,H);
-    // the slabs are the only cue that the ground moves, so they scroll and turn
+    // the floor is made of whatever the place is made of, and it scrolls
     if(slabImg.complete && slabImg.naturalWidth){
       var sr = slabImg.naturalHeight/slabImg.naturalWidth;
+      var gk = stageNow().ground;
       marks.forEach(function(mk){
         ctx.save();
         ctx.globalAlpha=mk.a;
-        ctx.translate(mk.x,mk.y); ctx.rotate(mk.rot);
-        ctx.drawImage(slabImg, -mk.w/2, -mk.w*sr/2, mk.w, mk.w*sr);
+        ctx.translate(mk.x,mk.y);
+        if(gk==='tile'){
+          ctx.globalAlpha=mk.a*0.75;          // laid, not fallen: no rotation
+          ctx.drawImage(slabImg, -mk.w/2, -mk.w*sr/2, mk.w, mk.w*sr);
+        } else if(gk==='root'){
+          // the wall and the beds are already briar; the floor must not be too
+          ctx.rotate(mk.rot); ctx.globalAlpha=mk.a*0.45;
+          ctx.drawImage(briarImg.complete?briarImg:slabImg,
+                        -mk.w*0.42, -mk.w*0.42, mk.w*0.84, mk.w*0.84);
+        } else if(gk==='bone'){
+          ctx.rotate(mk.rot);
+          var bi2=boneImg();
+          ctx.drawImage(bi2||slabImg, -mk.w*0.34, -mk.w*0.34, mk.w*0.68, mk.w*0.68);
+        } else if(gk==='ash'){
+          ctx.globalAlpha=mk.a*0.5;           // nothing is left standing here
+          ctx.rotate(mk.rot);
+          ctx.drawImage(slabImg, -mk.w*0.3, -mk.w*0.3*sr, mk.w*0.6, mk.w*0.6*sr);
+        } else {
+          ctx.rotate(mk.rot);
+          ctx.drawImage(slabImg, -mk.w/2, -mk.w*sr/2, mk.w, mk.w*sr);
+        }
         ctx.restore();
       });
       ctx.globalAlpha=1;
@@ -1418,6 +1487,7 @@
     }
 
     drawGorge();
+    drawAir();
     drawObstacles();
 
     // the lantern pool, on the ground, under everything
@@ -1601,6 +1671,9 @@
       ctx.restore();
       ctx.textAlign='left';
     }
+
+    var wsh=stageNow().wash;
+    if(wsh){ ctx.fillStyle=wsh; ctx.fillRect(0,0,W,H); }
 
     /* The stage name crosses the screen for 2 seconds and fades. The world
        does not pause: the card interrupt owns the pause, and two pauses in
