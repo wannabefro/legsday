@@ -9,7 +9,7 @@ struct FinaleTests {
     private static let tunables = Tunables(
         scroll: 78, spawn: 0, shove: 120, iframes: 0.55, fogGrace: 0.8, fogGrip: 2.4,
         fogCreep: 1.1, killPush: 0.9, downBias: 0.35, cardSlow: 0.005,
-        firstCardCost: 4, cardCostIncrement: 1, finaleTime: 720)
+        firstCardCost: 4, cardCostIncrement: 1)
 
     private func makeSim() -> RunSim {
         RunSim(tunables: Self.tunables, viewport: Vec2(393, 852), seed: 1, catalog: .seed)
@@ -17,7 +17,7 @@ struct FinaleTests {
 
     /// Death deals the Finale on entry to THE RECKONING, essence or not.
     @Test func finaleDealsOnReckoningEntryRegardlessOfEssence() {
-        var sim = makeSim() // finaleTime 720 stays for the keep-running ramp
+        var sim = makeSim()
         sim.debugMutate { $0.nextForkFathoms = 1e9
             $0.worldY = (Ascent.reckoningFathoms - 1) * 10 }
         sim.tick(dt: RunSim.fixedStep, input: .idle)
@@ -58,8 +58,8 @@ struct FinaleTests {
     /// After keep-running, the scroll strictly increases without bound.
     @Test func keepRunningRampsScrollForever() {
         var sim = makeSim()
-        sim.debugMutate { $0.finaleDealt = true; $0.keepRunning = true }
         sim.debugMutate { $0.time = 720 }
+        sim.commitFinale(1)
         let a = sim.scrollEff()
         sim.debugMutate { $0.time = 780 } // +60s
         let b = sim.scrollEff()
@@ -68,6 +68,24 @@ struct FinaleTests {
         #expect(b > a)
         #expect(c > b)
         #expect(a == 78) // base at arrival
+    }
+
+    @Test func keepRunningRampStartsAtExactCommitBoundary() {
+        var sim = makeSim()
+        sim.debugMutate { $0.time = 70 }
+        sim.commitFinale(1)
+        #expect(sim.scrollEff() == 78)
+    }
+
+    @Test func keepRunningCommitTimeAffectsFingerprint() {
+        var a = makeSim()
+        var b = makeSim()
+        a.debugMutate { $0.time = 70 }
+        b.debugMutate { $0.time = 71 }
+        a.commitFinale(1)
+        b.commitFinale(1)
+        b.debugMutate { $0.time = 70 }
+        #expect(a.state.fingerprint != b.state.fingerprint)
     }
 
     /// No forks deal once keep-running is chosen (R17).

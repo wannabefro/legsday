@@ -45,9 +45,9 @@ public enum Ascent {
 
     /// Fork cadence, in fathoms (was 60s; ≈ 7.8 fathoms/s at base scroll).
     public static let forkCadenceFathoms: Double = 450
-    /// Death takes the deck on entry to THE SPIRE (was 0.6 × finaleTime).
+    /// Death takes the deck on entry to THE SPIRE.
     public static let spireFathoms: Double = 960
-    /// The Finale deals on entry to THE RECKONING (was finaleTime).
+    /// The Finale deals on entry to THE RECKONING.
     public static let reckoningFathoms: Double = 1200
 
     /// The stage containing a given fathom count. Inclusive on the start.

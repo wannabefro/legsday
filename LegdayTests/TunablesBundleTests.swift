@@ -22,6 +22,5 @@ struct TunablesBundleTests {
         #expect(t.cardSlow == 0.005)
         #expect(t.firstCardCost == 20)
         #expect(t.cardCostIncrement == 5)
-        #expect(t.finaleTime == 150)
     }
 }

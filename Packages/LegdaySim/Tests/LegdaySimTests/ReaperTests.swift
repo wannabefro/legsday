@@ -11,7 +11,7 @@ struct ReaperTests {
     private static let tunables = Tunables(
         scroll: 78, spawn: 0, shove: 120, iframes: 0.55, fogGrace: 0.8, fogGrip: 2.4,
         fogCreep: 1.1, killPush: 0.9, downBias: 0.35, cardSlow: 0.005,
-        firstCardCost: 4, cardCostIncrement: 1, finaleTime: 720)
+        firstCardCost: 4, cardCostIncrement: 1)
 
     private func makeSim() -> RunSim {
         RunSim(tunables: Self.tunables, viewport: Vec2(393, 852), seed: 3, catalog: .seed)

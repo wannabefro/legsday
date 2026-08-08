@@ -104,15 +104,26 @@ struct GorgeTests {
         #expect(sim.state.hero.vel.x == 0)
     }
 
-    /// Foes are not clamped yet: it defeats the sideways cull and deadlocks the field.
-    @Test func foesAreNotYetHeldInsideTheGorge() {
+    @Test func foesAreHeldInsideTheGorge() {
         var sim = RunSim(tunables: Self.tunables, viewport: Vec2(Self.W, 852), seed: 18)
         sim.tick(dt: RunSim.fixedStep, input: .idle)
         let wall = sim.state.gorge.edges(at: sim.state.worldY + sim.state.height - 180).left
         sim.debugAddFoe(at: Vec2(wall - 40, 180), hp: 99, speed: 0)
         sim.tick(dt: RunSim.fixedStep, input: .idle)
-        #expect(sim.state.foes.count == 1)
-        #expect((sim.state.foes.first?.pos.x ?? 0) < wall)
+        let foe = sim.state.foes.first!
+        let edge = sim.state.gorge.edges(at: sim.terrainY(of: foe.pos.y))
+        #expect(foe.pos.x >= edge.left + foe.radius)
+    }
+
+    @Test func fullFieldOf120FoesStillProducesKills() {
+        var sim = RunSim(tunables: Self.tunables, viewport: Vec2(Self.W, 852), seed: 19)
+        for _ in 0..<120 {
+            sim.debugAddFoe(at: sim.state.hero.pos + Vec2(100, 0), speed: 0)
+        }
+        #expect(sim.state.foes.count == 120)
+        sim.tick(dt: RunSim.fixedStep, input: .idle)
+        #expect(sim.state.kills == 1)
+        #expect(sim.state.foes.count == 119)
     }
 
     private static let tunables = Tunables(

@@ -60,20 +60,23 @@ extension RunSim {
             state.foes[i].pos.y += toHero.y / dist * state.foes[i].speed * dt + drift
 
             let contact = dist < state.foes[i].radius + Self.heroContactRadius
-            guard contact, state.hero.invuln <= 0 else { continue }
+            if contact, state.hero.invuln <= 0 {
+                var s = Vec2(toHero.x / dist, toHero.y / dist)
+                s.y += tunables.downBias
+                let m = max(s.length, 1)
+                let impulse = tunables.shove * (state.foes[i].elite ? Self.eliteShoveFactor : 1)
+                    / state.mods.footing
+                state.hero.vel.x += s.x / m * impulse
+                state.hero.vel.y += s.y / m * impulse
+                state.hero.invuln = tunables.iframes
+                state.frameEvents.append(.heroShoved(at: state.hero.pos))
+                state.foes[i].pos.x -= s.x / m * Self.foeRecoil
+                state.foes[i].pos.y -= s.y / m * Self.foeRecoil
+            }
 
-            // Direction away from foe, downward-biased, renormalized.
-            var s = Vec2(toHero.x / dist, toHero.y / dist)
-            s.y += tunables.downBias
-            let m = max(s.length, 1)
-            let impulse = tunables.shove * (state.foes[i].elite ? Self.eliteShoveFactor : 1)
-                / state.mods.footing
-            state.hero.vel.x += s.x / m * impulse
-            state.hero.vel.y += s.y / m * impulse
-            state.hero.invuln = tunables.iframes
-            state.frameEvents.append(.heroShoved(at: state.hero.pos))
-            state.foes[i].pos.x -= s.x / m * Self.foeRecoil
-            state.foes[i].pos.y -= s.y / m * Self.foeRecoil
+            let foe = state.foes[i]
+            state.foes[i].pos = state.gorge.clamp(
+                foe.pos, radius: foe.radius, at: terrainY(of: foe.pos.y))
         }
         cullFoes()
     }

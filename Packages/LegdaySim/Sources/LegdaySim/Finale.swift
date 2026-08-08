@@ -67,6 +67,7 @@ extension RunSim {
     mutating func commitFinale(_ dir: Int) {
         if dir > 0 {
             state.keepRunning = true
+            state.keepRunningStartedAt = state.time
         } else {
             state.duelRequested = true
         }

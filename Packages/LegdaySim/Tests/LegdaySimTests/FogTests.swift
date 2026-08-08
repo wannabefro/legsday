@@ -72,6 +72,7 @@ struct FogTests {
             if sim.state.dead { caught = true; break }
         }
         #expect(caught)
+        #expect(sim.state.dead)
         #expect(elapsed > 1.0)   // not an instant death
     }
 

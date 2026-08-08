@@ -123,6 +123,7 @@ public struct RunState: Sendable {
     /// Keep-running chosen: the scroll ramps forever and only the fog ends the
     /// run (R17).
     public internal(set) var keepRunning: Bool = false
+    public internal(set) var keepRunningStartedAt: Double = 0
     /// Turn & fight chosen: U19 enters the duel with the Reaper.
     public internal(set) var duelRequested: Bool = false
     /// The Reaper duel ended in a loss (U19) — result ending `.duelLoss`.
@@ -193,6 +194,7 @@ public struct RunState: Sendable {
         mix(UInt64(bitPattern: Int64(drawn)))
         mix(UInt64(finaleDealt ? 1 : 0))
         mix(UInt64(keepRunning ? 1 : 0))
+        mix(keepRunningStartedAt)
         mix(UInt64(duelRequested ? 1 : 0))
         mix(UInt64(deadInDuel ? 1 : 0))
         mix(UInt64(duelWon ? 1 : 0))

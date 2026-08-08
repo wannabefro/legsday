@@ -54,7 +54,7 @@ public struct RunSim {
         if state.duel != nil { return 0 }
         let base = tunables.scroll * state.stage.scroll * state.mods.scrollMul
         guard state.keepRunning else { return base }
-        let elapsed = state.time - tunables.finaleTime
+        let elapsed = max(0, state.time - state.keepRunningStartedAt)
         return base * (1 + elapsed * Finale.keepRunningRamp)
     }
 
