@@ -1,110 +1,129 @@
 # Sprite generation prompts
 
-Run prompt A first. It locks the figure. Then run prompt B, which repeats the
-same figure eight times. Do not run B first: image models keep a figure
-consistent inside one image, but not across separate runs.
+Revision 2. Revision 1 asked for one 8-cell sheet and failed on six counts:
+a 3x3 grid of 9, a front view, an opaque vignette, drop shadows, nine identical
+cells, and off-palette colours. A cross-model review named the cause.
 
-Generate large, about 1024 pixels for each cell, then reduce. The Pilgrim ships
-at 18 x 26 pt. Hard alpha edges survive that reduction; soft edges do not.
+**The lore broke the camera.** "Pilgrim", "devotional woodcut" and "the dark
+void where the face would be" are stronger visual priors than "90 degrees", and
+all three pull the figure upright and frontal. The prompts below carry no lore.
 
-Related: [sprite-style.md](sprite-style.md) holds the camera decision and the
-subject list.
+Four rules follow from that failure:
 
-## A. The key frame
+1. Never ask for a grid. Generate one sprite, then edit it seven times.
+2. Never ask for alpha. Generate on flat cyan and key it out.
+3. Name a camera that exists. "Grand Theft Auto 1" beats "plan view".
+4. Four colours, not eight. Models do not bind pixels to a long hex list.
 
-```
-A single game sprite for "Legday", a gothic mobile game about a pilgrim
-who climbs away from a rising fog and bargains with Death for passage.
+Camera decision and subject list: [sprite-style.md](sprite-style.md).
 
-Camera: straight overhead plan view, 90 degrees, looking directly down
-at the floor. You see the crown of the hood, the tops of the shoulders,
-the cloak spread on the ground, and the feet. No face is visible. This
-is NOT a three-quarter view and NOT a side view.
-
-Subject: the Pilgrim. A hooded figure in a heavy travelling cloak,
-seen from directly above, mid-stride. One arm reaches out to the
-figure's left holding a small lantern. The cloak spreads and trails
-behind the shoulders.
-
-Orientation: the figure walks toward the TOP of the image. This is the
-only orientation drawn; the game rotates it.
-
-Art direction: hand-inked woodcut. Heavy black contour, sparse interior
-detail, visible cross-hatching for shadow. It reads as a medieval
-devotional woodcut, not as clean vector art and not as 3D. Weathered,
-dry, restrained.
-
-Palette - use only these:
-  parchment #E9DCBC   ink #241C12       dried blood #7A2E1E
-  gold #C99A2E        rust #C06430      grave violet #8A6FB3
-  plague green #8FA03A                  pitch #050303
-
-Format: ONE figure, alone, centred, filling the frame. No grid, no
-second copy, no border, no frame number, no text, no ground line.
-
-Fully transparent background, no ground shadow, no scene. Hard alpha
-edges - no glow, no soft drop shadow, no gradient fade.
-```
-
-## B. The eight-frame walk cycle
-
-Complete on its own. Attach the approved key frame as a reference image if you
-ran prompt A. Without that reference the sheet needs more retries, but the eight
-cells stay consistent with each other either way, because they are one image.
+## A. The canonical sprite
 
 ```
-A game sprite sheet for "Legday", a gothic mobile game about a pilgrim
-who climbs away from a rising fog and bargains with Death for passage.
+ONE isolated 2D game sprite. ONE character only. No sprite sheet, no
+grid, no duplicate figures.
 
-Camera: straight overhead plan view, 90 degrees, looking directly down
-at the floor. You see the crown of the hood, the tops of the shoulders,
-the cloak spread on the ground, and the feet. No face is visible. This
-is NOT a three-quarter view and NOT a side view.
+CAMERA IS THE PRIMARY REQUIREMENT:
+Orthographic top-down camera identical to the camera in early Grand
+Theft Auto 1 and Grand Theft Auto 2. The camera is directly above the
+character's crown and looks vertically down along the direction of
+gravity.
 
-Subject: the Pilgrim. A hooded figure in a heavy travelling cloak, seen
-from directly above. One arm reaches out to the figure's left holding a
-small lantern. The cloak spreads and trails behind the shoulders.
+Show only the TOP surfaces of the hood, shoulders, arms, cloak and
+boots. The crown of the hood completely hides the face and hood
+opening. The chest is foreshortened and nearly invisible. The body
+reads as a compact cloak-shaped footprint on the floor, not as an
+upright person viewed from the front.
 
-Orientation: in every cell the figure walks toward the TOP of the
-image. This is the only orientation drawn; the game rotates it.
+Automatic rejection if any face, hood opening, chest, frontal torso,
+vertical body, horizon, or side-hanging lantern is visible. Not
+isometric. Not three-quarter. Not frontal.
 
-Art direction: hand-inked woodcut. Heavy black contour, sparse interior
-detail, visible cross-hatching for shadow. It reads as a medieval
-devotional woodcut, not as clean vector art and not as 3D. Weathered,
-dry, restrained.
+The figure travels toward the TOP edge of the canvas. The cloak forms a
+top-down teardrop silhouette trailing toward the BOTTOM edge. The left
+arm projects horizontally toward the LEFT edge and holds a small
+lantern away from the body. The lantern is also viewed from its top
+surface.
 
-Palette - use only these:
-  parchment #E9DCBC   ink #241C12       dried blood #7A2E1E
-  gold #C99A2E        rust #C06430      grave violet #8A6FB3
-  plague green #8FA03A                  pitch #050303
+Pose: passing position, boots close together beneath the split lower
+hem. Full character visible with clear space around it. Portrait canvas
+with a 9:13 aspect ratio. Design it to remain readable when reduced to
+54 x 78 pixels.
 
-Format: ONE image holding EXACTLY 8 cells in a 4 x 2 grid, read left to
-right, top row first. Every cell holds the same figure at the same
-scale, centred in its own cell.
+Style: a coarse hand-inked woodcut texture applied to a top-down
+action-game sprite. Heavy near-black outer contour, sparse angular
+interior cuts, limited cross-hatching. Dry, weathered ink. No smooth
+painting, rendering, gradients, grey shading or 3D lighting.
 
-The 8 cells are one walk cycle that loops from cell 8 back to cell 1:
-  1  left foot forward, contact
-  2  weight down, body lowest
-  3  legs passing, feet together
-  4  body highest, cloak lifted
-  5  right foot forward, contact
-  6  weight down, body lowest
-  7  legs passing, feet together
-  8  body highest, cloak lifted
+Artwork colors: exactly four flat colors only:
+near-black ink #241C12,
+parchment beige #E9DCBC,
+dried-blood red #7A2E1E,
+one single lantern gold #C99A2E.
+Do not introduce additional robe colors, greys, olive, orange, or a
+second gold.
 
-Only the legs, the arms and the cloak hem change between cells. The
-hood, the shoulders, the lantern and the ink weight are IDENTICAL in
-all 8 cells. No frame numbers, no borders or gutters drawn between
-cells, no text, no ground line.
-
-Fully transparent background, no ground shadow, no scene. Hard alpha
-edges - no glow, no soft drop shadow, no gradient fade.
+BACKGROUND MATTE:
+The entire background is one perfectly uniform, fully saturated chroma
+cyan #00FFFF. Cyan is a removable production matte and must not occur
+anywhere inside the sprite. No scenery, floor, texture, vignette,
+scanlines, atmospheric lighting, ground shadow, cast shadow, halo, glow
+or soft edge.
 ```
 
-## Checks before you accept a sheet
+## B. The seven edits
 
-1. Count the cells. There must be 8.
-2. Put cell 1 and cell 5 side by side. The hood must be the same size.
-3. Look for a face. There must not be one.
-4. Check the alpha at the hem. A soft edge fails at 18 pt.
-5. Confirm every colour is one of the eight.
+Attach the approved canonical sprite. Run this eight times, once per phase.
+Frame 3 or frame 7 may reuse the canonical sprite unchanged, since it is already
+a passing pose.
+
+```
+Edit the supplied sprite; do not redraw or reinterpret it.
+
+Preserve the exact camera, canvas, scale, position, top-down
+silhouette, hood, shoulders, lantern, lantern arm, line weight,
+cross-hatching, colors and cyan background.
+
+Modify only the free arm, boots and bottom third of the cloak. Make the
+requested walk phase visibly distinct and exaggerated enough to read at
+54 x 78 pixels. Preserve the top-down camera. Do not reveal the face,
+hood opening, chest or frontal torso. Add no shadow or new color.
+
+Requested phase: [PHASE]
+```
+
+| # | `[PHASE]` |
+|---|---|
+| 1 | Left contact: left boot reaches toward the top edge; right boot trails toward the bottom; free arm swings backward; hem pulls diagonally behind the right boot. |
+| 2 | Left down: left boot planted; knees slightly spread; cloak silhouette shortens and broadens; free arm reaches its rear extreme. |
+| 3 | First passing: boots nearly overlap beneath the hem; right boot is lifting past the left; cloak hem narrows and centers. |
+| 4 | First high: right boot advances toward the top; trailing left heel lifted; cloak hem lifts and flares distinctly to the left. |
+| 5 | Right contact: right boot reaches toward the top edge; left boot trails toward the bottom; free arm swings forward; hem pulls diagonally behind the left boot. |
+| 6 | Right down: right boot planted; knees slightly spread; cloak silhouette shortens and broadens; free arm reaches its forward extreme. |
+| 7 | Second passing: boots nearly overlap beneath the hem; left boot is lifting past the right; cloak hem narrows and centers. |
+| 8 | Second high: left boot advances toward the top; trailing right heel lifted; cloak hem lifts and flares distinctly to the right. |
+
+## C. Key out the cyan
+
+```
+magick frame.png -fuzz 12% -transparent '#00FFFF' \
+  -channel A -morphology EdgeOut Diamond +channel frame-rgba.png
+```
+
+Raise `-fuzz` if a cyan fringe survives. Lower it if the ink starts to erode.
+Check the hem, which is where the fringe shows first.
+
+## Checks before you accept a frame
+
+1. Look for a face or a hood opening. There must be neither.
+2. Look for a lantern that hangs down. It must lie flat, seen from above.
+3. Reduce to 54 x 78 pixels. The silhouette must still read.
+4. Sample the robe folds. Grey and olive are failures.
+5. Put frame 1 beside frame 5. Hood and shoulders must be identical.
+
+## If the camera still will not come out
+
+Stop adding camera adjectives. Build a crude but unambiguous overhead guide --
+a blocked-out silhouette or a simple 3D mannequin render -- and run
+image-to-image at low strength over it. Geometry beats prose here. Apply the
+woodcut treatment after the geometry is locked.
