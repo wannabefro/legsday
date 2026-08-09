@@ -82,9 +82,10 @@ final class RunScene: SKScene {
         cloakNode.strokeColor = SKColor(red: 0.5, green: 0.42, blue: 0.32, alpha: 0.9)
         cloakNode.lineWidth = 2.5
         cloakNode.alpha = 0.55
-        lanternLine.strokeColor = SKColor(white: 0.5, alpha: 0.6)
-        lanternLine.lineWidth = 1.5
+        lanternLine.strokeColor = SpriteAtlas.rgb(0x241C12)
+        lanternLine.lineWidth = 1
         lanternBob = SKSpriteNode(texture: atlas.lantern)
+        lanternBob.size = CGSize(width: 7.8, height: 7.8)
         feelNode.addChild(cloakNode)
         feelNode.addChild(lanternLine)
         feelNode.addChild(lanternBob)
@@ -243,7 +244,8 @@ final class RunScene: SKScene {
         for p in s.cloak.points.dropFirst() { cloakPath.addLine(to: pt(p + shift)) }
         cloakNode.path = cloakPath
         // The lantern hangs off the arm, so its mount turns with the body.
-        let lanternLen = 20.0
+        // Rod is a tenth of the body. It is a grip, not a rope.
+        let lanternLen = Self.bodySize.y * 0.10
         let bodyAngle = s.hero.heading + s.hero.lean
         let armX = (Self.rigArm.x - Self.rigPivot.x) * Self.bodySize.x
         let armY = (Self.rigArm.y - Self.rigPivot.y) * Self.bodySize.y
@@ -254,7 +256,7 @@ final class RunScene: SKScene {
                           mount.y + lanternLen * cos(s.lantern.angle))
         let bob = pt(bobSim), pivot = pt(mount)
         lanternBob.position = bob
-        lanternBob.zRotation = CGFloat(-(bodyAngle + s.lantern.angle))
+        lanternBob.zRotation = CGFloat(-bodyAngle)
         let ll = CGMutablePath(); ll.move(to: pivot); ll.addLine(to: bob)
         lanternLine.path = ll
 
