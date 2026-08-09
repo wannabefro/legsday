@@ -8,6 +8,7 @@ final class SkyNode: SKNode {
     private let flock = SKSpriteNode()
     private var terrainY = 0.0
     private var driftX = 0.0
+    private var bank = 0.0
     private var rng = SeededRandom(seed: 0xB1_2D5)
 
     init(sceneSize: CGSize) {
@@ -28,9 +29,15 @@ final class SkyNode: SKNode {
         if y < -160 {
             terrainY += rng.range(900, 2_200)
             driftX = rng.range(60, sceneSize.width - 60)
-            flock.zRotation = CGFloat(rng.range(-0.5, 0.5))
+            bank = rng.range(-0.5, 0.5)
             return
         }
         flock.position = CGPoint(x: driftX + sin(state.time * 0.11) * 46, y: y)
+
+        // Wings: the flock squashes as it beats, and rolls as it circles.
+        let beat = abs(sin(state.time * 4.6))
+        flock.yScale = CGFloat(1 - 0.24 * beat)
+        flock.xScale = CGFloat(1 + 0.06 * beat)
+        flock.zRotation = CGFloat(bank + sin(state.time * 0.31) * 0.12)
     }
 }

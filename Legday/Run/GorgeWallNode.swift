@@ -43,7 +43,7 @@ final class GorgeWallNode: SKNode {
                     let x = edge + dir * (Double(course) * Self.tile * 0.62 + Self.tile * 0.30)
                     guard x > -Self.tile, x < sceneSize.width + Self.tile else { break }
                     place(&used, at: CGPoint(x: x, y: y), course: course,
-                          look: look, seedIndex: first + step + side)
+                          look: look, seedIndex: first + step + side, time: state.time)
                 }
             }
             // The island a fork puts between the two lanes.
@@ -53,7 +53,7 @@ final class GorgeWallNode: SKNode {
                 for slot in 0..<count {
                     let x = island.left + span * (Double(slot) + 0.5) / Double(count)
                     place(&used, at: CGPoint(x: x, y: y), course: 0,
-                          look: look, seedIndex: first + step + slot + 97)
+                          look: look, seedIndex: first + step + slot + 97, time: state.time)
                 }
             }
         }
@@ -61,7 +61,7 @@ final class GorgeWallNode: SKNode {
     }
 
     private func place(_ used: inout Int, at p: CGPoint, course: Int,
-                       look: ZoneLook, seedIndex: Int) {
+                       look: ZoneLook, seedIndex: Int, time: Double) {
         let node: SKSpriteNode
         if used < tiles.count {
             node = tiles[used]
@@ -77,18 +77,28 @@ final class GorgeWallNode: SKNode {
         let variants = look.wall.sprites.count
         node.texture = texture(look.wall, rock: look.rock,
                                variant: abs(seedIndex &+ course &* 7) % variants)
-        node.position = p
+        let rest = Double(seedIndex &* 2_654_435_761 % 628) / 100
+        // Rock and masonry hold still. Mist and briar are not rock.
         switch look.wall {
         case .masonry:
+            node.position = p
             node.zRotation = 0                      // it was built, so it is not tumbled
             node.size = CGSize(width: Self.tile * 0.92, height: Self.band * 0.98)
             node.alpha = course == 0 ? 0.90 : 0.55
         case .fog:
-            node.zRotation = CGFloat(seedIndex &* 2_654_435_761 % 628) / 100
+            let breath = sin(time * 0.42 + rest)
+            node.position = CGPoint(x: p.x + CGFloat(breath) * 7, y: p.y)
+            node.zRotation = CGFloat(rest + breath * 0.06)
             node.size = CGSize(width: Self.tile * 1.4, height: Self.tile * 1.4)
-            node.alpha = 0.34
+            node.alpha = CGFloat(0.28 + 0.12 * (0.5 + 0.5 * sin(time * 0.63 + rest)))
+        case .briar:
+            node.position = p
+            node.zRotation = CGFloat(rest + sin(time * 1.1 + rest) * 0.035)
+            node.size = CGSize(width: Self.tile, height: Self.tile)
+            node.alpha = course == 0 ? 0.72 : 0.84
         default:
-            node.zRotation = CGFloat(seedIndex &* 2_654_435_761 % 628) / 100
+            node.position = p
+            node.zRotation = CGFloat(rest)
             node.size = CGSize(width: Self.tile, height: Self.tile)
             node.alpha = course == 0 ? 0.72 : 0.84
         }

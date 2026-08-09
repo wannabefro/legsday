@@ -1,8 +1,8 @@
 import SpriteKit
 import LegdaySim
 
-/// The channel's furniture. A cairn is a stack, one slab per remaining hit,
-/// so its health reads from its shape, never from its brightness.
+/// The channel's furniture: a cairn's height is its remaining hits, never
+/// its brightness.
 final class FeatureNode: SKNode {
     private static let slabsPerCairn = 3
 
@@ -25,7 +25,7 @@ final class FeatureNode: SKNode {
             let p = CGPoint(x: f.x, y: f.terrainY - state.worldY)
             switch f.kind {
             case .briar:
-                layBriar(&usedBriars, at: p, feature: f)
+                layBriar(&usedBriars, at: p, feature: f, time: state.time)
             case .cairn:
                 stackCairn(&usedCairns, at: p, feature: f, time: state.time)
             }
@@ -34,7 +34,7 @@ final class FeatureNode: SKNode {
         for i in usedCairns..<cairns.count { cairns[i].isHidden = true }
     }
 
-    private func layBriar(_ used: inout Int, at p: CGPoint, feature: Feature) {
+    private func layBriar(_ used: inout Int, at p: CGPoint, feature: Feature, time: Double) {
         let node: SKSpriteNode
         if used < briars.count {
             node = briars[used]
@@ -47,9 +47,12 @@ final class FeatureNode: SKNode {
             briars.append(node)
         }
         used += 1
+        // Each bed keeps its own phase, so a field of briars never sways as one.
+        let phase = Double(feature.id) * 1.7
+        let side = feature.extent * 2.2 * (1 + sin(time * 0.9 + phase) * 0.035)
         node.position = p
-        node.zRotation = CGFloat(feature.rotation)
-        node.size = CGSize(width: feature.extent * 2.2, height: feature.extent * 2.2)
+        node.zRotation = CGFloat(feature.rotation + sin(time * 1.3 + phase) * 0.045)
+        node.size = CGSize(width: side, height: side)
     }
 
     private func stackCairn(_ used: inout Int, at p: CGPoint, feature: Feature, time: Double) {
@@ -74,14 +77,17 @@ final class FeatureNode: SKNode {
 
         let full = feature.extent * 2
         let scale = 0.55 + 0.15 * Double(feature.hp)
+        // A stack is never quite settled, and the top slab teeters most.
+        let phase = Double(feature.id) * 2.3
         for (i, slab) in node.children.enumerated() {
             guard let slab = slab as? SKSpriteNode else { continue }
             slab.isHidden = i >= feature.hp
             guard !slab.isHidden else { continue }
             let width = full * scale * 1.16 * (1 - Double(i) * 0.16)
             let lift = Double(i) * full * 0.10
+            let teeter = sin(time * 0.8 + phase + Double(i) * 0.9) * 0.014 * Double(i + 1)
             slab.position = CGPoint(x: -lift * 0.5, y: lift)
-            slab.zRotation = CGFloat(Double(i) * 0.22)
+            slab.zRotation = CGFloat(Double(i) * 0.22 + teeter)
             slab.zPosition = CGFloat(i)
             slab.size = CGSize(width: width, height: width * 0.82)
         }

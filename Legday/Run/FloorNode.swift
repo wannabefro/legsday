@@ -14,6 +14,7 @@ final class FloorNode: SKNode {
     private let bed = SKSpriteNode(texture: SpriteAtlas.fill(.white))
     private var relic = SKSpriteNode()
     private var relicTerrainY = 0.0
+    private var relicRest = 0.0
     private var relicRng = SeededRandom(seed: 0xFA11_E4)
     private var cache: [String: SKTexture] = [:]
     private var lastMaterial: ZoneLook.Material?
@@ -79,11 +80,13 @@ final class FloorNode: SKNode {
             relicTerrainY += relicRng.range(1_400, 3_600)
             let edges = state.gorge.edges(at: relicTerrainY)
             relic.position.x = CGFloat(relicRng.range(edges.left + 40, edges.right - 40))
-            relic.zRotation = CGFloat(relicRng.range(0, 6.28))
+            relicRest = relicRng.range(0, 6.28)
             relic.isHidden = false
             return
         }
         relic.position.y = CGFloat(y)
+        // Cloth on a dead pilgrim still moves. Nothing else about her does.
+        relic.zRotation = CGFloat(relicRest + sin(state.time * 0.7) * 0.03)
     }
 
     private func texture(_ material: ZoneLook.Material) -> SKTexture? {

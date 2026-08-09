@@ -264,6 +264,9 @@ final class RunScene: SKScene {
         }
         motePool.sync(s.motes, id: { $0.id }) { mote, node in
             node.position = self.pt(mote.pos)
+            let beat = sin(s.time * 4.4 + Double(mote.id) * 0.8)
+            node.setScale(CGFloat(1 + 0.20 * beat))
+            node.alpha = CGFloat(0.78 + 0.22 * beat)
         }
 
         // The lantern mounts on the arm. A tenth of the body is a grip, not a rope.
