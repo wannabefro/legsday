@@ -42,8 +42,10 @@ struct GorgeWallNodeTests {
     }
 
     @Test func everyStageNamesAMaterialThatShipsInTheBundle() {
-        let names = ZoneLook.byStageID.values.flatMap { [$0.wall.sprite, $0.floor.sprite] }
-        let missing = Set(names).filter { Bundle.main.url(forResource: $0, withExtension: "png") == nil }
+        let names = ZoneLook.byStageID.values.flatMap { $0.wall.sprites + $0.floor.sprites }
+        let extras = ["fallen-pilgrim", "carrion-birds"]
+        let missing = Set(names + extras)
+            .filter { Bundle.main.url(forResource: $0, withExtension: "png") == nil }
         #expect(missing.isEmpty)
         #expect(ZoneLook.byStageID.count == Ascent.stages.count)
     }

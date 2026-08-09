@@ -7,17 +7,17 @@ struct ZoneLook {
         case rubble, briar, bone, masonry, fog
         case slab, root, tile, ash
 
-        /// The drawing this material is built from. Several materials share one.
-        var sprite: String {
+        /// The drawings this material is built from. More than one breaks the tiling.
+        var sprites: [String] {
             switch self {
-            case .rubble: return "boulder"
-            case .slab: return "ground-slab"
-            case .briar: return "briar-bed"
-            case .bone: return "bone-pile"
-            case .masonry, .tile: return "ashlar"
-            case .fog: return "wall-fog"
-            case .root: return "floor-roots"
-            case .ash: return "floor-ash"
+            case .rubble: return ["boulder", "wall-rubble-b"]
+            case .slab: return ["ground-slab"]
+            case .briar: return ["briar-bed"]
+            case .bone: return ["bone-pile"]
+            case .masonry, .tile: return ["ashlar"]
+            case .fog: return ["wall-fog"]
+            case .root: return ["floor-roots"]
+            case .ash: return ["floor-ash"]
             }
         }
     }

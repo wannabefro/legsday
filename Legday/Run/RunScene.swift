@@ -31,6 +31,7 @@ final class RunScene: SKScene {
 
     private let world = SKNode()      // foes, motes, hero
     private var floorNode: FloorNode!
+    private var skyNode: SkyNode!
     private let gorgeWalls = GorgeWallNode()
     private let effects = SKNode()    // transient bolts/flashes
     private var heroNode: SKSpriteNode!
@@ -108,6 +109,9 @@ final class RunScene: SKScene {
         addChild(floorNode)
         gorgeWalls.zPosition = 2
         addChild(gorgeWalls)
+        skyNode = SkyNode(sceneSize: size)
+        skyNode.zPosition = 14
+        addChild(skyNode)
 
         heroNode = SKSpriteNode(texture: atlas.hero)
         world.addChild(heroNode)
@@ -197,6 +201,7 @@ final class RunScene: SKScene {
 
         floorNode.update(state: s, sceneSize: size)
         gorgeWalls.update(state: s, sceneSize: size)
+        skyNode.update(state: s, sceneSize: size)
 
         heroNode.position = pt(s.hero.pos)
         heroNode.texture = s.heroInFog ? atlas.heroSubmerged : atlas.hero

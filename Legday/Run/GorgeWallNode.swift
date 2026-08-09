@@ -63,7 +63,9 @@ final class GorgeWallNode: SKNode {
         }
         used += 1
 
-        node.texture = texture(look.wall, rock: look.rock)
+        let variants = look.wall.sprites.count
+        node.texture = texture(look.wall, rock: look.rock,
+                               variant: abs(seedIndex &+ course &* 7) % variants)
         node.position = p
         switch look.wall {
         case .masonry:
@@ -104,11 +106,11 @@ final class GorgeWallNode: SKNode {
         return path
     }
 
-    private func texture(_ material: ZoneLook.Material, rock: Int) -> SKTexture? {
-        let key = "\(material.rawValue)-\(rock)"
+    private func texture(_ material: ZoneLook.Material, rock: Int, variant: Int) -> SKTexture? {
+        let key = "\(material.rawValue)-\(rock)-\(variant)"
         if let hit = cache[key] { return hit }
         // Raw parchment outshines the Pilgrim, so the cliff takes the zone's stone.
-        let baked = SpriteAtlas.baked(material.sprite,
+        let baked = SpriteAtlas.baked(material.sprites[variant],
                                       tint: material == .fog ? nil : SpriteAtlas.rgb(rock))
         cache[key] = baked
         return baked
