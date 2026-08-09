@@ -42,6 +42,7 @@ final class FeatureNode: SKNode {
         } else {
             node = SKSpriteNode(texture: briarTexture)
             node.alpha = 0.5
+            Lighting.lit(node)
             addChild(node)
             briars.append(node)
         }
@@ -59,7 +60,9 @@ final class FeatureNode: SKNode {
         } else {
             node = SKNode()
             for _ in 0..<Self.slabsPerCairn {
-                node.addChild(SKSpriteNode(texture: slabTexture))
+                let slab = SKSpriteNode(texture: slabTexture)
+                Lighting.lit(slab)
+                node.addChild(slab)
             }
             addChild(node)
             cairns.append(node)

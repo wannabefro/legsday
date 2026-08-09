@@ -12,9 +12,10 @@ final class SkyNode: SKNode {
 
     init(sceneSize: CGSize) {
         super.init()
-        flock.texture = SpriteAtlas.baked("carrion-birds", tint: nil)
+        // A bird above the lantern is a silhouette, never a pale shape.
+        flock.texture = SpriteAtlas.baked("carrion-birds", tint: SpriteAtlas.rgb(0x14100C))
         flock.size = CGSize(width: 130, height: 130)
-        flock.alpha = 0.26
+        flock.alpha = 0.5
         addChild(flock)
         terrainY = sceneSize.height + 600
         driftX = sceneSize.width * 0.5

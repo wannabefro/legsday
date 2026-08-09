@@ -68,6 +68,7 @@ final class GorgeWallNode: SKNode {
             node.isHidden = false
         } else {
             node = SKSpriteNode()
+            Lighting.lit(node)
             addChild(node)
             tiles.append(node)
         }

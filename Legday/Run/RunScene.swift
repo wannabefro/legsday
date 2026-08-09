@@ -34,6 +34,7 @@ final class RunScene: SKScene {
     private var skyNode: SkyNode!
     private var airNode: AirNode!
     private let lanternLight = LanternLight()
+    private let lighting = Lighting()
     private let featureNode = FeatureNode()
     private let gorgeWalls = GorgeWallNode()
     private let effects = SKNode()    // transient bolts/flashes
@@ -116,6 +117,7 @@ final class RunScene: SKScene {
         addChild(featureNode)
         lanternLight.zPosition = 4      // on the ground, beneath every figure
         addChild(lanternLight)
+        addChild(lighting)
         skyNode = SkyNode(sceneSize: size)
         skyNode.zPosition = 14
         addChild(skyNode)
@@ -132,7 +134,11 @@ final class RunScene: SKScene {
         addChild(corpseNode)
         corpses = CorpseLayer(parent: corpseNode, texture: atlas.foe)
 
-        foePool = NodePool(parent: world) { [atlas] in SKSpriteNode(texture: atlas.foe) }
+        foePool = NodePool(parent: world) { [atlas] in
+            let node = SKSpriteNode(texture: atlas.foe)
+            Lighting.lit(node)
+            return node
+        }
         motePool = NodePool(parent: world) { [atlas] in SKSpriteNode(texture: atlas.mote) }
 
         fog = FogNode(width: size.width)
@@ -305,6 +311,7 @@ final class RunScene: SKScene {
         let topY = size.height - CGFloat(sim.fogLineY())
         fog.update(topY: topY, heights: s.fogSurface.heights)
         corpses.cull(belowY: topY)
+        lighting.update(lanternAt: bob, fogTopY: topY, sceneSize: size, time: s.time)
 
         for event in s.frameEvents { spawn(event) }
 

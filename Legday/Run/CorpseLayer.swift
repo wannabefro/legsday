@@ -24,6 +24,7 @@ final class CorpseLayer {
         if corpses.count >= cap { corpses.removeFirst().removeFromParent() }
 
         let node = SKSpriteNode(texture: texture)
+        Lighting.lit(node)
         node.position = pos
         node.setScale(elite ? 1.6 : 1)
         let body = SKPhysicsBody(circleOfRadius: elite ? 15 : 9)

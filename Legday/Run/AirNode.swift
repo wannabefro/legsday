@@ -72,6 +72,7 @@ final class AirNode: SKNode {
             node.colorBlendFactor = 1
             let scale = rng.range(0.6, 1.4)
             node.size = CGSize(width: air.size * scale * 2, height: air.size * scale * 2)
+            Lighting.lit(node)
             addChild(node)
             specks.append(Speck(node: node, x: rng.range(0, Double(size.width)),
                                 y: rng.range(0, Double(size.height)),

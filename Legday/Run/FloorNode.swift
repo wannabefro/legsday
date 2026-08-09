@@ -11,6 +11,7 @@ final class FloorNode: SKNode {
     }
 
     private var marks: [Mark] = []
+    private let bed = SKSpriteNode(texture: SpriteAtlas.fill(.white))
     private var relic = SKSpriteNode()
     private var relicTerrainY = 0.0
     private var relicRng = SeededRandom(seed: 0xFA11_E4)
@@ -19,9 +20,17 @@ final class FloorNode: SKNode {
 
     init(sceneSize: CGSize, count: Int = 26) {
         super.init()
+        bed.anchorPoint = .zero
+        bed.size = sceneSize
+        bed.colorBlendFactor = 1
+        bed.zPosition = -1
+        Lighting.lit(bed)
+        addChild(bed)
+
         var seed = SeededRandom(seed: 0xF100_0000)
         for _ in 0..<count {
             let node = SKSpriteNode()
+            Lighting.lit(node)
             addChild(node)
             marks.append(Mark(node: node,
                               terrainY: seed.range(0, sceneSize.height),
@@ -34,6 +43,7 @@ final class FloorNode: SKNode {
         relic.size = CGSize(width: 62, height: 62)
         relic.alpha = 0.42
         relic.isHidden = true
+        Lighting.lit(relic)
         addChild(relic)
         relicTerrainY = sceneSize.height + 400
     }
@@ -42,6 +52,7 @@ final class FloorNode: SKNode {
 
     func update(state: RunState, sceneSize: CGSize) {
         let look = ZoneLook.of(state.stage)
+        bed.color = SpriteAtlas.rgb(look.rock)
         if look.floor != lastMaterial {
             lastMaterial = look.floor
             let tex = texture(look.floor)

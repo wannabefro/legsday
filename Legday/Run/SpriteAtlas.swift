@@ -81,6 +81,15 @@ struct SpriteAtlas {
         return SKTexture(image: img)
     }
 
+    /// A flat quad. A light needs a surface, and the channel floor had none.
+    static func fill(_ color: UIColor) -> SKTexture {
+        let img = UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4)).image { ctx in
+            color.setFill()
+            ctx.fill(CGRect(x: 0, y: 0, width: 4, height: 4))
+        }
+        return SKTexture(image: img)
+    }
+
     static func circle(radius: CGFloat, color: UIColor) -> SKTexture {
         let d = radius * 2
         let img = UIGraphicsImageRenderer(size: CGSize(width: d, height: d)).image { ctx in
