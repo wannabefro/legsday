@@ -72,6 +72,7 @@ extension RunSim {
         state.hero.recoilVel.y -= uy * Rig.recoilImpulse
         let want = atan2(ux, -uy)
         state.hero.aim = Rig.shortestTurn(from: state.hero.heading, to: want) * Rig.aimGlance
+        state.cloak.kick(heading: state.hero.heading, unit: Vec2(ux, uy))
     }
 
     /// Advance one foe's body: turn lag, idle sway, and the knock spring.

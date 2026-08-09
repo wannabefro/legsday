@@ -35,7 +35,7 @@ final class RunScene: SKScene {
     private let featureNode = FeatureNode()
     private let gorgeWalls = GorgeWallNode()
     private let effects = SKNode()    // transient bolts/flashes
-    private var heroNode: SKSpriteNode!
+    private var heroNode: PilgrimNode!
     private var fog: FogNode!
     private var hud: HudNode!
     private var cardLayer: CardVisual!
@@ -44,7 +44,6 @@ final class RunScene: SKScene {
     private var motePool: NodePool!
     private var corpses: CorpseLayer!
     private let feelNode = SKNode()   // cloak + lantern, behind the hero
-    private let cloakNode = SKShapeNode()
     private let lanternLine = SKShapeNode()
     private var lanternBob: SKSpriteNode!
     private let weaponNode = SKNode() // the chain weapon's rope (U16)
@@ -82,16 +81,10 @@ final class RunScene: SKScene {
         addChild(world)
         addChild(effects)
 
-        cloakNode.strokeColor = SKColor(red: 0.5, green: 0.42, blue: 0.32, alpha: 0.9)
-        cloakNode.lineWidth = 2.5
-        cloakNode.alpha = 0.55
         lanternLine.strokeColor = SpriteAtlas.rgb(0x241C12)
         lanternLine.lineWidth = 1
         lanternBob = SKSpriteNode(texture: atlas.lantern)
         lanternBob.size = CGSize(width: 7.8, height: 7.8)
-        // The drawing carries its own cloak. The wire is the unported 12-wedge rig.
-        cloakNode.isHidden = true
-        feelNode.addChild(cloakNode)
         feelNode.addChild(lanternLine)
         feelNode.addChild(lanternBob)
 
@@ -121,7 +114,7 @@ final class RunScene: SKScene {
         skyNode.zPosition = 14
         addChild(skyNode)
 
-        heroNode = SKSpriteNode(texture: atlas.hero)
+        heroNode = PilgrimNode(texture: atlas.hero)
         world.addChild(heroNode)
 
         // Corpse debris tumbles in a dedicated layer between feel and world.
@@ -163,7 +156,6 @@ final class RunScene: SKScene {
     private static let rigArm = Vec2(0.02, 0.239)
     private static let rigPivot = Vec2(0.50, 0.50)
     private static let bodySize = Vec2(25.3, 26)
-    private static let hemDrop: Double = 11
 
     /// sim y-down / origin top-left → scene y-up / origin bottom-left.
     private func pt(_ p: Vec2) -> CGPoint { CGPoint(x: p.x, y: size.height - p.y) }
@@ -230,12 +222,10 @@ final class RunScene: SKScene {
 
         // The rig, not an animation set: heading, bank, hood glance, recoil kick.
         heroNode.position = pt(s.hero.pos + s.hero.recoil)
-        heroNode.zRotation = CGFloat(-(s.hero.heading + s.hero.lean + s.hero.aim))
-        heroNode.texture = s.heroInFog ? atlas.heroSubmerged : atlas.hero
-        heroNode.alpha = (s.hero.invuln > 0 && Int(s.time * 18) % 2 == 0) ? 0.3 : 1
-        let gait = 1 + 0.035 * sin(s.hero.stride * 6.283)
-        heroNode.yScale = CGFloat(gait)
-        heroNode.xScale = CGFloat(2 - gait)
+        heroNode.cloakWedges = s.cloak.wedges
+        heroNode.update(hero: s.hero, time: s.time,
+                        texture: s.heroInFog ? atlas.heroSubmerged : atlas.hero,
+                        alpha: (s.hero.invuln > 0 && Int(s.time * 18) % 2 == 0) ? 0.3 : 1)
 
         foePool.sync(s.foes, id: { $0.id }) { [atlas] foe, node in
             node.position = self.pt(foe.pos + foe.knock)
@@ -248,15 +238,6 @@ final class RunScene: SKScene {
             node.position = self.pt(mote.pos)
         }
 
-        // The cloak pins at the rear hem, not the hood, so it trails its body.
-        let hemAngle = s.hero.heading + s.hero.lean
-        let hem = s.hero.pos + s.hero.recoil
-            + Vec2(-Self.hemDrop * sin(hemAngle), -Self.hemDrop * cos(hemAngle))
-        let shift = hem - s.cloak.points[0]
-        let cloakPath = CGMutablePath()
-        cloakPath.move(to: pt(hem))
-        for p in s.cloak.points.dropFirst() { cloakPath.addLine(to: pt(p + shift)) }
-        cloakNode.path = cloakPath
         // The lantern mounts on the arm. A tenth of the body is a grip, not a rope.
         let lanternLen = Self.bodySize.y * 0.10
         let bodyAngle = s.hero.heading + s.hero.lean

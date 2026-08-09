@@ -83,8 +83,12 @@ public struct RunState: Sendable {
     public internal(set) var fogSurface: SpringLine
     /// The Pilgrim's lantern (physical feel, R20).
     public internal(set) var lantern = Pendulum()
-    /// The Pilgrim's trailing cloak (physical feel, R20).
-    public internal(set) var cloak: VerletChain
+    /// The Pilgrim's cloak, wedge by wedge (physical feel, R20).
+    public internal(set) var cloak = CloakRig()
+    /// Heading and drive velocity last step, for the cloak's turn rate and its
+    /// own acceleration.
+    var prevHeading: Double = .pi
+    var prevDrive: Vec2 = .zero
     /// The chain weapon's verlet rope, once the Wild chain is acquired (U16).
     /// Nil until the weapon's form is chosen; removed if a fusion takes it.
     public internal(set) var rope: ChainRope?
@@ -185,7 +189,6 @@ public struct RunState: Sendable {
         self.hero = Hero(pos: start, target: start, vel: .zero, invuln: 0, fogTime: 0)
         self.gorge = Gorge(width: width, seed: seed)
         self.fogSurface = SpringLine(nodeCount: 48)
-        self.cloak = VerletChain(pin: start)
         self.prevHeroPos = start
         self.anchor = nil
         self.rng = SeededRandom(seed: seed)
@@ -207,6 +210,7 @@ public struct RunState: Sendable {
         mix(hero.invuln); mix(hero.fogTime)
         mix(hero.heading); mix(hero.lean); mix(hero.stride)
         mix(hero.recoil.x); mix(hero.recoil.y); mix(hero.aim)
+        for v in cloak.fingerprint { mix(v) }
         for f in foes {
             mix(f.vel.x); mix(f.vel.y); mix(f.rotation); mix(f.wobble)
             mix(f.knock.x); mix(f.knock.y)
@@ -275,7 +279,6 @@ public struct RunState: Sendable {
         for v in fogSurface.heights { mix(v) }
         for v in fogSurface.velocities { mix(v) }
         mix(lantern.angle); mix(lantern.angularVel)
-        for p in cloak.points { mix(p.x); mix(p.y) }
         if let rope {
             for p in rope.points { mix(p.x); mix(p.y) }
             mix(rope.headSpeed)
