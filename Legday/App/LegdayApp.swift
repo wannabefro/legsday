@@ -11,8 +11,8 @@ struct LegdayApp: App {
     }
 }
 
-/// Root navigation (KTD-6/U17/U22). Stages cross-fade rather than cut, and the
-/// run carries a pause — it previously ended only in death.
+/// Root navigation (KTD-6/U17/U22): stages cross-fade rather than cut, and a
+/// run can pause.
 struct RootView: View {
     @State private var flow = GameFlow()
 
@@ -87,9 +87,14 @@ struct RunContainer: View {
         _scene = State(initialValue: flow.makeScene(for: draft, seed: flow.runSeed))
     }
 
+    /// `-showfps` puts the frame rate and the node count on screen.
+    private static let debugOptions: SpriteView.DebugOptions =
+        ProcessInfo.processInfo.arguments.contains("-showfps")
+            ? [.showsFPS, .showsNodeCount, .showsDrawCount] : []
+
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            SpriteView(scene: scene)
+            SpriteView(scene: scene, debugOptions: Self.debugOptions)
                 .ignoresSafeArea()
             pauseButton
             if flow.paused { pausedOverlay }

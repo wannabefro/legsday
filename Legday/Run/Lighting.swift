@@ -7,12 +7,14 @@ final class Lighting: SKNode {
     /// World sprites take the light. HUD, cards, motes and bolts stay flat.
     static let worldMask: UInt32 = 1
 
-    private static let fogLightCount = 3
+    private static let fogLightCount = 4
     private static let ambient = 0x1B1822
     private static let lanternHue = 0xFFE29E
-    private static let fogHue = 0x8A6FB3
+    private static let fogHue = 0xA98CD4
     private static let lanternFalloff: CGFloat = 2.5
-    private static let fogFalloff: CGFloat = 1.0
+    private static let fogFalloff: CGFloat = 1.15
+    /// The lights stand this far above the fog line, on the ground it will take.
+    private static let fogLift: CGFloat = 30
 
     private let lantern = SKLightNode()
     private var fogLights: [SKLightNode] = []
@@ -44,9 +46,13 @@ final class Lighting: SKNode {
         lantern.position = p
         lantern.lightColor = SpriteAtlas.rgb(Self.lanternHue)
             .withAlphaComponent(CGFloat(flicker))
+        // The fog breathes on its own clock, slower than the lantern flickers.
+        let swell = 0.82 + 0.18 * sin(time * 0.9)
         for (i, light) in fogLights.enumerated() {
             let share = (CGFloat(i) + 0.5) / CGFloat(Self.fogLightCount)
-            light.position = CGPoint(x: sceneSize.width * share, y: fogTopY)
+            light.position = CGPoint(x: sceneSize.width * share, y: fogTopY + Self.fogLift)
+            light.lightColor = SpriteAtlas.rgb(Self.fogHue)
+                .withAlphaComponent(CGFloat(swell))
         }
     }
 
