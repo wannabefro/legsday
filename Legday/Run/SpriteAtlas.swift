@@ -81,7 +81,7 @@ struct SpriteAtlas {
         return SKTexture(image: img)
     }
 
-    private static func circle(radius: CGFloat, color: UIColor) -> SKTexture {
+    static func circle(radius: CGFloat, color: UIColor) -> SKTexture {
         let d = radius * 2
         let img = UIGraphicsImageRenderer(size: CGSize(width: d, height: d)).image { ctx in
             color.setFill()

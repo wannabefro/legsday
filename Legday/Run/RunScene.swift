@@ -32,6 +32,7 @@ final class RunScene: SKScene {
     private let world = SKNode()      // foes, motes, hero
     private var floorNode: FloorNode!
     private var skyNode: SkyNode!
+    private var airNode: AirNode!
     private let featureNode = FeatureNode()
     private let gorgeWalls = GorgeWallNode()
     private let effects = SKNode()    // transient bolts/flashes
@@ -58,6 +59,7 @@ final class RunScene: SKScene {
     private let autoDrive = ProcessInfo.processInfo.arguments.contains("-autodrive")
     private var driveClock: Double = 0
     private var cardClock: Double = 0
+    private var frameDelta: Double = 0
 
     override func didMove(to view: SKView) {
         backgroundColor = SKColor(red: 0x0F / 255.0, green: 0x0C / 255.0, blue: 0x0A / 255.0, alpha: 1)
@@ -114,6 +116,9 @@ final class RunScene: SKScene {
         skyNode = SkyNode(sceneSize: size)
         skyNode.zPosition = 14
         addChild(skyNode)
+        airNode = AirNode(sceneSize: size)
+        airNode.zPosition = 15
+        addChild(airNode)
 
         heroNode = PilgrimNode(texture: atlas.hero)
         world.addChild(heroNode)
@@ -167,6 +172,7 @@ final class RunScene: SKScene {
         let dt = currentTime - lastUpdate
         lastUpdate = currentTime
 
+        frameDelta = dt
         sim.tick(dt: dt, input: autoDrive ? drivenInput(dt: dt) : touchInput.current)
         touchInput.advance()
         syncRender()
@@ -230,6 +236,7 @@ final class RunScene: SKScene {
         floorNode.update(state: s, sceneSize: size)
         gorgeWalls.update(state: s, sceneSize: size)
         skyNode.update(state: s, sceneSize: size)
+        airNode.update(state: s, dt: min(frameDelta, 0.05))
         featureNode.update(state: s)
 
         // The rig, not an animation set: heading, bank, hood glance, recoil kick.
