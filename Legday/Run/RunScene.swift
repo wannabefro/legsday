@@ -89,6 +89,8 @@ final class RunScene: SKScene {
         lanternLine.lineWidth = 1
         lanternBob = SKSpriteNode(texture: atlas.lantern)
         lanternBob.size = CGSize(width: 7.8, height: 7.8)
+        // The drawing carries its own cloak. The wire is the unported 12-wedge rig.
+        cloakNode.isHidden = true
         feelNode.addChild(cloakNode)
         feelNode.addChild(lanternLine)
         feelNode.addChild(lanternBob)
