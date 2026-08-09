@@ -95,13 +95,19 @@ final class GorgeWallNode: SKNode {
             node.position = p
             node.zRotation = CGFloat(rest + sin(time * 1.1 + rest) * 0.035)
             node.size = CGSize(width: Self.tile, height: Self.tile)
-            node.alpha = course == 0 ? 0.72 : 0.84
+            node.alpha = Self.courseAlpha(course)
         default:
             node.position = p
             node.zRotation = CGFloat(rest)
             node.size = CGSize(width: Self.tile, height: Self.tile)
-            node.alpha = course == 0 ? 0.72 : 0.84
+            node.alpha = Self.courseAlpha(course)
         }
+    }
+
+    /// The lip is the boundary you must not cross, so it reads. The mass
+    /// behind it recedes.
+    private static func courseAlpha(_ course: Int) -> CGFloat {
+        max(0.32, 0.88 - CGFloat(course) * 0.26)
     }
 
     /// Solid ground behind the face, so a cliff has mass rather than an outline.

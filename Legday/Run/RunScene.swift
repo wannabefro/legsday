@@ -137,6 +137,7 @@ final class RunScene: SKScene {
         foePool = NodePool(parent: world) { [atlas] in
             let node = SKSpriteNode(texture: atlas.foe)
             Lighting.lit(node)
+            node.addChild(Self.threatRing())
             return node
         }
         motePool = NodePool(parent: world) { [atlas] in SKSpriteNode(texture: atlas.mote) }
@@ -165,6 +166,15 @@ final class RunScene: SKScene {
         stageBanner.alpha = 0
         stageBanner.zPosition = 55
         addChild(stageBanner)
+    }
+
+    /// A foe carries its own dark ground, so it never depends on the wall behind.
+    private static func threatRing() -> SKSpriteNode {
+        let ring = SKSpriteNode(texture: SpriteAtlas.circle(radius: 16, color: .black))
+        ring.size = CGSize(width: 31, height: 31)
+        ring.alpha = 0.5
+        ring.zPosition = -1
+        return ring
     }
 
     /// Where the lantern arm sits in the drawing, and the body's own pivot.
