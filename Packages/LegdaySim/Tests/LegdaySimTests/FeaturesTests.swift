@@ -95,11 +95,11 @@ struct FeaturesTests {
             if withBriar { s.debugAddFeature(.briar, at: Vec2(200, 300), extent: 70) }
             s.debugAddFoe(at: Vec2(200, 300), hp: 9, speed: 200)
             let before = s.state.foes.first!.pos.y
-            s.tick(dt: RunSim.fixedStep * 4, input: .idle)
+            for _ in 0..<60 { s.tick(dt: RunSim.fixedStep, input: .idle) }
             return s.state.foes.first!.pos.y - before
         }
         #expect(closed(withBriar: true) < closed(withBriar: false) * 0.7)
-        #expect(Feature.foeBriarSpeed < 1)
+        #expect(Feature.foeBriarDrag < 1)
     }
 
     @Test func aCairnTakesTheShotTheFoeBehindItDoesNot() {

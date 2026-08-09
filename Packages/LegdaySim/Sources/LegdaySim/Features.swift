@@ -52,7 +52,8 @@ extension Feature {
     public static let placeInterval: Double = 2.6
     /// A briar slows the thumb this much. A cairn cannot be walked through at all.
     public static let heroBriarSeek: Double = 0.38
-    public static let foeBriarSpeed: Double = 0.40
+    /// Per 1/60s of foe velocity kept while snagged.
+    public static let foeBriarDrag: Double = 0.90
     public static let cairnHP = 3
     public static let strikeFlash: Double = 0.18
     static let minimumChannel: Double = 70

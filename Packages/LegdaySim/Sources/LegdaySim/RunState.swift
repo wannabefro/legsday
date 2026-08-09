@@ -14,6 +14,17 @@ public struct RunState: Sendable {
         public var invuln: Double
         /// Time spent inside the fog this dip, seconds (grace/grip in U4).
         public var fogTime: Double
+        /// Where the body points. 0 is up the climb; it eases toward travel.
+        public var heading: Double = .pi
+        /// Bank into a turn, clamped, so a hard swerve reads as weight.
+        public var lean: Double = 0
+        /// Stride phase. It rides distance, not time, so standing still stops it.
+        public var stride: Double = 0
+        /// Recoil offset and its spring velocity — the body kicks back on a shot.
+        public var recoil: Vec2 = .zero
+        public var recoilVel: Vec2 = .zero
+        /// The hood's glance at what was just shot. Decays on its own.
+        public var aim: Double = 0
     }
 
     /// Reference viewport, pinned per run; graybox formulas use it directly.
@@ -42,6 +53,8 @@ public struct RunState: Sendable {
 
     /// Live foes (append on spawn, remove on death/cull — stable order).
     public internal(set) var foes: [Foe] = []
+    /// Hero position at the start of the last step, for the drive velocity.
+    var prevHeroDrive: Vec2 = .zero
     /// The channel's furniture: briar beds and cairns.
     public internal(set) var features: [Feature] = []
     /// Live essence motes.
@@ -192,6 +205,12 @@ public struct RunState: Sendable {
         mix(hero.target.x); mix(hero.target.y)
         mix(hero.vel.x); mix(hero.vel.y)
         mix(hero.invuln); mix(hero.fogTime)
+        mix(hero.heading); mix(hero.lean); mix(hero.stride)
+        mix(hero.recoil.x); mix(hero.recoil.y); mix(hero.aim)
+        for f in foes {
+            mix(f.vel.x); mix(f.vel.y); mix(f.rotation); mix(f.wobble)
+            mix(f.knock.x); mix(f.knock.y)
+        }
         mix(UInt64(bitPattern: Int64(kills)))
         mix(UInt64(bitPattern: Int64(spawnedCount)))
         mix(spawnAcc); mix(attackTimer); mix(featureAcc)

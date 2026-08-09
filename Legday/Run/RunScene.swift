@@ -80,12 +80,11 @@ final class RunScene: SKScene {
         addChild(effects)
 
         cloakNode.strokeColor = SKColor(red: 0.5, green: 0.42, blue: 0.32, alpha: 0.9)
-        cloakNode.lineWidth = 4
+        cloakNode.lineWidth = 2.5
+        cloakNode.alpha = 0.55
         lanternLine.strokeColor = SKColor(white: 0.5, alpha: 0.6)
         lanternLine.lineWidth = 1.5
-        lanternBob = SKSpriteNode(texture: atlas.spark)
-        lanternBob.color = SpriteAtlas.rgb(0xC99A2E)
-        lanternBob.colorBlendFactor = 1
+        lanternBob = SKSpriteNode(texture: atlas.lantern)
         feelNode.addChild(cloakNode)
         feelNode.addChild(lanternLine)
         feelNode.addChild(lanternBob)
@@ -154,6 +153,12 @@ final class RunScene: SKScene {
         addChild(stageBanner)
     }
 
+    /// Where the lantern arm sits in the drawing, and the body's own pivot.
+    private static let rigArm = Vec2(0.121, 0.557)
+    private static let rigPivot = Vec2(0.50, 0.42)
+    private static let bodySize = Vec2(24, 26)
+    private static let hemDrop: Double = 11
+
     /// sim y-down / origin top-left → scene y-up / origin bottom-left.
     private func pt(_ p: Vec2) -> CGPoint { CGPoint(x: p.x, y: size.height - p.y) }
 
@@ -207,29 +212,49 @@ final class RunScene: SKScene {
         skyNode.update(state: s, sceneSize: size)
         featureNode.update(state: s)
 
-        heroNode.position = pt(s.hero.pos)
+        // The rig, not an animation set: heading, bank, hood glance, recoil kick.
+        heroNode.position = pt(s.hero.pos + s.hero.recoil)
+        heroNode.zRotation = CGFloat(-(s.hero.heading + s.hero.lean + s.hero.aim))
         heroNode.texture = s.heroInFog ? atlas.heroSubmerged : atlas.hero
         heroNode.alpha = (s.hero.invuln > 0 && Int(s.time * 18) % 2 == 0) ? 0.3 : 1
+        let gait = 1 + 0.035 * sin(s.hero.stride * 6.283)
+        heroNode.yScale = CGFloat(gait)
+        heroNode.xScale = CGFloat(2 - gait)
 
         foePool.sync(s.foes, id: { $0.id }) { [atlas] foe, node in
-            node.position = self.pt(foe.pos)
+            node.position = self.pt(foe.pos + foe.knock)
             node.texture = foe.elite ? atlas.elite : atlas.foe
-            node.setScale(foe.elite ? 1 : foe.radius / 9)
+            let sway = 0.09 * sin(foe.wobble)
+            node.zRotation = CGFloat(foe.rotation - .pi / 2 + sway)
+            node.setScale(foe.elite ? 1 : CGFloat(foe.radius / 9))
         }
         motePool.sync(s.motes, id: { $0.id }) { mote, node in
             node.position = self.pt(mote.pos)
         }
 
         // Cloak (verlet) + lantern (pendulum), in scene space.
+        // Pinned at the rear hem, not the hood, so it trails its own body.
+        let hemAngle = s.hero.heading + s.hero.lean
+        let hem = s.hero.pos + s.hero.recoil
+            + Vec2(-Self.hemDrop * sin(hemAngle), -Self.hemDrop * cos(hemAngle))
+        let shift = hem - s.cloak.points[0]
         let cloakPath = CGMutablePath()
-        cloakPath.move(to: pt(s.cloak.points[0]))
-        for p in s.cloak.points.dropFirst() { cloakPath.addLine(to: pt(p)) }
+        cloakPath.move(to: pt(hem))
+        for p in s.cloak.points.dropFirst() { cloakPath.addLine(to: pt(p + shift)) }
         cloakNode.path = cloakPath
-        let lanternLen = 26.0
-        let bobSim = Vec2(s.hero.pos.x + lanternLen * sin(s.lantern.angle),
-                          s.hero.pos.y + lanternLen * cos(s.lantern.angle))
-        let bob = pt(bobSim), pivot = pt(s.hero.pos)
+        // The lantern hangs off the arm, so its mount turns with the body.
+        let lanternLen = 20.0
+        let bodyAngle = s.hero.heading + s.hero.lean
+        let armX = (Self.rigArm.x - Self.rigPivot.x) * Self.bodySize.x
+        let armY = (Self.rigArm.y - Self.rigPivot.y) * Self.bodySize.y
+        let mount = s.hero.pos + s.hero.recoil
+            + Vec2(armX * cos(bodyAngle) - armY * sin(bodyAngle),
+                   armX * sin(bodyAngle) + armY * cos(bodyAngle))
+        let bobSim = Vec2(mount.x + lanternLen * sin(s.lantern.angle),
+                          mount.y + lanternLen * cos(s.lantern.angle))
+        let bob = pt(bobSim), pivot = pt(mount)
         lanternBob.position = bob
+        lanternBob.zRotation = CGFloat(-(bodyAngle + s.lantern.angle))
         let ll = CGMutablePath(); ll.move(to: pivot); ll.addLine(to: bob)
         lanternLine.path = ll
 

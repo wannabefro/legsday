@@ -42,8 +42,12 @@ extension RunSim {
         let radius = elite ? 15 : 9 + state.rng.unit() * 3
         let hp = elite ? 3 : (state.time > 45 ? 2 : 1)
         let speed = state.rng.range(48, 92) + min(60, state.time * 0.8)
+        // Detuned per foe, so no two bodies swing through a turn alike.
+        let turnGain = (elite ? 7.0 : 13.0) + state.rng.unit() * 6
         state.foes.append(Foe(id: state.nextFoeId, pos: Vec2(x, y),
-                              radius: radius, hp: hp, speed: speed, elite: elite))
+                              radius: radius, hp: hp, speed: speed, elite: elite,
+                              turnGain: turnGain,
+                              wobble: state.rng.range(0, 6.283)))
         state.nextFoeId += 1
         state.spawnedCount += 1
     }
@@ -52,14 +56,24 @@ extension RunSim {
     /// pre-move separation (graybox order). One shove per step — i-frames set
     /// on the first contact block the rest.
     mutating func steerAndContact(dt: Double) {
-        let drift = scrollEff() * Self.foeScrollDrift * dt
+        let sink = scrollEff() * Self.foeScrollDrift + state.height * Rig.foeDownBias
+        let drag = pow(Rig.foeDrag, dt)
         for i in state.foes.indices {
             let toHero = state.hero.pos - state.foes[i].pos
             let dist = max(toHero.length, 1)
-            let snag = inBriar(state.foes[i].pos) ? Feature.foeBriarSpeed : 1
-            let pace = state.foes[i].speed * snag
-            state.foes[i].pos.x += toHero.x / dist * pace * dt
-            state.foes[i].pos.y += toHero.y / dist * pace * dt + drift
+            let pull = state.foes[i].speed * Rig.foeAccel
+            state.foes[i].vel.x += toHero.x / dist * pull * dt
+            state.foes[i].vel.y += (toHero.y / dist * pull + sink) * dt
+            state.foes[i].vel.x *= drag
+            state.foes[i].vel.y *= drag
+            if inBriar(state.foes[i].pos) {
+                let snag = pow(Feature.foeBriarDrag, dt * 60)
+                state.foes[i].vel.x *= snag
+                state.foes[i].vel.y *= snag
+            }
+            state.foes[i].pos.x += state.foes[i].vel.x * dt
+            state.foes[i].pos.y += state.foes[i].vel.y * dt
+            RunSim.advanceFoeRig(&state.foes[i], dt: dt)
 
             let contact = dist < state.foes[i].radius + Self.heroContactRadius
             if contact, state.hero.invuln <= 0 {
@@ -72,8 +86,10 @@ extension RunSim {
                 state.hero.vel.y += s.y / m * impulse
                 state.hero.invuln = tunables.iframes
                 state.frameEvents.append(.heroShoved(at: state.hero.pos))
-                state.foes[i].pos.x -= s.x / m * Self.foeRecoil
-                state.foes[i].pos.y -= s.y / m * Self.foeRecoil
+                state.foes[i].knockVel.x -= s.x / m * Self.foeRecoil * 6
+                state.foes[i].knockVel.y -= s.y / m * Self.foeRecoil * 6
+                state.foes[i].vel.x -= s.x / m * Self.foeRecoil * 4
+                state.foes[i].vel.y -= s.y / m * Self.foeRecoil * 4
             }
 
             let foe = state.foes[i]
@@ -134,9 +150,17 @@ extension RunSim {
             if h.hp <= 0 { fellHerald(h) } else { state.herald = h }
         }
 
+        if let first = inRange.first,
+           let i = state.foes.firstIndex(where: { $0.id == first.id }) {
+            fireReaction(toward: state.foes[i].pos)
+        }
         for target in inRange.prefix(state.mods.bolts) {
             guard let i = state.foes.firstIndex(where: { $0.id == target.id }) else { continue }
             state.frameEvents.append(.attack(from: state.hero.pos, to: state.foes[i].pos))
+            let away = state.foes[i].pos - state.hero.pos
+            let d = max(away.length, 1)
+            state.foes[i].knockVel.x += away.x / d * 90
+            state.foes[i].knockVel.y += away.y / d * 90
             state.foes[i].hp -= 1
             if state.foes[i].hp <= 0 {
                 let felled = state.foes[i]

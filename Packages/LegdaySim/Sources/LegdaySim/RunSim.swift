@@ -149,6 +149,8 @@ public struct RunSim {
     /// knockback (which also drags the target so lost ground is real), clamp.
     private mutating func integrateHero(dt: Double) {
         var h = state.hero
+        // Before the seek, or the heading would see only the knockback.
+        let before = h.pos
         let drag = inBriar(h.pos) ? Feature.heroBriarSeek : 1
         let seek = min(1, dt * Self.followRate * drag)
         h.pos.x += (h.target.x - h.pos.x) * seek
@@ -171,6 +173,7 @@ public struct RunSim {
         h.target = clampToViewport(h.target)
         if h.invuln > 0 { h.invuln -= dt }
         state.hero = h
+        updateHeroRig(dt: dt, drive: h.pos - before)
     }
 
     private func clampToViewport(_ p: Vec2) -> Vec2 {
