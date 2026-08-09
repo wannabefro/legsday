@@ -42,6 +42,8 @@ public struct RunState: Sendable {
 
     /// Live foes (append on spawn, remove on death/cull — stable order).
     public internal(set) var foes: [Foe] = []
+    /// The channel's furniture: briar beds and cairns.
+    public internal(set) var features: [Feature] = []
     /// Live essence motes.
     public internal(set) var motes: [Mote] = []
     /// Essence banked this run (the currency).
@@ -150,6 +152,10 @@ public struct RunState: Sendable {
     var nextFoeId: Int = 0
     /// Monotonic mote id source.
     var nextMoteId: Int = 0
+    /// Fractional accumulator for placing the channel's furniture.
+    var featureAcc: Double = 0
+    /// Monotonic feature id source.
+    var nextFeatureId: Int = 0
 
     /// Drag anchor: pointer + hero-target at touch-down (offset follow).
     var anchor: (pointer: Vec2, heroTarget: Vec2)?
@@ -188,7 +194,11 @@ public struct RunState: Sendable {
         mix(hero.invuln); mix(hero.fogTime)
         mix(UInt64(bitPattern: Int64(kills)))
         mix(UInt64(bitPattern: Int64(spawnedCount)))
-        mix(spawnAcc); mix(attackTimer)
+        mix(spawnAcc); mix(attackTimer); mix(featureAcc)
+        for f in features {
+            mix(f.terrainY); mix(f.x); mix(f.extent)
+            mix(UInt64(bitPattern: Int64(f.hp)))
+        }
         mix(fogPressure); mix(UInt64(dead ? 1 : 0))
         mix(essence); mix(charge); mix(essNeed)
         mix(UInt64(bitPattern: Int64(drawn)))

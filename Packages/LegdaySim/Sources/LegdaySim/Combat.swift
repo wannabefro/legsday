@@ -56,8 +56,10 @@ extension RunSim {
         for i in state.foes.indices {
             let toHero = state.hero.pos - state.foes[i].pos
             let dist = max(toHero.length, 1)
-            state.foes[i].pos.x += toHero.x / dist * state.foes[i].speed * dt
-            state.foes[i].pos.y += toHero.y / dist * state.foes[i].speed * dt + drift
+            let snag = inBriar(state.foes[i].pos) ? Feature.foeBriarSpeed : 1
+            let pace = state.foes[i].speed * snag
+            state.foes[i].pos.x += toHero.x / dist * pace * dt
+            state.foes[i].pos.y += toHero.y / dist * pace * dt + drift
 
             let contact = dist < state.foes[i].radius + Self.heroContactRadius
             if contact, state.hero.invuln <= 0 {
@@ -75,8 +77,10 @@ extension RunSim {
             }
 
             let foe = state.foes[i]
-            state.foes[i].pos = state.gorge.clamp(
-                foe.pos, radius: foe.radius, at: terrainY(of: foe.pos.y))
+            var ignored = Vec2.zero
+            state.foes[i].pos = pushOutOfCairns(
+                state.gorge.clamp(foe.pos, radius: foe.radius, at: terrainY(of: foe.pos.y)),
+                velocity: &ignored, radius: foe.radius)
         }
         cullFoes()
     }
@@ -112,6 +116,17 @@ extension RunSim {
         guard !inRange.isEmpty || heraldInRange else { state.attackTimer = 0.12; return }
         state.attackTimer = state.mods.attackCooldown
 
+        // A cairn takes the hit the foe behind it does not, and the volley is spent.
+        if let nearest = inRange.first,
+           let foe = state.foes.first(where: { $0.id == nearest.id }),
+           let blocker = cairnBlocking(from: state.hero.pos, to: foe.pos) {
+            let stone = state.features[blocker]
+            state.frameEvents.append(
+                .attack(from: state.hero.pos, to: Vec2(stone.x, screenY(of: stone))))
+            strikeCairn(at: blocker)
+            return
+        }
+
         // The Herald is durable: it soaks one bolt per cadence while in range (R16).
         if heraldInRange, var h = state.herald {
             state.frameEvents.append(.attack(from: state.hero.pos, to: h.pos))
@@ -142,6 +157,20 @@ extension RunSim {
 
     /// Test/debug seam: mutate the otherwise-encapsulated state.
     mutating func debugMutate(_ body: (inout RunState) -> Void) { body(&state) }
+
+    /// Test/debug seam: inject a feature at a screen position; returns its id.
+    @discardableResult
+    mutating func debugAddFeature(_ kind: Feature.Kind, at pos: Vec2,
+                                  extent: Double = 30) -> Int {
+        let id = state.nextFeatureId
+        state.features.append(Feature(id: id, kind: kind,
+                                      terrainY: terrainY(of: pos.y), x: pos.x,
+                                      extent: extent,
+                                      hp: kind == .cairn ? Feature.cairnHP : 0,
+                                      rotation: 0))
+        state.nextFeatureId += 1
+        return id
+    }
 
     /// Test/debug seam: inject a foe at a position; returns its id.
     @discardableResult

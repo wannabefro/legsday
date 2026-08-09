@@ -110,6 +110,7 @@ public struct RunSim {
         updateFeel(dt: dt)
         updateRope(dt: dt)
         updateFog(dt: dt)
+        updateFeatures(dt: dt)
         spawnFoes(dt: dt)
         steerAndContact(dt: dt)
         autoAttack(dt: dt)
@@ -148,7 +149,8 @@ public struct RunSim {
     /// knockback (which also drags the target so lost ground is real), clamp.
     private mutating func integrateHero(dt: Double) {
         var h = state.hero
-        let seek = min(1, dt * Self.followRate)
+        let drag = inBriar(h.pos) ? Feature.heroBriarSeek : 1
+        let seek = min(1, dt * Self.followRate * drag)
         h.pos.x += (h.target.x - h.pos.x) * seek
         h.pos.y += (h.target.y - h.pos.y) * seek
         h.pos.x += h.vel.x * dt
@@ -162,6 +164,10 @@ public struct RunSim {
 
         state.gorge.generate(throughWorldY: terrainY(of: 0), stageID: state.stage.id)
         h.pos = clampToViewport(h.pos, velocity: &h.vel)
+        let freed = pushOutOfCairns(h.pos, velocity: &h.vel, radius: 12)
+        // The target follows, or it pulls the Pilgrim back into the stone.
+        if freed != h.pos { h.target = freed }
+        h.pos = freed
         h.target = clampToViewport(h.target)
         if h.invuln > 0 { h.invuln -= dt }
         state.hero = h

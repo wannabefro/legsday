@@ -16,4 +16,6 @@ public enum FrameEvent: Equatable, Sendable {
     case moteLost(at: Vec2)
     /// The climb entered a new Ascent stage (the render shows a banner).
     case stageEntered(AscentStage)
+    /// A cairn took its last hit and fell apart.
+    case cairnBroken(at: Vec2)
 }

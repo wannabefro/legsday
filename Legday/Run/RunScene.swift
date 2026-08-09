@@ -32,6 +32,7 @@ final class RunScene: SKScene {
     private let world = SKNode()      // foes, motes, hero
     private var floorNode: FloorNode!
     private var skyNode: SkyNode!
+    private let featureNode = FeatureNode()
     private let gorgeWalls = GorgeWallNode()
     private let effects = SKNode()    // transient bolts/flashes
     private var heroNode: SKSpriteNode!
@@ -109,6 +110,8 @@ final class RunScene: SKScene {
         addChild(floorNode)
         gorgeWalls.zPosition = 2
         addChild(gorgeWalls)
+        featureNode.zPosition = 3
+        addChild(featureNode)
         skyNode = SkyNode(sceneSize: size)
         skyNode.zPosition = 14
         addChild(skyNode)
@@ -202,6 +205,7 @@ final class RunScene: SKScene {
         floorNode.update(state: s, sceneSize: size)
         gorgeWalls.update(state: s, sceneSize: size)
         skyNode.update(state: s, sceneSize: size)
+        featureNode.update(state: s)
 
         heroNode.position = pt(s.hero.pos)
         heroNode.texture = s.heroInFog ? atlas.heroSubmerged : atlas.hero
@@ -295,6 +299,10 @@ final class RunScene: SKScene {
             flash(at: pt(at), color: SpriteAtlas.rgb(0x8A6FB3), radius: 6)
         case .moteLost:
             break
+        case let .cairnBroken(at):
+            let p = pt(at)
+            flash(at: p, color: SpriteAtlas.rgb(0x8C7A57), radius: 18)
+            corpses.spawn(at: p, elite: false, impulse: CGVector(dx: 0, dy: 3))
         case let .stageEntered(stage):
             stageBanner.text = stage.name
             stageBanner.setScale(1)

@@ -43,6 +43,11 @@ final class GameFlow {
             self.store = seeded
         }
         stage = .title
+        // Dogfood seam: the simulator has no HID port, so nothing can tap.
+        if ProcessInfo.processInfo.arguments.contains("-autorun") {
+            let picks = Array(self.store.collection.keys.sorted().prefix(12))
+            stage = startRun(Draft(picks: picks, opener: picks.first))
+        }
     }
 
     /// Leave the title: draft if unlocked, otherwise straight to a run with

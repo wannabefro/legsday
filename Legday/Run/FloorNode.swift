@@ -28,7 +28,7 @@ final class FloorNode: SKNode {
                               x: seed.range(0, sceneSize.width),
                               width: seed.range(34, 88)))
             node.zRotation = CGFloat(seed.range(0, 6.28))
-            node.alpha = seed.range(0.10, 0.30)
+            node.alpha = seed.range(0.16, 0.40)
         }
         relic.texture = SpriteAtlas.baked("fallen-pilgrim", tint: nil)
         relic.size = CGSize(width: 62, height: 62)
