@@ -233,8 +233,7 @@ final class RunScene: SKScene {
             node.position = self.pt(mote.pos)
         }
 
-        // Cloak (verlet) + lantern (pendulum), in scene space.
-        // Pinned at the rear hem, not the hood, so it trails its own body.
+        // The cloak pins at the rear hem, not the hood, so it trails its body.
         let hemAngle = s.hero.heading + s.hero.lean
         let hem = s.hero.pos + s.hero.recoil
             + Vec2(-Self.hemDrop * sin(hemAngle), -Self.hemDrop * cos(hemAngle))
@@ -243,8 +242,7 @@ final class RunScene: SKScene {
         cloakPath.move(to: pt(hem))
         for p in s.cloak.points.dropFirst() { cloakPath.addLine(to: pt(p + shift)) }
         cloakNode.path = cloakPath
-        // The lantern hangs off the arm, so its mount turns with the body.
-        // Rod is a tenth of the body. It is a grip, not a rope.
+        // The lantern mounts on the arm. A tenth of the body is a grip, not a rope.
         let lanternLen = Self.bodySize.y * 0.10
         let bodyAngle = s.hero.heading + s.hero.lean
         let armX = (Self.rigArm.x - Self.rigPivot.x) * Self.bodySize.x
