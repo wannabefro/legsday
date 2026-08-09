@@ -2,8 +2,7 @@ import Foundation
 import Testing
 @testable import LegdaySim
 
-/// The gorge is a sentence, not a corridor. Each segment has a length, a
-/// width and a drift, and the transitions carry the meaning.
+/// The gorge is a sentence: each segment has a length, a width and a drift.
 struct PhrasingTests {
     private static let W = 393.0
     private static let band = Gorge.bandHeight
@@ -78,8 +77,25 @@ struct PhrasingTests {
         }
     }
 
-    /// The complaint this replaces: a screen of gorge that goes nowhere. The
-    /// old random walk leaned on 30% of screens. This measures 45 to 56.
+    /// Squeeze owned 40% until the chamber's exit moved to bend.
+    @Test func noPhraseOwnsMoreThanAThirdOfTheClimb() {
+        var owned: [Gorge.Segment.Kind: Int] = [:]
+        var total = 0
+        for seed in UInt64(1)...6 {
+            let g = Self.filled(seed: seed)
+            for i in 0..<1_200 {
+                guard let kind = g.segment(at: Double(i) * Self.band) else { continue }
+                owned[kind, default: 0] += 1
+                total += 1
+            }
+        }
+        for (kind, count) in owned {
+            let share = Double(count) / Double(total)
+            #expect(share < 0.34, "\(kind.rawValue) takes \(Int(share * 100))%")
+        }
+    }
+
+    /// The old random walk leaned on 30% of screens. This measures 48 to 60.
     @Test func mostScreensNowCarryALean() {
         var leaning = 0, windows = 0
         for seed in UInt64(1)...8 {

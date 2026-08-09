@@ -52,6 +52,7 @@ public struct Gorge: Sendable {
         public let drift: Double
     }
 
+    /// Lengths are in bands, and 22 bands is one screen.
     public static let segments: [Segment.Kind: Segment] = [
         .breath: Segment(bands: 10...18, width: 0.78...0.92, drift: 0.30),
         .squeeze: Segment(bands: 14...26, width: 0.30...0.40, drift: 0.70),
@@ -60,14 +61,15 @@ public struct Gorge: Sendable {
         .bend: Segment(bands: 16...28, width: 0.44...0.58, drift: 1.30),
     ]
 
-    /// Pressure earns release: a gate always opens into a chamber.
+    /// A gate always opens into a chamber, and a chamber closes into a bend,
+    /// not a squeeze.
     public static func followers(after kind: Segment.Kind?) -> [Segment.Kind] {
         switch kind {
         case .none: return [.breath, .squeeze]
         case .breath: return [.bend, .squeeze]
         case .squeeze: return [.gate, .breath]
         case .gate: return [.chamber]
-        case .chamber: return [.breath, .squeeze]
+        case .chamber: return [.breath, .bend]
         case .bend: return [.breath, .squeeze]
         }
     }
@@ -84,11 +86,9 @@ public struct Gorge: Sendable {
     /// Island half-width and offset, as fractions of the channel.
     static let spineHalfShare = 0.20
     static let spineOffsetShare = 0.14
-    /// A channel narrower than this cannot hold a fork and stays open. The
-    /// tight lane is 0.16 of the channel, so 200 leaves it 32pt.
+    /// The tight lane is 0.16 of the channel, so 200 leaves it 32pt.
     static let forkMinimumChannel = 200.0
-    /// The zone's own floor and ceiling. The grammar spans the whole range, so
-    /// a floor near the ceiling would leave a gate no room to bite.
+    /// The grammar spans the whole range, so a high floor leaves a gate no bite.
     public static let widthRanges: [String: WidthRange] = [
         "low_road": WidthRange(0.26, 0.86),
         "orchard": WidthRange(0.24, 0.66),
