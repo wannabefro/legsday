@@ -56,6 +56,7 @@ them today. Both are in the prototype.
 | Ground slab | `sprites/ground-slab.png` | 9 scrolling slabs, each with its own turn and alpha |
 | Orchard floor | `sprites/floor-roots.png` | scrolling marks, rotated, at 0.55 alpha |
 | Reckoning floor | `sprites/floor-ash.png` | scrolling marks, rotated, at 0.85 alpha |
+| Reckoning wall | `sprites/wall-fog.png` | wall courses, rotated, at 0.34 alpha |
 
 Every subject now has art. `PlaceholderAtlas` is unchanged: the sprites live in
 `design/sprites/` and the render layer still draws shapes.

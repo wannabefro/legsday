@@ -71,8 +71,8 @@ final class GorgeWallNode: SKNode {
             node.size = CGSize(width: Self.tile * 0.92, height: Self.band * 0.98)
             node.alpha = course == 0 ? 0.90 : 0.55
         case .fog:
-            node.zRotation = 0
-            node.size = CGSize(width: Self.tile * 1.5, height: Self.tile * 1.5)
+            node.zRotation = CGFloat(seedIndex &* 2_654_435_761 % 628) / 100
+            node.size = CGSize(width: Self.tile * 1.4, height: Self.tile * 1.4)
             node.alpha = 0.34
         default:
             node.zRotation = CGFloat(seedIndex &* 2_654_435_761 % 628) / 100

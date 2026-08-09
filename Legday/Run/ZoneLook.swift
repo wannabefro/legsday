@@ -5,16 +5,17 @@ import LegdaySim
 struct ZoneLook {
     enum Material: String {
         case rubble, briar, bone, masonry, fog
-        case root, tile, ash
+        case slab, root, tile, ash
 
         /// The drawing this material is built from. Several materials share one.
         var sprite: String {
             switch self {
-            case .rubble: return "ground-slab"
-            case .briar: return "tree-canopy"
+            case .rubble: return "boulder"
+            case .slab: return "ground-slab"
+            case .briar: return "briar-bed"
             case .bone: return "bone-pile"
             case .masonry, .tile: return "ashlar"
-            case .fog: return "fog-tendril"
+            case .fog: return "wall-fog"
             case .root: return "floor-roots"
             case .ash: return "floor-ash"
             }
@@ -28,7 +29,7 @@ struct ZoneLook {
     let depth: Int
 
     static let byStageID: [String: ZoneLook] = [
-        "low_road":  ZoneLook(wall: .rubble,  floor: .rubble, rock: 0x3A2A1C, depth: 2),
+        "low_road":  ZoneLook(wall: .rubble,  floor: .slab,   rock: 0x3A2A1C, depth: 2),
         "orchard":   ZoneLook(wall: .briar,   floor: .root,   rock: 0x2C3018, depth: 2),
         "ossuary":   ZoneLook(wall: .bone,    floor: .bone,   rock: 0x2E2838, depth: 2),
         "spire":     ZoneLook(wall: .masonry, floor: .tile,   rock: 0x3E301A, depth: 3),

@@ -361,3 +361,33 @@ The images survive at `~/.codex/generated_images/<session-id>/`, and the
 session id is printed in the run header. Recover from there rather than
 re-running. Passing `--sandbox workspace-write` is the fix, and
 `codex-run.sh` does not expose it.
+
+## The fog wall, and the two that were never missing
+
+THE RECKONING drew its cliffs with `fog-tendril.png`, a single upward tongue
+made for the fog line at the bottom of the screen. It has a tip and an axis, so
+a random rotation reads wrong. `wall-fog.png` replaces it: coiling volutes with
+no top and no tip.
+
+The rule that did the work is the one from the floors, applied to a subject
+that has no natural silhouette. **A rotated asset must have no axis.** The brief
+names the axis failures directly — a flame, a plume, a single tendril with a
+tip, a whirlpool with one centre of rotation.
+
+Fog also needs the style rule stated twice, because "fog" pulls a generator
+toward airbrush. The brief says fog is drawn purely as line, then lists no
+gradients, no grey shading, no airbrush and no soft edges.
+
+### Two gaps that were mis-mappings, not missing art
+
+An audit of the five zone walls found three that looked wrong. Only one needed a
+drawing.
+
+| Zone | Was drawn with | Should have been |
+|---|---|---|
+| THE LOW ROAD | `ground-slab`, a cracked paving stone | `boulder` |
+| THE ORCHARD | `tree-canopy`, which reads as a snowflake | `briar-bed` |
+| THE RECKONING | `fog-tendril`, which has a tip | `wall-fog` (new) |
+
+Look at the contact sheet before you write a brief. Two of these three cost
+nothing to fix.
