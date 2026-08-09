@@ -7,7 +7,9 @@ extension RunSim {
     private static let heroContactRadius: Double = 13
     private static let foeScrollDrift: Double = 0.22   // foes ride the scroll down
     private static let foeRecoil: Double = 14          // foe knocked back on contact
-    private static let attackRange: Double = 340
+    /// Measured: 340 put a third of kills in the screen's top tenth.
+    /// 260 puts 1% there, at the same kills and the same deaths.
+    private static let attackRange: Double = 260
     static let eliteShoveFactor: Double = 1.7
     static let eliteFogPushFactor: Double = 3          // used by U4 fog pushback
 

@@ -33,6 +33,7 @@ final class RunScene: SKScene {
     private var floorNode: FloorNode!
     private var skyNode: SkyNode!
     private var airNode: AirNode!
+    private let lanternLight = LanternLight()
     private let featureNode = FeatureNode()
     private let gorgeWalls = GorgeWallNode()
     private let effects = SKNode()    // transient bolts/flashes
@@ -113,6 +114,8 @@ final class RunScene: SKScene {
         addChild(gorgeWalls)
         featureNode.zPosition = 3
         addChild(featureNode)
+        lanternLight.zPosition = 4      // on the ground, beneath every figure
+        addChild(lanternLight)
         skyNode = SkyNode(sceneSize: size)
         skyNode.zPosition = 14
         addChild(skyNode)
@@ -268,6 +271,7 @@ final class RunScene: SKScene {
         let bobSim = Vec2(mount.x + lanternLen * sin(s.lantern.angle),
                           mount.y + lanternLen * cos(s.lantern.angle))
         let bob = pt(bobSim), pivot = pt(mount)
+        lanternLight.update(at: bob, time: s.time)
         lanternBob.position = bob
         lanternBob.zRotation = CGFloat(-bodyAngle)
         let ll = CGMutablePath(); ll.move(to: pivot); ll.addLine(to: bob)
