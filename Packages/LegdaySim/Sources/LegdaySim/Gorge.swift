@@ -29,6 +29,53 @@ public struct Gorge: Sendable {
         case wide
     }
 
+    /// A typed stretch of channel. Drift is the share of the free room the
+    /// channel crosses over the segment.
+    public struct Segment: Equatable, Sendable {
+        public enum Kind: String, Equatable, Sendable, CaseIterable {
+            case breath, squeeze, gate, chamber, bend
+
+            /// Stable across processes, unlike `hashValue`, so replays agree.
+            var code: UInt64 {
+                switch self {
+                case .breath: return 1
+                case .squeeze: return 2
+                case .gate: return 3
+                case .chamber: return 4
+                case .bend: return 5
+                }
+            }
+        }
+
+        public let bands: ClosedRange<Int>
+        public let width: ClosedRange<Double>
+        public let drift: Double
+    }
+
+    public static let segments: [Segment.Kind: Segment] = [
+        .breath: Segment(bands: 10...18, width: 0.78...0.92, drift: 0.30),
+        .squeeze: Segment(bands: 14...26, width: 0.30...0.40, drift: 0.70),
+        .gate: Segment(bands: 3...5, width: 0.20...0.26, drift: 0.00),
+        .chamber: Segment(bands: 12...20, width: 0.92...1.00, drift: 0.15),
+        .bend: Segment(bands: 16...28, width: 0.44...0.58, drift: 1.30),
+    ]
+
+    /// Pressure earns release: a gate always opens into a chamber.
+    public static func followers(after kind: Segment.Kind?) -> [Segment.Kind] {
+        switch kind {
+        case .none: return [.breath, .squeeze]
+        case .breath: return [.bend, .squeeze]
+        case .squeeze: return [.gate, .breath]
+        case .gate: return [.chamber]
+        case .chamber: return [.breath, .squeeze]
+        case .bend: return [.breath, .squeeze]
+        }
+    }
+
+    /// No zone may close below this, or a gate stops being passable.
+    public static let minimumChannel: Double = 100
+    static let approach = 0.16
+
     public static let bandHeight: Double = 34
     /// Bands between forks, and how long one lasts. The gap matches the
     /// fork card's 450-fathom cadence.
@@ -37,14 +84,17 @@ public struct Gorge: Sendable {
     /// Island half-width and offset, as fractions of the channel.
     static let spineHalfShare = 0.20
     static let spineOffsetShare = 0.14
-    /// A channel narrower than this cannot hold a fork and stays open.
-    static let forkMinimumChannel = 150.0
+    /// A channel narrower than this cannot hold a fork and stays open. The
+    /// tight lane is 0.16 of the channel, so 200 leaves it 32pt.
+    static let forkMinimumChannel = 200.0
+    /// The zone's own floor and ceiling. The grammar spans the whole range, so
+    /// a floor near the ceiling would leave a gate no room to bite.
     public static let widthRanges: [String: WidthRange] = [
-        "low_road": WidthRange(0.52, 0.86),
-        "orchard": WidthRange(0.38, 0.66),
-        "ossuary": WidthRange(0.42, 0.74),
-        "spire": WidthRange(0.30, 0.52),
-        "reckoning": WidthRange(0.26, 0.44),
+        "low_road": WidthRange(0.26, 0.86),
+        "orchard": WidthRange(0.24, 0.66),
+        "ossuary": WidthRange(0.25, 0.74),
+        "spire": WidthRange(0.24, 0.52),
+        "reckoning": WidthRange(0.24, 0.44),
     ]
 
     private struct Band: Sendable {
@@ -53,15 +103,17 @@ public struct Gorge: Sendable {
         /// Island centre and half-width, both as fractions of the viewport.
         var spineCenter: Double = 0
         var spineHalf: Double = 0
+        var kind: Segment.Kind?
     }
 
     private struct Profile: Sendable {
         var bands: [Band] = [Band(center: 0.5, width: 0)]
         var center = 0.5
         var width = 0.0
-        var goalCenter = 0.5
-        var goalWidth = 0.0
-        var hold = 0
+        var segment: Segment.Kind?
+        var span = 0
+        var travel = 0
+        var side = 1.0
         var untilFork = Gorge.forkGap
         var forkAge = 0
         var forkSide = 1.0
@@ -70,15 +122,14 @@ public struct Gorge: Sendable {
     private struct Shape: Sendable {
         let widths: WidthRange
         let jitter: Double
-        let hold: ClosedRange<Int>
     }
 
     private static let shapes: [String: Shape] = [
-        "low_road": Shape(widths: widthRanges["low_road"]!, jitter: 0.022, hold: 4...9),
-        "orchard": Shape(widths: widthRanges["orchard"]!, jitter: 0.040, hold: 2...4),
-        "ossuary": Shape(widths: widthRanges["ossuary"]!, jitter: 0.010, hold: 3...6),
-        "spire": Shape(widths: widthRanges["spire"]!, jitter: 0.002, hold: 6...12),
-        "reckoning": Shape(widths: widthRanges["reckoning"]!, jitter: 0.030, hold: 2...5),
+        "low_road": Shape(widths: widthRanges["low_road"]!, jitter: 0.022),
+        "orchard": Shape(widths: widthRanges["orchard"]!, jitter: 0.040),
+        "ossuary": Shape(widths: widthRanges["ossuary"]!, jitter: 0.010),
+        "spire": Shape(widths: widthRanges["spire"]!, jitter: 0.002),
+        "reckoning": Shape(widths: widthRanges["reckoning"]!, jitter: 0.030),
     ]
 
     private let width: Double
@@ -99,14 +150,16 @@ public struct Gorge: Sendable {
         if let profile {
             mix(profile.center.bitPattern)
             mix(profile.width.bitPattern)
-            mix(profile.goalCenter.bitPattern)
-            mix(profile.goalWidth.bitPattern)
-            mix(UInt64(bitPattern: Int64(profile.hold)))
+            mix(profile.segment?.code ?? 0)
+            mix(UInt64(bitPattern: Int64(profile.span)))
+            mix(UInt64(bitPattern: Int64(profile.travel)))
+            mix(profile.side.bitPattern)
             for band in profile.bands {
                 mix(band.center.bitPattern)
                 mix(band.width.bitPattern)
                 mix(band.spineCenter.bitPattern)
                 mix(band.spineHalf.bitPattern)
+                mix(band.kind?.code ?? 0)
             }
         }
         return hash
@@ -121,6 +174,11 @@ public struct Gorge: Sendable {
             Self.pushBand(into: &current, shape: shape, viewport: width, using: &rng)
         }
         profile = current
+    }
+
+    /// The phrase this height belongs to, for tests and for the render.
+    public func segment(at worldY: Double) -> Segment.Kind? {
+        sample(at: worldY).0.kind
     }
 
     /// The island at this height, or nil where the channel is single.
@@ -211,29 +269,28 @@ public struct Gorge: Sendable {
 
     private static func makeProfile(shape: Shape) -> Profile {
         let band = Band(center: 0.5, width: shape.widths.upper.nextDown)
-        return Profile(bands: [band], center: band.center, width: band.width,
-                       goalCenter: band.center, goalWidth: band.width, hold: 0)
+        return Profile(bands: [band], center: band.center, width: band.width)
     }
 
     private static func pushBand(into profile: inout Profile, shape: Shape,
                                  viewport: Double, using rng: inout SeededRandom) {
-        if profile.hold <= 0 {
-            profile.hold = shape.hold.lowerBound
-                + Int(rng.unit() * Double(shape.hold.upperBound - shape.hold.lowerBound))
-            let base = rng.unit() < 0.42 ? shape.widths.lower : shape.widths.upper
-            profile.goalWidth = min(max(base * rng.range(0.86, 1.06), shape.widths.lower),
-                                    shape.widths.upper)
-            profile.goalCenter = 0.5 + (rng.unit() - 0.5) * (0.92 - profile.goalWidth)
-        }
-        profile.hold -= 1
-        profile.width += (profile.goalWidth - profile.width) * 0.34
-        profile.width = min(max(profile.width, shape.widths.lower.nextUp),
-                            shape.widths.upper.nextDown)
-        profile.center += (profile.goalCenter - profile.center) * 0.34
+        if profile.travel >= profile.span { openSegment(&profile, using: &rng) }
+        profile.travel += 1
+
+        let segment = segments[profile.segment ?? .breath]!
+        let through = Double(profile.travel) / Double(max(1, profile.span))
+        let goalWidth = channelWidth(segment, through: through, shape: shape,
+                                     viewport: viewport)
+        // Drift replaces the old hover around 0.5, so a segment travels.
+        let goalCenter = 0.5 + (through - 0.5) * (1 - goalWidth)
+            * segment.drift * profile.side
+
+        profile.width += (goalWidth - profile.width) * approach
+        profile.center += (goalCenter - profile.center) * approach
         let jittered = profile.center + (rng.unit() - 0.5) * shape.jitter
         let half = profile.width / 2
         let center = min(max(jittered, half), 1 - half)
-        var band = Band(center: center, width: profile.width)
+        var band = Band(center: center, width: profile.width, kind: profile.segment)
         advanceFork(&profile, channel: profile.width * viewport, using: &rng)
         if profile.forkAge > 0 {
             let taper = sin(Double(profile.forkAge) / Double(Gorge.forkLength) * .pi)
@@ -244,10 +301,45 @@ public struct Gorge: Sendable {
         profile.bands.append(band)
     }
 
+    private static func openSegment(_ profile: inout Profile,
+                                    using rng: inout SeededRandom) {
+        let next = followers(after: profile.segment)
+        let pick = min(next.count - 1, Int(rng.unit() * Double(next.count)))
+        let kind = next[pick]
+        let bands = segments[kind]!.bands
+        profile.segment = kind
+        profile.span = bands.lowerBound
+            + Int(rng.unit() * Double(bands.upperBound - bands.lowerBound))
+        profile.travel = 0
+        profile.side = rng.unit() < 0.5 ? -1 : 1
+    }
+
+    /// The narrowest and widest a segment may ask for, before the zone scales it.
+    static let grammarRange = 0.20...1.00
+
+    /// The grammar's width mapped across the zone's range, then floored so a
+    /// gate stays passable in the tightest zone.
+    private static func channelWidth(_ segment: Segment, through: Double,
+                                     shape: Shape, viewport: Double) -> Double {
+        let span = segment.width.upperBound - segment.width.lowerBound
+        let shaped = segment.width.lowerBound + span * (0.5 + 0.5 * sin(through * .pi))
+        let across = (shaped - grammarRange.lowerBound)
+            / (grammarRange.upperBound - grammarRange.lowerBound)
+        let zoned = shape.widths.lower + across * (shape.widths.upper - shape.widths.lower)
+        let floor = viewport > 0 ? minimumChannel / viewport : 0
+        return min(max(zoned, floor), 1)
+    }
+
     /// A fork opens on its own clock, and only where both lanes would be passable.
     private static func advanceFork(_ profile: inout Profile, channel: Double,
                                     using rng: inout SeededRandom) {
         if profile.forkAge > 0 {
+            // A phrase can close the channel mid-fork, and a fork in a gate is a wall.
+            guard channel >= forkMinimumChannel else {
+                profile.forkAge = 0
+                profile.untilFork = forkGap
+                return
+            }
             profile.forkAge = profile.forkAge < forkLength ? profile.forkAge + 1 : 0
             if profile.forkAge == 0 { profile.untilFork = forkGap }
             return

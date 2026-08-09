@@ -21,15 +21,18 @@ struct GorgeTests {
         #expect(sample(first) != sample(other))
     }
 
-    @Test func everyStageKeepsItsChannelInsideTheDeclaredWidthRange() {
+    /// A zone owns its ceiling. Its floor is the grammar's, because a gate is
+    /// meant to close tighter than the zone's resting width.
+    @Test func everyStageKeepsItsChannelUnderItsCeilingAndOverTheFloor() {
         var inside = true
         for stage in Ascent.stages {
             let g = Self.filled(seed: 91, stage: stage.id, through: 3_400)
             let range = Gorge.widthRanges[stage.id]!
             for i in 0..<200 {
                 let e = g.edges(at: Double(i) * 17)
-                let fraction = (e.right - e.left) / Self.W
-                inside = inside && fraction >= range.lower && fraction <= range.upper
+                let channel = e.right - e.left
+                inside = inside && channel >= Gorge.minimumChannel - 0.5
+                    && channel / Self.W <= range.upper
             }
         }
         #expect(inside)

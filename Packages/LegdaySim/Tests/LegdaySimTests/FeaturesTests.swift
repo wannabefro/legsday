@@ -53,11 +53,19 @@ struct FeaturesTests {
         #expect(s.state.features.isEmpty)
     }
 
+    /// The run stays inside the channel. A wall clamp would measure the wall,
+    /// not the briar.
     @Test func aBriarUnderTheHeroSlowsTheThumbButDoesNotStopIt() {
+        let probe = Self.sim()
+        let edges = probe.state.gorge.edges(at: probe.terrainY(of: 400))
+        let from = (edges.left + edges.right) / 2 - 30
         func travel(withBriar: Bool) -> Double {
             var s = Self.sim()
-            s.debugMutate { $0.hero.pos = Vec2(100, 400); $0.hero.target = Vec2(300, 400) }
-            if withBriar { s.debugAddFeature(.briar, at: Vec2(100, 400), extent: 60) }
+            s.debugMutate {
+                $0.hero.pos = Vec2(from, 400)
+                $0.hero.target = Vec2(from + 60, 400)
+            }
+            if withBriar { s.debugAddFeature(.briar, at: Vec2(from, 400), extent: 90) }
             let start = s.state.hero.pos.x
             s.tick(dt: RunSim.fixedStep * 8, input: .idle)
             return s.state.hero.pos.x - start
