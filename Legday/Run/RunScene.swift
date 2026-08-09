@@ -176,8 +176,8 @@ final class RunScene: SKScene {
         }
     }
 
-    /// A slow lissajous, so a recording shows the body turn and bank.
-    /// A card holds the world, so it commits one side.
+    /// A slow lissajous, so a recording shows the rig turn. It also
+    /// commits any card that freezes the world.
     private func drivenInput(dt: TimeInterval) -> Input {
         if let card = sim.state.card, !card.committing {
             cardClock += dt
