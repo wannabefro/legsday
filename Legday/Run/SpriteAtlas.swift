@@ -58,6 +58,29 @@ struct SpriteAtlas {
         return SKTexture(image: img)
     }
 
+    /// A drawing at its own size, optionally taking a colour at partial alpha so
+    /// the cross-hatching survives.
+    static func baked(_ name: String, tint: UIColor?) -> SKTexture? {
+        guard let url = Bundle.main.url(forResource: name, withExtension: "png"),
+              let src = UIImage(contentsOfFile: url.path), src.size.height > 0 else { return nil }
+        let side = 128.0
+        let size = CGSize(width: (side * src.size.width / src.size.height).rounded(), height: side)
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        format.opaque = false
+        let img = UIGraphicsImageRenderer(size: size, format: format).image { ctx in
+            let rect = CGRect(origin: .zero, size: size)
+            src.draw(in: rect)
+            if let tint {
+                tint.setFill()
+                ctx.cgContext.setBlendMode(.sourceAtop)
+                ctx.cgContext.setAlpha(0.80)
+                ctx.cgContext.fill(rect)
+            }
+        }
+        return SKTexture(image: img)
+    }
+
     private static func circle(radius: CGFloat, color: UIColor) -> SKTexture {
         let d = radius * 2
         let img = UIGraphicsImageRenderer(size: CGSize(width: d, height: d)).image { ctx in

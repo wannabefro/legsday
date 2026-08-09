@@ -30,6 +30,8 @@ final class RunScene: SKScene {
     required init?(coder: NSCoder) { fatalError("init(coder:) not used") }
 
     private let world = SKNode()      // foes, motes, hero
+    private var floorNode: FloorNode!
+    private let gorgeWalls = GorgeWallNode()
     private let effects = SKNode()    // transient bolts/flashes
     private var heroNode: SKSpriteNode!
     private var fog: FogNode!
@@ -100,6 +102,12 @@ final class RunScene: SKScene {
         reaper.zPosition = 13 // above world (10) and corpses (11), below card
         reaper.hide()
         addChild(reaper)
+
+        floorNode = FloorNode(sceneSize: size)
+        floorNode.zPosition = 1
+        addChild(floorNode)
+        gorgeWalls.zPosition = 2
+        addChild(gorgeWalls)
 
         heroNode = SKSpriteNode(texture: atlas.hero)
         world.addChild(heroNode)
@@ -186,6 +194,9 @@ final class RunScene: SKScene {
 
     private func syncRender() {
         let s = sim.state
+
+        floorNode.update(state: s, sceneSize: size)
+        gorgeWalls.update(state: s, sceneSize: size)
 
         heroNode.position = pt(s.hero.pos)
         heroNode.texture = s.heroInFog ? atlas.heroSubmerged : atlas.hero

@@ -1,8 +1,7 @@
 import SpriteKit
 import LegdaySim
 
-/// What a stage is made of. `AscentStage` carries the rules; this carries the
-/// look, and it stays in the app because the sim may not name a colour.
+/// What a stage is made of. It lives here because the sim may not name a colour.
 struct ZoneLook {
     enum Material: String {
         case rubble, briar, bone, masonry, fog
