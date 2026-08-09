@@ -55,6 +55,9 @@ final class RunScene: SKScene {
     private let stageBanner = SKLabelNode(fontNamed: "Georgia-Bold")
     private var owningTouch: UITouch? // first touch owns the run (R1/U8)
     private var touchInput = TouchInputAccumulator()
+    /// Dogfood seam: the simulator has no HID port, so no drag can reach the run.
+    private let autoDrive = ProcessInfo.processInfo.arguments.contains("-autodrive")
+    private var driveClock: Double = 0
 
     override func didMove(to view: SKView) {
         backgroundColor = SKColor(red: 0x0F / 255.0, green: 0x0C / 255.0, blue: 0x0A / 255.0, alpha: 1)
@@ -155,9 +158,9 @@ final class RunScene: SKScene {
     }
 
     /// Where the lantern arm sits in the drawing, and the body's own pivot.
-    private static let rigArm = Vec2(0.121, 0.557)
-    private static let rigPivot = Vec2(0.50, 0.42)
-    private static let bodySize = Vec2(24, 26)
+    private static let rigArm = Vec2(0.02, 0.239)
+    private static let rigPivot = Vec2(0.50, 0.50)
+    private static let bodySize = Vec2(25.3, 26)
     private static let hemDrop: Double = 11
 
     /// sim y-down / origin top-left → scene y-up / origin bottom-left.
@@ -169,13 +172,23 @@ final class RunScene: SKScene {
         let dt = currentTime - lastUpdate
         lastUpdate = currentTime
 
-        sim.tick(dt: dt, input: touchInput.current)
+        sim.tick(dt: dt, input: autoDrive ? drivenInput(dt: dt) : touchInput.current)
         touchInput.advance()
         syncRender()
         if sim.state.dead, !didReportDeath {
             didReportDeath = true
             onRunEnded(sim.result())
         }
+    }
+
+    /// A slow lissajous, so a recording shows the body turn, bank and swing.
+    private func drivenInput(dt: TimeInterval) -> Input {
+        let began = driveClock == 0
+        driveClock += dt
+        let c = Vec2(size.width / 2, size.height * 0.55)
+        let p = Vec2(c.x + sin(driveClock * 0.55) * size.width * 0.30,
+                     c.y + sin(driveClock * 0.83) * size.height * 0.16)
+        return Input(phase: began ? .began : .moved, location: p)
     }
 
     // MARK: - Touch (first touch owns the run)
