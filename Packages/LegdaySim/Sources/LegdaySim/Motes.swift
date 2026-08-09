@@ -1,13 +1,13 @@
 import Foundation
 
-/// Essence motes: drop from kills, ride the world down toward the fog, hoover
-/// to the hero inside magnet range, credit essence on contact, and are lost to
-/// the fog if unclaimed (R6). Ported from the graybox mote loop.
+/// Essence motes drop from kills and ride the world down. The fog takes
+/// whatever it reaches first (R6).
 extension RunSim {
     private static let magnetSpan: Double = 2.4      // magnet reach = mods.magnet · 2.4
     private static let hooverBasePull: Double = 140
     private static let hooverGain: Double = 6
     private static let collectRadius: Double = 16
+    static let narrowLanePay: Double = 2
     private static let sinkScrollFactor: Double = 0.95
     private static let sinkBase: Double = 2
     private static let fogClaimMargin: Double = 30    // lost when past fog line + this
@@ -17,9 +17,9 @@ extension RunSim {
     /// normal foe drops val 1 with 85% chance).
     mutating func dropMote(_ foe: Foe) {
         if foe.elite {
-            addMote(at: foe.pos, radius: 8, value: 3)
+            addMote(at: foe.pos, radius: 8, value: 3 * narrowLaneBonus())
         } else if state.rng.unit() < 0.85 {
-            addMote(at: foe.pos, radius: 5, value: 1)
+            addMote(at: foe.pos, radius: 5, value: narrowLaneBonus())
         }
     }
 
@@ -60,6 +60,13 @@ extension RunSim {
             }
         }
         state.motes = kept
+    }
+
+    /// Greed against distance, drawn in terrain: the tight lane pays double.
+    func narrowLaneBonus() -> Double {
+        let lane = state.gorge.lane(ofX: state.hero.pos.x,
+                                    at: terrainY(of: state.hero.pos.y))
+        return lane == .narrow ? Self.narrowLanePay : 1
     }
 
     private mutating func addMote(at pos: Vec2, radius: Double, value: Double) {

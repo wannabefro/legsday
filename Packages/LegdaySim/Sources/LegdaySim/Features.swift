@@ -1,7 +1,7 @@
 import Foundation
 
-/// A zone's furniture, placed inside the channel. A briar bed buried in the
-/// cliff is scenery, so every piece sits between the edges.
+/// A zone's furniture. A briar bed buried in the cliff is scenery, so
+/// every piece sits inside the channel.
 public struct Feature: Equatable, Sendable, Identifiable {
     public enum Kind: String, Equatable, Sendable {
         case briar
@@ -79,8 +79,16 @@ extension RunSim {
         let terrainY = terrainY(of: -40)
         let edges = state.gorge.edges(at: terrainY)
         guard edges.right - edges.left >= Feature.minimumChannel else { return }
-        let x = state.rng.range(edges.left + Feature.edgeInset,
+        var x = state.rng.range(edges.left + Feature.edgeInset,
                                 edges.right - Feature.edgeInset)
+        // A briar bed inside the island is furniture nobody can reach.
+        if let island = state.gorge.spine(at: terrainY),
+           x > island.left, x < island.right {
+            x = x - island.left < island.right - x
+                ? island.left - Feature.edgeInset
+                : island.right + Feature.edgeInset
+            guard x > edges.left, x < edges.right else { return }
+        }
         let extent = kind == .briar
             ? state.height * state.rng.range(0.045, 0.070)
             : state.width * 0.065

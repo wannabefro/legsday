@@ -16,7 +16,29 @@ public struct Gorge: Sendable {
         public let right: Double
     }
 
+    /// The island a fork puts in the middle of the channel. Both lanes stay
+    /// passable; the narrow one pays better.
+    public struct Spine: Equatable, Sendable {
+        public let left: Double
+        public let right: Double
+    }
+
+    public enum Lane: Equatable, Sendable {
+        case open
+        case narrow
+        case wide
+    }
+
     public static let bandHeight: Double = 34
+    /// Bands between forks, and how long one lasts. The gap matches the
+    /// fork card's 450-fathom cadence.
+    public static let forkGap = 118
+    public static let forkLength = 14
+    /// Island half-width and offset, as fractions of the channel.
+    static let spineHalfShare = 0.20
+    static let spineOffsetShare = 0.14
+    /// A channel narrower than this cannot hold a fork and stays open.
+    static let forkMinimumChannel = 150.0
     public static let widthRanges: [String: WidthRange] = [
         "low_road": WidthRange(0.52, 0.86),
         "orchard": WidthRange(0.38, 0.66),
@@ -28,6 +50,9 @@ public struct Gorge: Sendable {
     private struct Band: Sendable {
         var center: Double
         var width: Double
+        /// Island centre and half-width, both as fractions of the viewport.
+        var spineCenter: Double = 0
+        var spineHalf: Double = 0
     }
 
     private struct Profile: Sendable {
@@ -37,6 +62,9 @@ public struct Gorge: Sendable {
         var goalCenter = 0.5
         var goalWidth = 0.0
         var hold = 0
+        var untilFork = Gorge.forkGap
+        var forkAge = 0
+        var forkSide = 1.0
     }
 
     private struct Shape: Sendable {
@@ -77,6 +105,8 @@ public struct Gorge: Sendable {
             for band in profile.bands {
                 mix(band.center.bitPattern)
                 mix(band.width.bitPattern)
+                mix(band.spineCenter.bitPattern)
+                mix(band.spineHalf.bitPattern)
             }
         }
         return hash
@@ -88,9 +118,44 @@ public struct Gorge: Sendable {
         let index = Int((max(0, worldY) / Self.bandHeight).rounded(.down))
         var current = profile ?? Self.makeProfile(shape: shape)
         while current.bands.count <= index + 1 {
-            Self.pushBand(into: &current, shape: shape, using: &rng)
+            Self.pushBand(into: &current, shape: shape, viewport: width, using: &rng)
         }
         profile = current
+    }
+
+    /// The island at this height, or nil where the channel is single.
+    public func spine(at worldY: Double) -> Spine? {
+        let (a, b, fraction) = sample(at: worldY)
+        guard a.spineHalf > 0, b.spineHalf > 0 else { return nil }
+        let center = a.spineCenter + (b.spineCenter - a.spineCenter) * fraction
+        let half = a.spineHalf + (b.spineHalf - a.spineHalf) * fraction
+        guard half > 0.001 else { return nil }
+        return Spine(left: (center - half) * width, right: (center + half) * width)
+    }
+
+    /// Which lane a point stands in. The narrow lane is the one that pays.
+    public func lane(ofX x: Double, at worldY: Double) -> Lane {
+        guard let island = spine(at: worldY) else { return .open }
+        let bounds = edges(at: worldY)
+        let leftLane = island.left - bounds.left
+        let rightLane = bounds.right - island.right
+        if x < island.left { return leftLane <= rightLane ? .narrow : .wide }
+        if x > island.right { return rightLane <= leftLane ? .narrow : .wide }
+        return .open
+    }
+
+    private func sample(at worldY: Double) -> (Band, Band, Double) {
+        guard let current = profile, current.bands.count >= 2 else {
+            return (Band(center: 0.5, width: 1), Band(center: 0.5, width: 1), 0)
+        }
+        let position = max(0, worldY) / Self.bandHeight
+        var index = Int(position.rounded(.down))
+        var fraction = position - Double(index)
+        if index >= current.bands.count - 1 {
+            index = current.bands.count - 2
+            fraction = 1
+        }
+        return (current.bands[index], current.bands[index + 1], fraction)
     }
 
     public func edges(at worldY: Double) -> Edges {
@@ -129,6 +194,18 @@ public struct Gorge: Sendable {
             clamped.x = boundary.right - radius
             if velocity.x > 0 { velocity.x = 0 }
         }
+        guard let island = spine(at: worldY),
+              clamped.x > island.left - radius, clamped.x < island.right + radius else {
+            return clamped
+        }
+        // Leave by the nearer face, so a body never tunnels through the island.
+        if clamped.x - island.left < island.right - clamped.x {
+            clamped.x = island.left - radius
+            if velocity.x > 0 { velocity.x = 0 }
+        } else {
+            clamped.x = island.right + radius
+            if velocity.x < 0 { velocity.x = 0 }
+        }
         return clamped
     }
 
@@ -139,7 +216,7 @@ public struct Gorge: Sendable {
     }
 
     private static func pushBand(into profile: inout Profile, shape: Shape,
-                                 using rng: inout SeededRandom) {
+                                 viewport: Double, using rng: inout SeededRandom) {
         if profile.hold <= 0 {
             profile.hold = shape.hold.lowerBound
                 + Int(rng.unit() * Double(shape.hold.upperBound - shape.hold.lowerBound))
@@ -155,7 +232,30 @@ public struct Gorge: Sendable {
         profile.center += (profile.goalCenter - profile.center) * 0.34
         let jittered = profile.center + (rng.unit() - 0.5) * shape.jitter
         let half = profile.width / 2
-        profile.bands.append(Band(center: min(max(jittered, half), 1 - half),
-                                  width: profile.width))
+        let center = min(max(jittered, half), 1 - half)
+        var band = Band(center: center, width: profile.width)
+        advanceFork(&profile, channel: profile.width * viewport, using: &rng)
+        if profile.forkAge > 0 {
+            let taper = sin(Double(profile.forkAge) / Double(Gorge.forkLength) * .pi)
+            band.spineHalf = profile.width * Gorge.spineHalfShare * taper
+            band.spineCenter = center + profile.forkSide * profile.width
+                * Gorge.spineOffsetShare
+        }
+        profile.bands.append(band)
+    }
+
+    /// A fork opens on its own clock, and only where both lanes would be passable.
+    private static func advanceFork(_ profile: inout Profile, channel: Double,
+                                    using rng: inout SeededRandom) {
+        if profile.forkAge > 0 {
+            profile.forkAge = profile.forkAge < forkLength ? profile.forkAge + 1 : 0
+            if profile.forkAge == 0 { profile.untilFork = forkGap }
+            return
+        }
+        profile.untilFork -= 1
+        guard profile.untilFork <= 0 else { return }
+        guard channel >= forkMinimumChannel else { return }
+        profile.forkAge = 1
+        profile.forkSide = rng.unit() < 0.5 ? -1 : 1
     }
 }

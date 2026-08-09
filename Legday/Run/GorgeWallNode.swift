@@ -46,6 +46,16 @@ final class GorgeWallNode: SKNode {
                           look: look, seedIndex: first + step + side)
                 }
             }
+            // The island a fork puts between the two lanes.
+            if let island = state.gorge.spine(at: terrainY) {
+                let span = island.right - island.left
+                let count = max(1, Int((span / (Self.tile * 0.62)).rounded()))
+                for slot in 0..<count {
+                    let x = island.left + span * (Double(slot) + 0.5) / Double(count)
+                    place(&used, at: CGPoint(x: x, y: y), course: 0,
+                          look: look, seedIndex: first + step + slot + 97)
+                }
+            }
         }
         for i in used..<tiles.count { tiles[i].isHidden = true }
     }
@@ -93,6 +103,13 @@ final class GorgeWallNode: SKNode {
             let y = terrainY - state.worldY
             left.append(CGPoint(x: e.left, y: y))
             right.append(CGPoint(x: e.right, y: y))
+        }
+        for step in 0...count {
+            let terrainY = max(0, Double(first + step) * Self.band)
+            guard let island = state.gorge.spine(at: terrainY) else { continue }
+            let y = terrainY - state.worldY
+            path.addRect(CGRect(x: island.left, y: y - Self.band / 2,
+                                width: island.right - island.left, height: Self.band + 1))
         }
         guard let lo = left.first, let hi = left.last else { return path }
         path.move(to: CGPoint(x: 0, y: lo.y))

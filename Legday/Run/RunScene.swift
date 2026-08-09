@@ -57,6 +57,7 @@ final class RunScene: SKScene {
     /// Dogfood seam: the simulator has no HID port, so no drag can reach the run.
     private let autoDrive = ProcessInfo.processInfo.arguments.contains("-autodrive")
     private var driveClock: Double = 0
+    private var cardClock: Double = 0
 
     override func didMove(to view: SKView) {
         backgroundColor = SKColor(red: 0x0F / 255.0, green: 0x0C / 255.0, blue: 0x0A / 255.0, alpha: 1)
@@ -175,8 +176,19 @@ final class RunScene: SKScene {
         }
     }
 
-    /// A slow lissajous, so a recording shows the body turn, bank and swing.
+    /// A slow lissajous, so a recording shows the body turn and bank.
+    /// A card holds the world, so it commits one side.
     private func drivenInput(dt: TimeInterval) -> Input {
+        if let card = sim.state.card, !card.committing {
+            cardClock += dt
+            let x = size.width * 0.5
+            if cardClock < 0.2 { return Input(phase: .began, location: Vec2(x, 400)) }
+            if cardClock < 1.1 {
+                return Input(phase: .moved, location: Vec2(x + size.width * 0.34, 400))
+            }
+            return Input(phase: .ended, location: Vec2(x + size.width * 0.34, 400))
+        }
+        cardClock = 0
         let began = driveClock == 0
         driveClock += dt
         let c = Vec2(size.width / 2, size.height * 0.55)
