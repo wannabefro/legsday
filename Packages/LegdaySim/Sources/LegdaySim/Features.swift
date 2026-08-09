@@ -48,6 +48,20 @@ extension Feature {
         "reckoning": Furniture(kind: nil, rate: 0),
     ]
 
+    /// A phrase's share of the stage's rate. A gate is a moment, not a place.
+    public static func density(in phrase: Gorge.Segment.Kind?) -> Double {
+        switch phrase {
+        case .gate: return 0
+        case .chamber: return 1.8
+        case .squeeze: return 0.6
+        case .bend: return 0.8
+        default: return 1.0
+        }
+    }
+
+    /// Below this a cairn stops being furniture and becomes a wall.
+    public static let cairnMinimumChannel: Double = 150
+
     /// Seconds of accumulated rate that buy one piece.
     public static let placeInterval: Double = 2.6
     /// A briar slows the thumb this much. A cairn cannot be walked through at all.
@@ -66,7 +80,8 @@ extension RunSim {
         let furniture = Feature.byStageID[state.stage.id]
             ?? Feature.byStageID["low_road"]!
         if let kind = furniture.kind, furniture.rate > 0 {
-            state.featureAcc += dt * furniture.rate
+            let phrase = state.gorge.segment(at: terrainY(of: -40))
+            state.featureAcc += dt * furniture.rate * Feature.density(in: phrase)
             while state.featureAcc > Feature.placeInterval {
                 state.featureAcc -= Feature.placeInterval
                 placeFeature(kind)
@@ -78,7 +93,9 @@ extension RunSim {
     private mutating func placeFeature(_ kind: Feature.Kind) {
         let terrainY = terrainY(of: -40)
         let edges = state.gorge.edges(at: terrainY)
-        guard edges.right - edges.left >= Feature.minimumChannel else { return }
+        let channel = edges.right - edges.left
+        guard channel >= Feature.minimumChannel else { return }
+        guard kind != .cairn || channel >= Feature.cairnMinimumChannel else { return }
         var x = state.rng.range(edges.left + Feature.edgeInset,
                                 edges.right - Feature.edgeInset)
         // A briar bed inside the island is furniture nobody can reach.
