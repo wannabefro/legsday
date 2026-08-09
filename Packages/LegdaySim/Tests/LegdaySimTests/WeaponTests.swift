@@ -129,3 +129,61 @@ struct WeaponTests {
         #expect(!sim.state.card!.committing)          // sprung back, still in play
     }
 }
+
+/// The render draws a weapon's form, so the sim has to name which one fired.
+struct ActiveWeaponTests {
+    private static let tunables = Tunables(
+        scroll: 78, spawn: 0, shove: 120, iframes: 0.55, fogGrace: 0.8, fogGrip: 2.4,
+        fogCreep: 1.1, killPush: 0.9, downBias: 0.35, cardSlow: 1,
+        firstCardCost: 9_999, cardCostIncrement: 1)
+
+    private static func sim() -> RunSim {
+        RunSim(tunables: tunables, viewport: Vec2(393, 852), seed: 4)
+    }
+
+    @Test func anUnarmedRunNamesNoWeapon() {
+        #expect(Self.sim().activeWeaponID == nil)
+    }
+
+    /// The guard on its own: owned but with no form chosen still names nothing.
+    @Test func aWeaponWithNoFormChosenIsNotYetTheOne() {
+        var s = Self.sim()
+        s.debugMutate { $0.weapons["the_thurible"] = WeaponState(owned: true, form: nil) }
+        #expect(s.activeWeaponID == nil)
+    }
+
+    @Test func theMostGrownWeaponIsTheOneTheRenderDraws() {
+        var s = Self.sim()
+        s.debugMutate {
+            $0.weapons["the_thurible"] = WeaponState(owned: true, form: 0, levels: [1, 0])
+            $0.weapons["the_passing_bell"] = WeaponState(owned: true, form: 1, levels: [2, 1])
+        }
+        #expect(s.activeWeaponID == "the_passing_bell")
+    }
+
+    /// The boundary itself: level pegged, so the id decides and never the order.
+    @Test func aTieIsBrokenByTheLowestIdAndNotByDictionaryOrder() {
+        var s = Self.sim()
+        s.debugMutate {
+            $0.weapons["the_thurible"] = WeaponState(owned: true, form: 0, levels: [2])
+            $0.weapons["the_censer_rot"] = WeaponState(owned: true, form: 0, levels: [2])
+        }
+        #expect(s.activeWeaponID == "the_censer_rot")
+    }
+
+    @Test func everyAttackEventCarriesTheWeaponThatThrewIt() {
+        var s = Self.sim()
+        s.debugMutate {
+            $0.hero.pos = Vec2(200, 500); $0.hero.target = Vec2(200, 500)
+            $0.weapons["the_thurible"] = WeaponState(owned: true, form: 0, levels: [1])
+            $0.attackTimer = 0
+        }
+        s.debugAddFoe(at: Vec2(200, 380), hp: 9, speed: 0)
+        s.tick(dt: RunSim.fixedStep, input: .idle)
+        let named = s.state.frameEvents.contains {
+            if case let .attack(_, _, weapon) = $0 { return weapon == "the_thurible" }
+            return false
+        }
+        #expect(named)
+    }
+}

@@ -246,3 +246,16 @@ extension RunSim {
         }
     }
 }
+
+
+extension RunSim {
+    /// The weapon whose form the render draws. Ties go to the lowest id.
+    public var activeWeaponID: String? {
+        state.weapons
+            .filter { $0.value.owned && $0.value.form != nil }
+            .max { a, b in
+                let ga = a.value.levels.reduce(0, +), gb = b.value.levels.reduce(0, +)
+                return ga != gb ? ga < gb : a.key > b.key
+            }?.key
+    }
+}

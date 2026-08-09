@@ -321,24 +321,23 @@ final class RunScene: SKScene {
     /// Cosmetic-only transient effects (SKAction is fine here — never gameplay).
     private func spawn(_ event: FrameEvent) {
         switch event {
-        case let .attack(from, to):
-            let a = pt(from), b = pt(to)
-            let line = SKShapeNode()
-            let path = CGMutablePath()
-            path.move(to: a); path.addLine(to: b)
-            line.path = path
-            line.strokeColor = SKColor(white: 0.9, alpha: 0.8)
-            line.lineWidth = 2
-            effects.addChild(line)
-            line.run(.sequence([.fadeOut(withDuration: 0.12), .removeFromParent()]))
+        case let .attack(from, to, weapon):
+            StrikeLayer.attack(in: effects, from: pt(from), to: pt(to), weapon: weapon)
         case let .heroShoved(at):
             flash(at: pt(at), color: SKColor(white: 0.9, alpha: 0.9), radius: 20)
         case let .foeDown(at, elite):
             let p = pt(at)
+            // Thrown along the shot, so a kill reads as a blow and not a deletion.
+            let away = CGVector(dx: p.x - pt(sim.state.hero.pos).x,
+                                dy: p.y - pt(sim.state.hero.pos).y)
+            let d = max(hypot(away.dx, away.dy), 1)
+            let heading = atan2(away.dy, away.dx)
             flash(at: p, color: SpriteAtlas.rgb(0xC99A2E), radius: elite ? 12 : 7)
-            // Pop up and outward; gravity tumbles it down toward the fog splash.
-            let dx = (p.x - size.width / 2) / size.width // −0.5…0.5
-            corpses.spawn(at: p, elite: elite, impulse: CGVector(dx: dx * 6, dy: 4))
+            StrikeLayer.burst(in: effects, at: p, along: heading, elite: elite)
+            let punch: CGFloat = elite ? 11 : 7
+            corpses.spawn(at: p, elite: elite,
+                          impulse: CGVector(dx: away.dx / d * punch,
+                                            dy: away.dy / d * punch + 3))
         case let .moteCollected(at):
             flash(at: pt(at), color: SpriteAtlas.rgb(0x8A6FB3), radius: 6)
         case .moteLost:

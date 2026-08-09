@@ -119,7 +119,8 @@ extension RunSim {
         if state.duel != nil {
             state.attackTimer = state.mods.attackCooldown
             if let d = state.duel {
-                state.frameEvents.append(.attack(from: state.hero.pos, to: d.reaperPos))
+                state.frameEvents.append(.attack(from: state.hero.pos, to: d.reaperPos,
+                                                 weapon: activeWeaponID))
             }
             hitReaper()
             return
@@ -140,14 +141,16 @@ extension RunSim {
            let blocker = cairnBlocking(from: state.hero.pos, to: foe.pos) {
             let stone = state.features[blocker]
             state.frameEvents.append(
-                .attack(from: state.hero.pos, to: Vec2(stone.x, screenY(of: stone))))
+                .attack(from: state.hero.pos, to: Vec2(stone.x, screenY(of: stone)),
+                        weapon: activeWeaponID))
             strikeCairn(at: blocker)
             return
         }
 
         // The Herald is durable: it soaks one bolt per cadence while in range (R16).
         if heraldInRange, var h = state.herald {
-            state.frameEvents.append(.attack(from: state.hero.pos, to: h.pos))
+            state.frameEvents.append(.attack(from: state.hero.pos, to: h.pos,
+                                             weapon: activeWeaponID))
             h.hp -= 1
             if h.hp <= 0 { fellHerald(h) } else { state.herald = h }
         }
@@ -158,7 +161,8 @@ extension RunSim {
         }
         for target in inRange.prefix(state.mods.bolts) {
             guard let i = state.foes.firstIndex(where: { $0.id == target.id }) else { continue }
-            state.frameEvents.append(.attack(from: state.hero.pos, to: state.foes[i].pos))
+            state.frameEvents.append(.attack(from: state.hero.pos, to: state.foes[i].pos,
+                                             weapon: activeWeaponID))
             let away = state.foes[i].pos - state.hero.pos
             let d = max(away.length, 1)
             state.foes[i].knockVel.x += away.x / d * 90

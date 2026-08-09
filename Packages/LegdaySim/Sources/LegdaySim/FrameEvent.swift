@@ -4,8 +4,8 @@
 /// (fog pushback, mote drops, fog splash) are sim *state*, handled directly,
 /// not carried here.
 public enum FrameEvent: Equatable, Sendable {
-    /// An auto-attack bolt from the hero to a foe.
-    case attack(from: Vec2, to: Vec2)
+    /// An auto-attack. `weapon` names the form to draw, nil when unarmed.
+    case attack(from: Vec2, to: Vec2, weapon: String?)
     /// The hero was shoved (hit flash origin).
     case heroShoved(at: Vec2)
     /// A foe was felled (corpse spawn in U9; fog splash scheduled in U4).

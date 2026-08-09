@@ -1,9 +1,8 @@
 import SpriteKit
 import LegdaySim
 
-/// Persistent HUD in the top safe area only (R5). Three fixed readings, the live
-/// modifiers, and the deck as pips — a count called "fates" named nothing and
-/// climbed back up whenever the deck reshuffled.
+/// Persistent HUD in the top safe area only (R5): three readings, the live
+/// modifiers, and the deck as pips.
 final class HudNode: SKNode {
     private let essenceLabel = HudNode.label(align: .left)
     private let fathomsLabel = HudNode.label(align: .center)
@@ -14,8 +13,10 @@ final class HudNode: SKNode {
     private let sceneSize: CGSize
     private let pipsY: CGFloat
 
-    private static let muted = SKColor(red: 0.69, green: 0.63, blue: 0.49, alpha: 1)
-    private static let dim = SKColor(red: 0.55, green: 0.50, blue: 0.38, alpha: 1)
+    /// Ink on the strip, not parchment on the world.
+    private static let muted = SKColor(red: 0.23, green: 0.17, blue: 0.11, alpha: 1)
+    private static let dim = SKColor(red: 0.42, green: 0.32, blue: 0.22, alpha: 1)
+    private let strip = SKShapeNode()
 
     init(sceneSize: CGSize, safeTop: CGFloat) {
         self.sceneSize = sceneSize
@@ -33,6 +34,15 @@ final class HudNode: SKNode {
         stageLabel.fontSize = 12
         stageLabel.fontColor = Self.muted
         pips.position = CGPoint(x: 18, y: pipsY)
+        // The run is an obituary being written, so the numbers live on a torn page.
+        strip.path = Self.tornStrip(width: sceneSize.width,
+                                    top: sceneSize.height,
+                                    bottom: pipsY - 30)
+        strip.fillColor = SpriteAtlas.rgb(0xE9DCBC).withAlphaComponent(0.90)
+        strip.strokeColor = SpriteAtlas.rgb(0x17120E).withAlphaComponent(0.45)
+        strip.lineWidth = 1
+        strip.zPosition = -1
+        addChild(strip)
         [essenceLabel, fathomsLabel, statusLabel, modsLabel, stageLabel, pips].forEach(addChild)
     }
 
@@ -47,6 +57,23 @@ final class HudNode: SKNode {
         modsLabel.text = HudNode.modsSummary(mods)
         stageLabel.text = stage
         syncPips(deck)
+    }
+
+    /// A parchment band whose lower edge is torn, never ruled.
+    private static func tornStrip(width w: CGFloat, top: CGFloat, bottom: CGFloat) -> CGPath {
+        let path = CGMutablePath()
+        path.move(to: CGPoint(x: 0, y: top))
+        path.addLine(to: CGPoint(x: w, y: top))
+        path.addLine(to: CGPoint(x: w, y: bottom))
+        var seed = SeededRandom(seed: 0x7EA2_1000)
+        var x = w
+        while x > 0 {
+            x -= 11
+            path.addLine(to: CGPoint(x: max(0, x), y: bottom + seed.range(-5, 5)))
+        }
+        path.addLine(to: CGPoint(x: 0, y: bottom))
+        path.closeSubpath()
+        return path
     }
 
     /// Only what a card has changed. A run with no cards taken shows nothing.
