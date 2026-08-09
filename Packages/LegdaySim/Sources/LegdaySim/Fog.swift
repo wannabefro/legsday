@@ -16,6 +16,8 @@ extension RunSim {
     private static let splashMagnitude: Double = 90    // ripple velocity per kill
     static let pushBudgetShare: Double = 0.75          // below 1, so the fog always gains
     static let pushBudgetCap: Double = 12
+    /// Creep growth per second of run (graybox value).
+    static let creepRamp: Double = 0.015
 
     /// The flat fog rest line in reference-space y. Larger `fogPressure` raises
     /// it (smaller y) toward the hero. The wobble is a slow breathing.
@@ -31,7 +33,7 @@ extension RunSim {
         // anchors the fog, accelerating the creep (R16).
         let heraldCreep = state.herald != nil ? Heralds.creepMult : 1
         let creepRate = tunables.fogCreep * state.stage.fogCreep
-            * (0.7 + state.time * 0.015) * heraldCreep
+            * (0.7 + state.time * Self.creepRamp) * heraldCreep
         state.fogPressure = min(Self.fogPressureCap, state.fogPressure + creepRate * dt)
         state.pushBudget = min(Self.pushBudgetCap,
                                state.pushBudget + creepRate * Self.pushBudgetShare * dt)
