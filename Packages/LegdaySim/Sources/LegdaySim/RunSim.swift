@@ -28,14 +28,17 @@ public struct RunSim {
     public private(set) var stepsTaken: Int = 0
     /// Card-interrupt time scaling (KTD-2).
     public private(set) var timescale = Timescale()
+    /// How many foes the screen may hold at once. Overflow queues.
+    public let threatCap: Int
     private var accumulator: Double = 0
 
     public init(tunables: Tunables, viewport: Vec2, seed: UInt64,
                 catalog: CardCatalog = .seed, collection: [String: Int] = [:],
-                draft: Draft? = nil) {
+                draft: Draft? = nil, threatCap: Int = RunSim.defaultThreatCap) {
         self.tunables = tunables
         self.catalog = catalog
         self.collection = collection
+        self.threatCap = threatCap
         self.state = RunState(width: viewport.x, height: viewport.y, seed: seed)
         self.state.essNeed = tunables.firstCardCost
         if let draft {

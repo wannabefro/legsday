@@ -20,12 +20,22 @@ extension RunSim {
         return tunables.spawn * stageSpawn * state.mods.spawnMul * ramp
     }
 
-    /// Spawn foes on the ramping clock (graybox `spawnAcc`).
+    /// The screen holds this many foes. Beyond it a spawn waits its turn.
+    /// Measured: 16 halves the worst-case crowd and moves no outcome. 6 moved
+    /// plenty, all of it the wrong way.
+    public static let defaultThreatCap = 16
+    /// Waiting spawns are capped too, or a careful run banks a flood.
+    public static let queueCap = 12
+
+    /// Spawn foes on the ramping clock (graybox `spawnAcc`), up to the cap.
     mutating func spawnFoes(dt: Double) {
-        let rate = spawnRate()
-        state.spawnAcc += dt * rate
+        state.spawnAcc += dt * spawnRate()
         while state.spawnAcc > 1 {
             state.spawnAcc -= 1
+            state.queuedFoes = min(Self.queueCap, state.queuedFoes + 1)
+        }
+        while state.queuedFoes > 0, state.foes.count < threatCap {
+            state.queuedFoes -= 1
             spawnFoe()
         }
     }

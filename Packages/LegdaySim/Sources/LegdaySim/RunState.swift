@@ -163,6 +163,8 @@ public struct RunState: Sendable {
 
     /// Fractional spawn accumulator (graybox `spawnAcc`).
     var spawnAcc: Double = 0
+    /// Spawns waiting for room on screen. A kill is what releases one.
+    public internal(set) var queuedFoes: Int = 0
     /// Auto-attack cooldown timer (graybox `atkT`).
     var attackTimer: Double = 0
     /// Monotonic foe id source (stable identity for render pooling).
@@ -218,6 +220,7 @@ public struct RunState: Sendable {
         mix(UInt64(bitPattern: Int64(kills)))
         mix(UInt64(bitPattern: Int64(spawnedCount)))
         mix(spawnAcc); mix(attackTimer); mix(featureAcc)
+        mix(Double(queuedFoes))
         for f in features {
             mix(f.terrainY); mix(f.x); mix(f.extent)
             mix(UInt64(bitPattern: Int64(f.hp)))

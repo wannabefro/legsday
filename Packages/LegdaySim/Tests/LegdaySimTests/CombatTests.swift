@@ -89,31 +89,28 @@ struct CombatTests {
         #expect(!sim.state.foes.contains { $0.hp <= 0 })
     }
 
-    /// Spawner rate ramps with run time per the graybox curve
-    /// (0.7 + t·0.05): far more foes per second at t≈120 than at t≈0.
+    /// Spawner rate ramps with run time per the graybox curve (0.7 + t·0.05).
     @Test func spawnerRampMatchesGrayboxCurve() {
         var sim = makeSim()
-        // Hold the hero high and out of the fog so the run doesn't end mid-sample
-        // (this isolates the spawn ramp from the fog/shove loop).
+        // Hold the hero out of the fog, so the run cannot end mid-sample.
         func keepAlive(_ s: inout RunSim) {
             s.debugMutate {
                 $0.hero.pos.y = 180; $0.hero.target.y = 180; $0.hero.vel = .zero
                 $0.card = nil; $0.charge = 0
             }
         }
-        let c0 = sim.state.spawnedCount
+        // The rate is the curve — realised spawns measure the threat cap.
+        let demand0 = sim.state.spawnedCount + sim.state.queuedFoes
         for _ in 0..<60 { keepAlive(&sim); sim.tick(dt: 1.0 / 60, input: .idle) } // ~1s at t≈0
-        let delta0 = sim.state.spawnedCount - c0
+        let rate0 = sim.spawnRate()
+        let delta0 = sim.state.spawnedCount + sim.state.queuedFoes - demand0
 
-        // Advance to t≈120, then sample another second.
         for _ in 0..<(119 * 60) { keepAlive(&sim); sim.tick(dt: 1.0 / 60, input: .idle) }
-        let c120 = sim.state.spawnedCount
-        for _ in 0..<60 { keepAlive(&sim); sim.tick(dt: 1.0 / 60, input: .idle) }
-        let delta120 = sim.state.spawnedCount - c120
+        let rate120 = sim.spawnRate()
 
         // Expected: ~1.23 spawns/s at t≈0, ~14.8 at t≈120 (THE OSSUARY stage ×1.30).
-        #expect(delta0 >= 1 && delta0 <= 3)
-        #expect(delta120 >= 12 && delta120 <= 18)
-        #expect(delta120 > delta0 * 4)
+        #expect(rate0 >= 1 && rate0 <= 3)
+        #expect(rate120 >= 12 && rate120 <= 18)
+        #expect(rate120 > rate0 * 4 && delta0 >= 1)
     }
 }
