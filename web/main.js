@@ -8,21 +8,24 @@ let size = { w: 0, h: 0 }, running = false, last = 0, ended = false;
 const pending = [];
 setLights(!location.search.includes('lights=off'));
 
+// 100dvh is not innerHeight while the address bar is up.
 function resize() {
-  const dpr = Math.min(devicePixelRatio || 1, 2);
-  size = { w: innerWidth, h: innerHeight, dpr };
-  canvas.width = Math.round(size.w * dpr);
-  canvas.height = Math.round(size.h * dpr);
+  const dpr = Math.min(devicePixelRatio || 1, 3);
+  const r = canvas.getBoundingClientRect();
+  size = { w: r.width, h: r.height, dpr };
+  canvas.width = Math.round(r.width * dpr);
+  canvas.height = Math.round(r.height * dpr);
 }
 addEventListener('resize', resize);
 resize();
 
 /// Client pixels to the sim's reference points — the inverse of draw()'s fit.
 function toRef(e) {
+  const r = canvas.getBoundingClientRect();
   const s = Math.min(size.w / REF.w, size.h / REF.h);
   return {
-    x: (e.clientX - (size.w - REF.w * s) / 2) / s,
-    y: (e.clientY - (size.h - REF.h * s) / 2) / s,
+    x: (e.clientX - r.left - (size.w - REF.w * s) / 2) / s,
+    y: (e.clientY - r.top - (size.h - REF.h * s) / 2) / s,
   };
 }
 
@@ -49,15 +52,18 @@ function frame(now) {
   const dt = Math.min((now - last) / 1000, 1 / 20);
   last = now;
   if (!running || dt <= 0) return;
-  const input = pending.shift() || { phase: 0, x: 0, y: 0 };
-  const f = tick(dt, input.phase, input.x, input.y);
+  // Every queued touch lands this frame. One per frame let a drag lag.
+  const batch = pending.length ? pending.splice(0) : [{ phase: 0, x: 0, y: 0 }];
+  let f;
+  for (const i of batch) f = tick(dt / batch.length, i.phase, i.x, i.y);
   ended = f[8] === 1;
   draw(ctx, f, text(), size, dt);
 }
 
 async function start() {
   ended = false; pending.length = 0; last = performance.now();
-  await boot(WASM_BYTES, TUNABLES, (Math.random() * 2 ** 32) >>> 0, SPRITES);
+  resize();
+  await boot(WASM_BYTES, TUNABLES, (Math.random() * 2 ** 32) >>> 0, SPRITES, size);
   running = true;
 }
 

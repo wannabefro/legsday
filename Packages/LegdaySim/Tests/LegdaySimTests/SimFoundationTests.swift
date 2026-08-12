@@ -25,7 +25,8 @@ struct SimFoundationTests {
         for _ in 0..<120 {
             sim.tick(dt: 1.0 / 60, input: Input(phase: .moved, location: Vec2(150, 120)))
         }
-        let expectedTarget = start + Vec2(50, 20) * 1.18
+        // The thumb moves the Pilgrim 1:1 — no amplification.
+        let expectedTarget = start + Vec2(50, 20)
         #expect(abs(sim.state.hero.target.x - expectedTarget.x) < 1e-6)
         #expect(abs(sim.state.hero.target.y - expectedTarget.y) < 1e-6)
         // Position has converged onto the target within the follow time.

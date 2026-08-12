@@ -13,7 +13,7 @@ public struct RunSim {
     public static let maxFrameTime: Double = 0.05
 
     // Movement constants ported from the graybox.
-    private static let dragGain: Double = 1.18     // pointer→target sensitivity
+    private static let dragGain: Double = 1.0      // 1:1; 1.18 read as twitchy
     private static let followRate: Double = 14     // target-seek gain
     private static let velDecay: Double = 5.5      // knockback decay rate
 

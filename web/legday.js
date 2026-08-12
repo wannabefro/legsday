@@ -2,7 +2,9 @@
 // Every number it draws came out of the Swift sim across the wasm boundary.
 import { load, sprite, tinted, stamp, fit, hex, ZONES, AIR, SPINE, variants, seeded } from './art.js';
 
-const REF = { w: 393, h: 852 };      // the sim's reference space, in points
+// The sim's space, in points. boot() sets the height from the viewport.
+const REF = { w: 393, h: 852 };
+const REF_H_RANGE = [560, 1180];
 const H = 64;                         // frame buffer header length
 const SAFE_TOP = 26;
 
@@ -34,8 +36,12 @@ function wasiShim() {
 let memory, wasm;
 const view = () => new DataView(memory.buffer);
 
-export async function boot(wasmBytes, tunables, seed, sprites) {
+export async function boot(wasmBytes, tunables, seed, sprites, viewport) {
   if (sprites) await load(sprites);
+  if (viewport && viewport.w > 0) {
+    const tall = REF.w * viewport.h / viewport.w;
+    REF.h = Math.round(Math.min(Math.max(tall, REF_H_RANGE[0]), REF_H_RANGE[1]));
+  }
   const { instance } = await WebAssembly.instantiate(wasmBytes, {
     wasi_snapshot_preview1: wasiShim(),
   });
@@ -89,10 +95,11 @@ function reset() {
   corpses = []; effects = []; banner = { text: '', at: -99 };
 }
 
-function buffer(store, w, h) {
-  if (store && store.canvas.width === w && store.canvas.height === h) return store;
+function buffer(store, w, h, q) {
+  const [pw, ph] = [Math.round(w * q), Math.round(h * q)];
+  if (store && store.canvas.width === pw && store.canvas.height === ph) return store;
   const canvas = document.createElement('canvas');
-  canvas.width = w; canvas.height = h;
+  canvas.width = pw; canvas.height = ph;
   return { canvas, ctx: canvas.getContext('2d') };
 }
 
@@ -106,6 +113,9 @@ export function draw(ctx, f, t, size, dt) {
   ctx.setTransform(s * d, 0, 0, s * d,
                    (size.w - REF.w * s) / 2 * d, (size.h - REF.h * s) / 2 * d);
   ctx.clearRect(0, 0, REF.w, REF.h);
+  // The offscreen layers carry the canvas's device pixels. At 1x the world
+  // layer was upscaled, and its motion stepped.
+  const q = Math.min(Math.max(s * d, 0.5), 3);
 
   const n = {
     foes: f[15], motes: f[16], bands: f[17], feats: f[18],
@@ -124,13 +134,13 @@ export function draw(ctx, f, t, size, dt) {
   const zone = ZONES[Math.max(0, Math.min(ZONES.length - 1, f[24] | 0))];
   const time = f[0];
 
-  lit = buffer(lit, REF.w, REF.h);
-  lamp = buffer(lamp, REF.w, REF.h);
-  buildLightMap(f, time);
+  lit = buffer(lit, REF.w, REF.h, q);
+  lamp = buffer(lamp, REF.w, REF.h, q);
+  buildLightMap(f, time, q);
 
   // One opaque layer: canvas `multiply` on a transparent pixel returns the
   // source, and a sparse layer copied the light map.
-  lit.ctx.setTransform(1, 0, 0, 1, 0, 0);
+  lit.ctx.setTransform(q, 0, 0, q, 0, 0);
   lit.ctx.clearRect(0, 0, REF.w, REF.h);
   drawFloor(lit.ctx, f, zone, time);
   drawWalls(lit.ctx, f, at, n, zone, time);
@@ -139,7 +149,7 @@ export function draw(ctx, f, t, size, dt) {
   drawFoes(lit.ctx, f, at, n);
   drawCorpses(lit.ctx, f, dt);
   multiplyByLight(lit.ctx);
-  ctx.drawImage(lit.canvas, 0, 0);
+  ctx.drawImage(lit.canvas, 0, 0, REF.w, REF.h);
 
   drawLanternPool(ctx, f, time);
   drawRope(ctx, f, at, n);
@@ -159,9 +169,9 @@ export function draw(ctx, f, t, size, dt) {
 
 /// The lantern, and four lights along the fog line.
 /// The ambient is lighter than iOS; web/README.md says why.
-function buildLightMap(f, time) {
+function buildLightMap(f, time, q) {
   const c = lamp.ctx;
-  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.setTransform(q, 0, 0, q, 0, 0);
   c.globalCompositeOperation = 'source-over';
   c.fillStyle = INK.ambient;
   c.fillRect(0, 0, REF.w, REF.h);
@@ -202,7 +212,7 @@ export function setLights(on) { lightsOn = on; }
 function multiplyByLight(ctx) {
   if (!lightsOn) return;
   ctx.globalCompositeOperation = 'multiply';
-  ctx.drawImage(lamp.canvas, 0, 0);
+  ctx.drawImage(lamp.canvas, 0, 0, REF.w, REF.h);
   ctx.globalCompositeOperation = 'source-over';
 }
 
