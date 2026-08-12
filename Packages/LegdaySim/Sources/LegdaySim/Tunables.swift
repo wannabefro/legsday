@@ -23,6 +23,12 @@ public struct Tunables: Codable, Equatable, Sendable {
     public var fogGrip: Double
     /// Fog creep, px/s; ramps with run time (graybox `fogCreep`).
     public var fogCreep: Double
+    /// Highest fog pressure, px. Below the viewport height the fog can never
+    /// reach a Pilgrim who stays high, so this sets the whole run's difficulty.
+    public var fogCeiling: Double
+    /// The graybox ceiling. A default here keeps every test that does not tune
+    /// the fog from naming it.
+    public static let graybox190FogCeiling: Double = 190
     /// Fog pushback per kill, px; elites ×3 (graybox `killPush`).
     public var killPush: Double
     /// Downward bias added to the shove direction (graybox `downBias`).
@@ -41,6 +47,7 @@ public struct Tunables: Codable, Equatable, Sendable {
         fogGrace: Double,
         fogGrip: Double,
         fogCreep: Double,
+        fogCeiling: Double = Tunables.graybox190FogCeiling,
         killPush: Double,
         downBias: Double,
         cardSlow: Double,
@@ -54,6 +61,7 @@ public struct Tunables: Codable, Equatable, Sendable {
         self.fogGrace = fogGrace
         self.fogGrip = fogGrip
         self.fogCreep = fogCreep
+        self.fogCeiling = fogCeiling
         self.killPush = killPush
         self.downBias = downBias
         self.cardSlow = cardSlow

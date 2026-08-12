@@ -14,18 +14,20 @@ private let canonicalJSON = """
   "fogGrace": 0.8,
   "fogGrip": 2.4,
   "fogCreep": 1.5,
+  "fogCeiling": 190,
   "killPush": 0.9,
   "downBias": 0.35,
   "cardSlow": 0.005,
-  "firstCardCost": 20,
+  "firstCardCost": 5,
   "cardCostIncrement": 5
 }
 """
 
 struct TunablesTests {
-    /// Every field decodes to its graybox `S` default (values from
-    /// prototype/graybox.html lines 37-48 and the reset() essNeed seed).
-    @Test func decodesToGrayboxDefaults() throws {
+    /// Every field decodes to the shipped value. Most are the graybox `S`
+    /// defaults; `firstCardCost` is 5, not the graybox 20, so a run draws its
+    /// whole drafted deck. `fogCeiling` was a constant until it was measured.
+    @Test func decodesToShippedValues() throws {
         let t = try Tunables.decoded(from: Data(canonicalJSON.utf8))
         #expect(t.scroll == 78)
         #expect(t.spawn == 0.3)
@@ -34,10 +36,11 @@ struct TunablesTests {
         #expect(t.fogGrace == 0.8)
         #expect(t.fogGrip == 2.4)
         #expect(t.fogCreep == 1.5)
+        #expect(t.fogCeiling == 190)
         #expect(t.killPush == 0.9)
         #expect(t.downBias == 0.35)
         #expect(t.cardSlow == 0.005)
-        #expect(t.firstCardCost == 20)
+        #expect(t.firstCardCost == 5)
         #expect(t.cardCostIncrement == 5)
     }
 

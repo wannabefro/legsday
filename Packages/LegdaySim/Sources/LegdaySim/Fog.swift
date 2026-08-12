@@ -1,14 +1,12 @@
 import Foundation
 
-/// The fog economy (R4, R5) and its rippling surface (R20). The fog owns the
-/// bottom of the screen: it advances on a ramping clock, every kill pushes it
-/// back, and a stay past the grace window is fatal. The spring surface is
-/// read-only feedback — death is decided by the flat rest line only.
+/// The fog economy (R4, R5) and its rippling surface (R20). It advances on a
+/// ramping clock, every kill pushes it back, and a stay past the grace window
+/// is fatal. The spring surface is read-only: the flat rest line decides death.
 extension RunSim {
     private static let fogBaseOffset: Double = 110   // graybox 110px above bottom
     private static let fogWobbleAmp: Double = 12
     private static let fogWobbleFreq: Double = 1.05
-    private static let fogPressureCap: Double = 190
     private static let gracePull: Double = 8          // gentle downward pull in grace
     private static let gripPull: Double = 30           // strong pull once gripped
     private static let fogTimeDecay: Double = 0.9      // fogTime bleed when clear
@@ -19,8 +17,7 @@ extension RunSim {
     /// Creep growth per second of run (graybox value).
     static let creepRamp: Double = 0.015
 
-    /// The flat fog rest line in reference-space y. Larger `fogPressure` raises
-    /// it (smaller y) toward the hero. The wobble is a slow breathing.
+    /// The flat fog rest line. Larger `fogPressure` raises it toward the hero.
     public func fogLineY() -> Double {
         let wobble = sin(state.time * Self.fogWobbleFreq) * Self.fogWobbleAmp
         return state.height - (Self.fogBaseOffset + wobble + state.fogPressure + state.mods.fogAdd)
@@ -34,7 +31,7 @@ extension RunSim {
         let heraldCreep = state.herald != nil ? Heralds.creepMult : 1
         let creepRate = tunables.fogCreep * state.stage.fogCreep
             * (0.7 + state.time * Self.creepRamp) * heraldCreep
-        state.fogPressure = min(Self.fogPressureCap, state.fogPressure + creepRate * dt)
+        state.fogPressure = min(tunables.fogCeiling, state.fogPressure + creepRate * dt)
         state.pushBudget = min(Self.pushBudgetCap,
                                state.pushBudget + creepRate * Self.pushBudgetShare * dt)
 

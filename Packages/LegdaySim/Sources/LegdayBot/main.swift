@@ -15,6 +15,8 @@ struct Options {
     var csv = false
     var trace = false
     var cap = 900.0
+    var stopAtFinale = false
+    var overrides: [String: Double] = [:]
 }
 
 func parseOptions() -> Options {
@@ -29,6 +31,13 @@ func parseOptions() -> Options {
         case "--csv": o.csv = true
         case "--trace": o.trace = true
         case "--cap": o.cap = Double(it.next() ?? "") ?? o.cap
+        case "--stop-at-finale": o.stopAtFinale = true
+        case "--set":
+            let pair = (it.next() ?? "").split(separator: "=", maxSplits: 1)
+            guard pair.count == 2, let v = Double(pair[1]) else {
+                FileHandle.standardError.write(Data("--set wants key=number\n".utf8)); exit(2)
+            }
+            o.overrides[String(pair[0])] = v
         case "--help":
             print("""
             legdaybot — play the sim headlessly
@@ -39,11 +48,15 @@ func parseOptions() -> Options {
               --verbose         print every card drawn and the side taken
               --csv             one row per run, for a spreadsheet
               --trace           per-frame hero/fog state, and the cost of each card
+              --cap N           stop a run after N seconds of RUN CLOCK (default 900)
+              --set key=N       override one shipped tunable, repeatable, so a
+                                sweep never edits tunables.json
+              --stop-at-finale  end each run when the Finale deals, so the report
+                                measures the climb and not the unbounded tail
 
-            KNOWN GAP: the movement policy does not hold altitude. Every run ends
-            with the Pilgrim pinned at the viewport floor inside the fog at ~63s,
-            for every seed and every collection. Card decisions, deck statistics
-            and the report are sound; survival numbers are not the game's.
+            TWO CLOCKS. `--cap` and "run length" are the run clock, which a Fate
+            Card nearly stops (cardSlow 0.005). "played" is real time, which the
+            player feels and which the 2–3 minute target refers to.
             """)
             exit(0)
         default: FileHandle.standardError.write(Data("unknown argument \(a)\n".utf8)); exit(2)
@@ -55,7 +68,8 @@ func parseOptions() -> Options {
 // MARK: - Content
 
 /// The tunables the app ships, so the bot's numbers are the game's numbers.
-func loadTunables() -> Tunables {
+/// `--set` patches the JSON before decoding, so an unknown key still throws.
+func loadTunables(overrides: [String: Double]) -> Tunables {
     let root = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent()   // LegdayBot
         .deletingLastPathComponent()   // Sources
@@ -63,9 +77,25 @@ func loadTunables() -> Tunables {
         .deletingLastPathComponent()   // Packages
         .deletingLastPathComponent()   // repo root
     let url = root.appendingPathComponent("Legday/Resources/tunables.json")
-    guard let data = try? Data(contentsOf: url),
-          let t = try? Tunables.decoded(from: data) else {
+    guard var data = try? Data(contentsOf: url) else {
         FileHandle.standardError.write(Data("cannot read \(url.path)\n".utf8))
+        exit(1)
+    }
+    if !overrides.isEmpty {
+        guard var fields = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else {
+            FileHandle.standardError.write(Data("cannot patch \(url.path)\n".utf8))
+            exit(1)
+        }
+        for (k, v) in overrides {
+            guard fields[k] != nil else {
+                FileHandle.standardError.write(Data("no such tunable: \(k)\n".utf8)); exit(2)
+            }
+            fields[k] = v
+        }
+        data = (try? JSONSerialization.data(withJSONObject: fields)) ?? data
+    }
+    guard let t = try? Tunables.decoded(from: data) else {
+        FileHandle.standardError.write(Data("cannot decode \(url.path)\n".utf8))
         exit(1)
     }
     return t
@@ -143,6 +173,12 @@ struct RunReport {
     var kills: Int
     var shards: Int
     var seconds: Double
+    /// Real seconds the player would have held the phone, cards included.
+    var played: Double
+    /// Real seconds to reach THE RECKONING, or nil if the run never got there.
+    var reachedReckoningAt: Double?
+    /// Essence banked over the whole run, not the unspent balance.
+    var essenceEarned: Double
     var ending: String
     var deckDryAt: Double?     // sim time the drafted deck first ran out
     var hitCap: Bool           // stopped by the harness, not by the game
@@ -153,7 +189,7 @@ struct RunReport {
 
 func play(seed: UInt64, tunables: Tunables, catalog: CardCatalog,
           collection: [String: Int], verbose: Bool, trace: Bool = false,
-          cap: Double = 900) -> RunReport {
+          cap: Double = 900, stopAtFinale: Bool = false) -> RunReport {
     let viewport = Vec2(393, 852)
     var sim = RunSim(tunables: tunables, viewport: viewport, seed: seed,
                      catalog: catalog, collection: collection)
@@ -180,8 +216,19 @@ func play(seed: UInt64, tunables: Tunables, catalog: CardCatalog,
     var stageFaces: [String: Set<String>] = [:]
     var lastStageID = ""
 
+    var reckoningAt: Double?
+    var earned = 0.0
+    var lastEssence = sim.state.essence
     while !sim.state.dead, sim.state.time < hardCap {
         frame += 1
+        // A card spends essence, so only the rises are income.
+        let now = sim.state.essence
+        if now > lastEssence { earned += now - lastEssence }
+        lastEssence = now
+        if reckoningAt == nil, sim.state.fathoms >= Ascent.reckoningFathoms {
+            reckoningAt = Double(frame) * step
+            if stopAtFinale { break }
+        }
         let stage = Ascent.stage(atFathoms: sim.state.fathoms)
         if stage.id != lastStageID {
             if stageEntries[stage.id] == nil { stageEntries[stage.id] = sim.state.fathoms }
@@ -286,6 +333,8 @@ func play(seed: UInt64, tunables: Tunables, catalog: CardCatalog,
     return RunReport(seed: seed, fathoms: r.fathoms, cardsDrawn: drawn,
                      deathDealt: deathDealt, distinctTitles: titles.count,
                      kills: r.felled, shards: r.shards, seconds: sim.state.time,
+                     played: Double(frame) * step, reachedReckoningAt: reckoningAt,
+                     essenceEarned: earned,
                      ending: "\(r.ending)", deckDryAt: deckDryAt, hitCap: !sim.state.dead,
                      endingStage: Ascent.stage(atFathoms: r.fathoms).name,
                      stageEntryFathoms: stageEntries,
@@ -333,7 +382,7 @@ func nearest(_ points: [Vec2], to hero: Vec2, above limitY: Double) -> Vec2? {
 // MARK: - Report
 
 let options = parseOptions()
-let tunables = loadTunables()
+let tunables = loadTunables(overrides: options.overrides)
 let catalog = CardCatalog.seed
 let owned = collection(options.collection, catalog: catalog)
 
@@ -345,7 +394,7 @@ if options.verbose || options.trace {
         if options.verbose { print("seed \(seed)") }
         reports.append(play(seed: seed, tunables: tunables, catalog: catalog,
                             collection: owned, verbose: options.verbose, trace: options.trace,
-                            cap: options.cap))
+                            cap: options.cap, stopAtFinale: options.stopAtFinale))
     }
 } else {
     // Runs are independent; run them across cores to cut wall time.
@@ -353,7 +402,8 @@ if options.verbose || options.trace {
     DispatchQueue.concurrentPerform(iterations: options.runs) { i in
         let seed = options.firstSeed &+ UInt64(i)
         ordered[i] = play(seed: seed, tunables: tunables, catalog: catalog,
-                          collection: owned, verbose: false, trace: false, cap: options.cap)
+                          collection: owned, verbose: false, trace: false, cap: options.cap,
+                          stopAtFinale: options.stopAtFinale)
     }
     reports = ordered.compactMap { $0 }
 }
@@ -365,10 +415,13 @@ func median(_ xs: [Double]) -> Double {
 }
 
 if options.csv {
-    print("seed,fathoms,seconds,cards,deathDealt,distinct,felled,shards,ending,deckDryAt,endingStage,distinctFacesPerStage")
+    print("seed,fathoms,seconds,played,reckoningAt,cards,deathDealt,distinct,felled,shards,ending,deckDryAt,endingStage,distinctFacesPerStage")
     for r in reports {
         let faces = r.distinctFacesPerStage.sorted(by: { $0.key < $1.key }).map { "\($0.key)=\($0.value)" }.joined(separator: ";")
-        print("\(r.seed),\(Int(r.fathoms)),\(String(format: "%.1f", r.seconds)),\(r.cardsDrawn),"
+        print("\(r.seed),\(Int(r.fathoms)),\(String(format: "%.1f", r.seconds)),"
+            + "\(String(format: "%.1f", r.played)),"
+            + (r.reachedReckoningAt.map { String(format: "%.1f", $0) } ?? "") + ","
+            + "\(r.cardsDrawn),"
             + "\(r.deathDealt),\(r.distinctTitles),\(r.kills),\(r.shards),\(r.ending),"
             + (r.deckDryAt.map { String(format: "%.1f", $0) } ?? "")
             + ",\(r.endingStage),\(faces)")
@@ -378,6 +431,8 @@ if options.csv {
 
 let fathoms = reports.map(\.fathoms)
 let seconds = reports.map(\.seconds)
+let played = reports.map(\.played)
+let toReckoning = reports.compactMap(\.reachedReckoningAt)
 let cards = reports.map { Double($0.cardsDrawn) }
 let distinct = reports.map { Double($0.distinctTitles) }
 let totalDraws = reports.reduce(0) { $0 + $1.cardsDrawn }
@@ -394,7 +449,10 @@ print("""
 \(options.runs) runs · collection \(options.collection) · seeds \(options.firstSeed)…\(options.firstSeed &+ UInt64(options.runs - 1))
 
   fathoms        median \(Int(median(fathoms)))   min \(Int(fathoms.min() ?? 0))   max \(Int(fathoms.max() ?? 0))
-  run length     median \(String(format: "%.0f", median(seconds)))s
+  run clock      median \(String(format: "%.0f", median(seconds)))s
+  played         median \(String(format: "%.0f", median(played)))s of real time — what the thumb feels
+  to RECKONING   \(toReckoning.count)/\(options.runs) runs\(toReckoning.isEmpty ? "" : ", median \(String(format: "%.0f", median(toReckoning)))s played")
+  essence earned median \(Int(median(reports.map(\.essenceEarned))))
   cards drawn    median \(Int(median(cards)))
   distinct faces median \(Int(median(distinct)))  of \(reachableFaces) reachable
   Death's share  \(totalDraws > 0 ? Int(Double(totalDeath) / Double(totalDraws) * 100) : 0)% of \(totalDraws) draws

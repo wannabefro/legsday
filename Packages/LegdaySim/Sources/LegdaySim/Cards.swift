@@ -60,6 +60,8 @@ extension RunSim {
     /// Fraction of screen width a drag must pass to commit. The view draws it,
     /// so the highlight cannot disagree with the rule (R22).
     public static let commitThreshold: Double = 0.3
+    /// The most essence stacking can be worth (greed stops paying for itself).
+    public static let essMulCeiling: Double = 6
 
     /// Essence charges the next Fate Card; when full, the card is dealt and the
     /// cost escalates (graybox `essNeed += 1`). Only one card is up at a time.
@@ -103,7 +105,6 @@ extension RunSim {
         }
     }
 
-    /// Abort the drag: return the card to neutral without committing.
     mutating func springBackCard() {
         guard var c = state.card, !c.committing else { return }
         c.offset = 0
@@ -238,7 +239,8 @@ extension RunSim {
         case .magnet: state.mods.magnet = op(state.mods.magnet)
         case .gain: state.mods.gain = op(state.mods.gain)
         case .scrollMul: state.mods.scrollMul = op(state.mods.scrollMul)
-        case .essMul: state.mods.essMul = op(state.mods.essMul)
+        // Essence buys the next card, so unbounded this mod compounds to 2^N.
+        case .essMul: state.mods.essMul = min(Self.essMulCeiling, op(state.mods.essMul))
         case .moteSink: state.mods.moteSink = op(state.mods.moteSink)
         case .spawnMul: state.mods.spawnMul = op(state.mods.spawnMul)
         case .fogAdd: state.mods.fogAdd = op(state.mods.fogAdd)

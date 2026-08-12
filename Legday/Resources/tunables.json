@@ -6,9 +6,10 @@
   "fogGrace": 0.8,
   "fogGrip": 2.4,
   "fogCreep": 1.5,
+  "fogCeiling": 190,
   "killPush": 0.9,
   "downBias": 0.35,
   "cardSlow": 0.005,
   "firstCardCost": 5,
-  "cardCostIncrement": 1
+  "cardCostIncrement": 5
 }
