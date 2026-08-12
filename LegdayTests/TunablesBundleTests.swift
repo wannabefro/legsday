@@ -7,7 +7,8 @@ import LegdaySim
 /// 2–3 minute run tuning. The package's `TunablesTests` covers the Codable
 /// contract host-side; this one guards the real resource against drift.
 struct TunablesBundleTests {
-    /// The shipped resource matches the canonical 2–3 minute tuning values.
+    /// Card costs are 5 and +1: a greedy run earns about 31 essence, which
+    /// buys four cards. At 20 and +5 it bought one.
     @Test func shippedTunablesDecodeToGrayboxDefaults() throws {
         let t = try Tunables.bundled()
         #expect(t.scroll == 78)
@@ -20,7 +21,7 @@ struct TunablesBundleTests {
         #expect(t.killPush == 0.9)
         #expect(t.downBias == 0.35)
         #expect(t.cardSlow == 0.005)
-        #expect(t.firstCardCost == 20)
-        #expect(t.cardCostIncrement == 5)
+        #expect(t.firstCardCost == 5)
+        #expect(t.cardCostIncrement == 1)
     }
 }
