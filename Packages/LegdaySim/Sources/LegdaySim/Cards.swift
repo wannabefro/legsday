@@ -68,9 +68,13 @@ extension RunSim {
     mutating func maybeDrawCard() {
         guard state.card == nil, state.charge >= state.essNeed else { return }
         state.charge = 0
-        state.essNeed += tunables.cardCostIncrement
+        // The ramp rides essMul because the income does. Flat, it has no
+        // stable card count.
+        state.essNeed += tunables.cardCostIncrement * state.mods.essMul
         drawCard()
     }
+
+    mutating func debugDrawCardIfCharged() { maybeDrawCard() }
 
     /// Drag the current card horizontally (input-driven; U8 wires touches).
     mutating func dragCard(offset: Double) {

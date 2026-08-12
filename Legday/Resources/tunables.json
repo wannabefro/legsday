@@ -1,6 +1,6 @@
 {
   "scroll": 78,
-  "spawn": 0.3,
+  "spawn": 1.2,
   "shove": 120,
   "iframes": 0.55,
   "fogGrace": 0.8,
@@ -11,5 +11,5 @@
   "downBias": 0.35,
   "cardSlow": 0.005,
   "firstCardCost": 5,
-  "cardCostIncrement": 5
+  "cardCostIncrement": 10
 }

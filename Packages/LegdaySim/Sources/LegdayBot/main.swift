@@ -179,6 +179,11 @@ struct RunReport {
     var reachedReckoningAt: Double?
     /// Essence banked over the whole run, not the unspent balance.
     var essenceEarned: Double
+    /// Mean live foes on screen — what "enemy density" means to the thumb.
+    var crowd: Double
+    var motesTaken: Int
+    /// Motes the fog took first. The reach half of the essence economy.
+    var motesLost: Int
     var ending: String
     var deckDryAt: Double?     // sim time the drafted deck first ran out
     var hitCap: Bool           // stopped by the harness, not by the game
@@ -219,8 +224,14 @@ func play(seed: UInt64, tunables: Tunables, catalog: CardCatalog,
     var reckoningAt: Double?
     var earned = 0.0
     var lastEssence = sim.state.essence
+    var foeFrames = 0, motesTaken = 0, motesLost = 0
     while !sim.state.dead, sim.state.time < hardCap {
         frame += 1
+        foeFrames += sim.state.foes.count
+        for e in sim.state.frameEvents {
+            if case .moteCollected = e { motesTaken += 1 }
+            if case .moteLost = e { motesLost += 1 }
+        }
         // A card spends essence, so only the rises are income.
         let now = sim.state.essence
         if now > lastEssence { earned += now - lastEssence }
@@ -335,6 +346,8 @@ func play(seed: UInt64, tunables: Tunables, catalog: CardCatalog,
                      kills: r.felled, shards: r.shards, seconds: sim.state.time,
                      played: Double(frame) * step, reachedReckoningAt: reckoningAt,
                      essenceEarned: earned,
+                     crowd: Double(foeFrames) / Double(max(frame, 1)),
+                     motesTaken: motesTaken, motesLost: motesLost,
                      ending: "\(r.ending)", deckDryAt: deckDryAt, hitCap: !sim.state.dead,
                      endingStage: Ascent.stage(atFathoms: r.fathoms).name,
                      stageEntryFathoms: stageEntries,
@@ -415,14 +428,15 @@ func median(_ xs: [Double]) -> Double {
 }
 
 if options.csv {
-    print("seed,fathoms,seconds,played,reckoningAt,cards,deathDealt,distinct,felled,shards,ending,deckDryAt,endingStage,distinctFacesPerStage")
+    print("seed,fathoms,seconds,played,reckoningAt,cards,deathDealt,distinct,felled,shards,crowd,motesTaken,motesLost,ending,deckDryAt,endingStage,distinctFacesPerStage")
     for r in reports {
         let faces = r.distinctFacesPerStage.sorted(by: { $0.key < $1.key }).map { "\($0.key)=\($0.value)" }.joined(separator: ";")
         print("\(r.seed),\(Int(r.fathoms)),\(String(format: "%.1f", r.seconds)),"
             + "\(String(format: "%.1f", r.played)),"
             + (r.reachedReckoningAt.map { String(format: "%.1f", $0) } ?? "") + ","
             + "\(r.cardsDrawn),"
-            + "\(r.deathDealt),\(r.distinctTitles),\(r.kills),\(r.shards),\(r.ending),"
+            + "\(r.deathDealt),\(r.distinctTitles),\(r.kills),\(r.shards),"
+            + "\(String(format: "%.1f", r.crowd)),\(r.motesTaken),\(r.motesLost),\(r.ending),"
             + (r.deckDryAt.map { String(format: "%.1f", $0) } ?? "")
             + ",\(r.endingStage),\(faces)")
     }
@@ -443,6 +457,9 @@ let reachableFaces = catalog.player.count + catalog.death.count + catalog.threat
     + catalog.forks.count + catalog.weapons.count + catalog.rivalOffers.count
 var endings: [String: Int] = [:]
 for r in reports { endings[r.ending, default: 0] += 1 }
+let taken = reports.reduce(0) { $0 + $1.motesTaken }
+let lost = reports.reduce(0) { $0 + $1.motesLost }
+let reach = taken + lost > 0 ? Int(Double(taken) / Double(taken + lost) * 100) : 0
 
 print("""
 
@@ -453,6 +470,8 @@ print("""
   played         median \(String(format: "%.0f", median(played)))s of real time — what the thumb feels
   to RECKONING   \(toReckoning.count)/\(options.runs) runs\(toReckoning.isEmpty ? "" : ", median \(String(format: "%.0f", median(toReckoning)))s played")
   essence earned median \(Int(median(reports.map(\.essenceEarned))))
+  motes reached  \(reach)% — \(taken) taken, \(lost) taken by the fog first
+  foes on screen median \(String(format: "%.1f", median(reports.map(\.crowd)))) live, \(String(format: "%.2f", median(reports.map { Double($0.kills) / max($0.played, 1) }))) felled per second
   cards drawn    median \(Int(median(cards)))
   distinct faces median \(Int(median(distinct)))  of \(reachableFaces) reachable
   Death's share  \(totalDraws > 0 ? Int(Double(totalDeath) / Double(totalDraws) * 100) : 0)% of \(totalDraws) draws

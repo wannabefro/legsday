@@ -65,6 +65,27 @@ struct MotesTests {
         #expect(sim.state.essence == 6) // 2 · 3
     }
 
+    /// The mote lands below her even when the foe she felled was above her.
+    @Test func aMoteAlwaysLandsBelowThePilgrim() {
+        var sim = makeSim()
+        let hero = sim.state.hero.pos
+        let foe = Foe(id: 1, pos: Vec2(hero.x, hero.y - 200), radius: 9, hp: 1,
+                      speed: 60, elite: true, turnGain: 10, wobble: 0)
+        sim.debugDropMote(from: foe)
+        #expect(sim.state.motes.count == 1)
+        #expect(sim.state.motes[0].pos.y == hero.y + RunSim.dropBelow)
+    }
+
+    /// A foe below her drops its mote below itself, not below her.
+    @Test func aFoeBelowHerDropsBelowItself() {
+        var sim = makeSim()
+        let hero = sim.state.hero.pos
+        let foe = Foe(id: 1, pos: Vec2(hero.x, hero.y + 150), radius: 9, hp: 1,
+                      speed: 60, elite: true, turnGain: 10, wobble: 0)
+        sim.debugDropMote(from: foe)
+        #expect(sim.state.motes[0].pos.y == foe.pos.y + RunSim.dropBelow)
+    }
+
     /// A wider magnet snags a mote the base reach would let sink past.
     @Test func magnetGrowthWidensTheReach() {
         func collected(magnet: Double) -> Bool {

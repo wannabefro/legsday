@@ -13,7 +13,7 @@ struct TunablesBundleTests {
     @Test func shippedTunablesDecodeToGrayboxDefaults() throws {
         let t = try Tunables.bundled()
         #expect(t.scroll == 78)
-        #expect(t.spawn == 0.3)
+        #expect(t.spawn == 1.2)
         #expect(t.shove == 120)
         #expect(t.iframes == 0.55)
         #expect(t.fogGrace == 0.8)
@@ -24,6 +24,6 @@ struct TunablesBundleTests {
         #expect(t.downBias == 0.35)
         #expect(t.cardSlow == 0.005)
         #expect(t.firstCardCost == 5)
-        #expect(t.cardCostIncrement == 5)
+        #expect(t.cardCostIncrement == 10)
     }
 }

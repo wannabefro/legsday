@@ -8,7 +8,7 @@ import Testing
 private let canonicalJSON = """
 {
   "scroll": 78,
-  "spawn": 0.3,
+  "spawn": 1.2,
   "shove": 120,
   "iframes": 0.55,
   "fogGrace": 0.8,
@@ -19,7 +19,7 @@ private let canonicalJSON = """
   "downBias": 0.35,
   "cardSlow": 0.005,
   "firstCardCost": 5,
-  "cardCostIncrement": 5
+  "cardCostIncrement": 10
 }
 """
 
@@ -30,7 +30,7 @@ struct TunablesTests {
     @Test func decodesToShippedValues() throws {
         let t = try Tunables.decoded(from: Data(canonicalJSON.utf8))
         #expect(t.scroll == 78)
-        #expect(t.spawn == 0.3)
+        #expect(t.spawn == 1.2)
         #expect(t.shove == 120)
         #expect(t.iframes == 0.55)
         #expect(t.fogGrace == 0.8)
@@ -41,7 +41,7 @@ struct TunablesTests {
         #expect(t.downBias == 0.35)
         #expect(t.cardSlow == 0.005)
         #expect(t.firstCardCost == 5)
-        #expect(t.cardCostIncrement == 5)
+        #expect(t.cardCostIncrement == 10)
     }
 
     /// A JSON missing any key must fail decode — no silent defaults (U1 contract).

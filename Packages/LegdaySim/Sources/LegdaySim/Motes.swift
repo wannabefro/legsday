@@ -7,9 +7,9 @@ extension RunSim {
     /// going to it costs the ground she must climb again.
     private static let baseReach: Double = 16
     private static let magnetReachGain: Double = 0.35
-    /// Essence falls past the Pilgrim before she can take it, so a kill and a
-    /// claim are two separate decisions.
-    static let dropBelow: Double = 60
+    /// A kill and a claim are two decisions. At the shipped spawn rate,
+    /// 60 lost 61% of motes to the fog; 26 loses 11%.
+    static let dropBelow: Double = 26
     static let narrowLanePay: Double = 2
     private static let sinkScrollFactor: Double = 0.95
     private static let sinkBase: Double = 2
@@ -67,6 +67,8 @@ extension RunSim {
         state.motes.append(Mote(id: state.nextMoteId, pos: pos, radius: radius, value: value))
         state.nextMoteId += 1
     }
+
+    mutating func debugDropMote(from foe: Foe) { dropMote(foe) }
 
     /// Test/debug seam: inject a mote; returns its id.
     @discardableResult
