@@ -17,6 +17,7 @@ mkdir -p "$here/dist"
 python3 "$here/bundle.py" \
     --wasm "$here/.build/release/LegdayWasm.wasm" \
     --tunables "$here/../Legday/Resources/tunables.json" \
+    --sprites "$here/../Legday/Resources/sprites" \
     --shell "$here/shell.html" \
-    --js "$here/legday.js" "$here/main.js" \
+    --js "$here/art.js" "$here/legday.js" "$here/main.js" \
     --out "$here/dist/legday.html"

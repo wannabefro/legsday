@@ -1,18 +1,18 @@
 // Boot, input, and the frame loop. The sim decides; this drives it.
-import { boot, tick, text, draw, REF } from './legday.js';
+import { boot, tick, text, draw, setLights, REF } from './legday.js';
 
 const canvas = document.getElementById('stage');
 const ctx = canvas.getContext('2d');
 const bootPane = document.getElementById('boot');
 let size = { w: 0, h: 0 }, running = false, last = 0, ended = false;
 const pending = [];
+setLights(!location.search.includes('lights=off'));
 
 function resize() {
   const dpr = Math.min(devicePixelRatio || 1, 2);
-  size = { w: innerWidth, h: innerHeight };
-  canvas.width = size.w * dpr;
-  canvas.height = size.h * dpr;
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  size = { w: innerWidth, h: innerHeight, dpr };
+  canvas.width = Math.round(size.w * dpr);
+  canvas.height = Math.round(size.h * dpr);
 }
 addEventListener('resize', resize);
 resize();
@@ -26,9 +26,8 @@ function toRef(e) {
   };
 }
 
-// The sim takes one input per tick, so events queue. Consecutive drags
-// coalesce: only the newest position matters, but a down or an up never
-// gets dropped, and the sim anchors the drag on the down.
+// The sim takes one input per tick, so events queue. Drags coalesce; a
+// down or an up is never dropped.
 let down = false;
 for (const [type, phase] of [['pointerdown', 1], ['pointermove', 2], ['pointerup', 3], ['pointercancel', 3]]) {
   canvas.addEventListener(type, (e) => {
@@ -53,12 +52,12 @@ function frame(now) {
   const input = pending.shift() || { phase: 0, x: 0, y: 0 };
   const f = tick(dt, input.phase, input.x, input.y);
   ended = f[8] === 1;
-  draw(ctx, f, text(), size);
+  draw(ctx, f, text(), size, dt);
 }
 
 async function start() {
   ended = false; pending.length = 0; last = performance.now();
-  await boot(WASM_BYTES, TUNABLES, (Math.random() * 2 ** 32) >>> 0);
+  await boot(WASM_BYTES, TUNABLES, (Math.random() * 2 ** 32) >>> 0, SPRITES);
   running = true;
 }
 

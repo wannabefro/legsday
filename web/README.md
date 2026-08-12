@@ -38,10 +38,29 @@ internationalization tables. Two calls pulled them in:
 Both loaders are still there for iOS, behind `#if !os(WASI)`. Before you add a
 Foundation call to `LegdaySim`, build for wasm and check the size.
 
-## What the web build does not have
+## The render layer
 
-The renderer is plain canvas, so there is no lighting, no baked art and no
-cloak or rope. The run itself is complete: the gorge, the fog, foes, motes,
-Fate Cards, forks and the Ascent stages.
+`legday.js` is a port of `Legday/Run/*`, layer for layer: the floor and its
+relic, the two cliffs with their courses, the channel's furniture, the air, the
+carrion birds, the foes, the Pilgrim's twelve-wedge cloak rig, her lantern, the
+fog surface, the strike forms, the HUD, the charge rail and the Fate Card.
+`art.js` carries `SpriteAtlas`, `ZoneLook` and `AirNode` — the same 17 sprites
+under the same partial-alpha wash.
 
-Card art aside, the two builds play the same run for the same seed.
+Two things could not be copied, and both are canvas limits:
+
+**Lighting.** SpriteKit lights each sprite. A canvas can only multiply a whole
+layer, which forces two changes. Everything lit is drawn into **one opaque
+layer** — canvas `multiply` against a transparent pixel returns the source, so
+a sparse layer comes back as a full-screen copy of the light map. And the
+ambient is `#332C40` rather than the iOS `#1B1822`: at 10% the cliff art fell
+to rgb(5,4,3) and its cross-hatching vanished.
+
+**Corpses.** The iOS build tumbles them on a physics body. Here a plain
+ballistic step stands in. They are cosmetic in both.
+
+## Two sources of truth disagree
+
+`legday-full.jpeg` specifies an **edge HUD only** — essence, fathoms and pause
+in the top safe area. `HudNode.swift` draws a torn parchment strip instead, and
+this port follows the code so the two builds match. Worth settling.
