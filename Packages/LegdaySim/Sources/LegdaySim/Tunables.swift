@@ -76,6 +76,8 @@ public extension Tunables {
         case resourceMissing
     }
 
+    // The web build passes these as raw doubles instead; see CardCatalog.
+    #if !os(WASI)
     /// Decodes tunables from JSON. A missing key throws (`keyNotFound`) rather
     /// than silently defaulting — the U1 contract.
     static func decoded(from data: Data) throws -> Tunables {
@@ -89,4 +91,5 @@ public extension Tunables {
         }
         return try decoded(from: Data(contentsOf: url))
     }
+    #endif
 }

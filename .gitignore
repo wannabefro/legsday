@@ -13,3 +13,10 @@ xcuserdata/
 
 # macOS
 .DS_Store
+
+# Web build output (regenerate with web/build.sh)
+web/dist/
+
+# Browser automation scratch
+.playwright-mcp/
+__pycache__/

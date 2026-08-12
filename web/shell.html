@@ -1,0 +1,32 @@
+<title>LEGDAY</title>
+<style>
+  :root { color-scheme: dark; }
+  html, body {
+    margin: 0; height: 100%; background: #0a060e; overflow: hidden;
+    font-family: ui-serif, Georgia, serif; color: #d8a53c;
+    -webkit-user-select: none; user-select: none; touch-action: none;
+    overscroll-behavior: none;
+  }
+  #stage { display: block; width: 100vw; height: 100dvh; }
+  #boot {
+    position: fixed; inset: 0; display: grid; place-content: center;
+    gap: 1.2rem; justify-items: center; text-align: center; padding: 2rem;
+  }
+  h1 { font-size: clamp(2.6rem, 14vw, 5rem); letter-spacing: 0.22em; margin: 0 0 -0.4rem; }
+  p { opacity: 0.55; font-size: 0.9rem; margin: 0; max-width: 26ch; line-height: 1.5; }
+  button {
+    font: inherit; font-size: 1rem; letter-spacing: 0.18em; padding: 0.85rem 2.2rem;
+    background: #d8a53c; color: #17111d; border: 0; cursor: pointer;
+  }
+  button:focus-visible { outline: 3px solid #efe6d2; outline-offset: 3px; }
+  #boot[hidden] { display: none; }
+</style>
+
+<canvas id="stage"></canvas>
+<div id="boot">
+  <h1>LEGDAY</h1>
+  <p>the climb is the only health</p>
+  <button id="go">BEGIN THE CLIMB</button>
+  <p>Drag anywhere to steer. A Fate Card takes your thumb — drag it left or
+     right to choose.</p>
+</div>

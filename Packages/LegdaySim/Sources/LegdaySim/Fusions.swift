@@ -25,6 +25,18 @@ public struct FusionRecipe: Equatable, Sendable, Codable {
 /// Fusion tuning (R15). The recipe table is placeholder-by-design: one neutral
 /// pair and one rival pair; the full table is deferred.
 public enum Fusions {
+    /// Upper-case an ASCII id for a card face. `String.uppercased()` links
+    /// Foundation's case tables, which cost 45 MB in the WebAssembly build.
+    static func shout(_ id: String) -> String {
+        String(id.utf8.map { b -> Character in
+            if b == UInt8(ascii: "_") { return " " }
+            if b >= UInt8(ascii: "a"), b <= UInt8(ascii: "z") {
+                return Character(UnicodeScalar(b - 32))
+            }
+            return Character(UnicodeScalar(b))
+        })
+    }
+
     /// Growth levels each source must reach before a recipe can fire.
     public static let upgradeGate = 2
     /// Small essence boon for declining a fusion.
@@ -118,7 +130,7 @@ extension RunSim {
 
     /// A weapon card for an evolution — dealt when a converted deck copy comes up.
     func evolutionCard(_ r: FusionRecipe) -> CardDef {
-        CardDef(id: r.evolution.id, title: r.evolution.id.replacingOccurrences(of: "_", with: " ").uppercased(),
+        CardDef(id: r.evolution.id, title: Fusions.shout(r.evolution.id),
             spine: .inkspine, isDeath: false,
             left: CardChoice(label: "the evolution", subtitle: "", effects: []),
             right: CardChoice(label: "the evolution", subtitle: "", effects: []),

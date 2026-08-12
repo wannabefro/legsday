@@ -59,6 +59,9 @@ public struct CardCatalog: Codable, Equatable, Sendable {
 public extension CardCatalog {
     enum LoadError: Error, Equatable { case resourceMissing }
 
+    // A browser has no bundle, and `JSONDecoder` links Foundation's
+    // internationalization tables — 45 MB of a 52 MB WebAssembly binary.
+    #if !os(WASI)
     /// Decodes a catalog from JSON. An unknown effect name / malformed card
     /// throws (no silent fallback) — the U10 contract.
     static func decoded(from data: Data) throws -> CardCatalog {
@@ -72,6 +75,7 @@ public extension CardCatalog {
         }
         return try decoded(from: Data(contentsOf: url))
     }
+    #endif
 
     /// Resolve a card by id across every pool — the draft's picks are ids.
     public func card(id: String) -> CardDef? {
